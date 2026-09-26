@@ -1,0 +1,6 @@
+brew "actionlint"
+brew "dprint"
+brew "git-cliff"
+brew "just"
+brew "pre-commit"
+brew "swiftlint"

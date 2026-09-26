@@ -1,0 +1,126 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - name: Extract version and metadata
+        id: metadata
+        shell: bash
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          COMMIT_DATE: ${{ github.event.head_commit.timestamp }}
+        run: |
+          BUILD_DATE=$(date -u +'%Y-%m-%dT%H:%M:%SZ')
+          if [ "$GITHUB_EVENT_NAME" = "pull_request" ]; then
+            VERSION="pr-${PR_NUMBER}-${GITHUB_SHA:0:7}"
+            IS_PRERELEASE=true
+            RELEASE_NAME="PR #${PR_NUMBER} Release Preview"
+            TAG_NAME="pr-${PR_NUMBER}"
+          elif [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+            VERSION="${GITHUB_REF#refs/tags/v}"
+            IS_PRERELEASE=false
+            RELEASE_NAME="v${VERSION}"
+            TAG_NAME="v${VERSION}"
+          else
+            VERSION=$(date -u -d "${COMMIT_DATE:-$BUILD_DATE}" +'%Y.%m.%d.%H%M%S')
+            IS_PRERELEASE=true
+            RELEASE_NAME="Latest Development Release"
+            TAG_NAME=latest
+          fi
+          {
+            echo "version=$VERSION"
+            echo "commit_sha=$GITHUB_SHA"
+            echo "build_date=$BUILD_DATE"
+            echo "is_prerelease=$IS_PRERELEASE"
+            echo "release_name=$RELEASE_NAME"
+            echo "tag_name=$TAG_NAME"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Generate changelog
+        uses: orhun/git-cliff-action@v4
+        with:
+          version: v2.14.1
+          config: .github/cliff.toml
+          # --current can resolve to the excluded rolling tag when it shares HEAD with a version tag.
+          args: --use-branch-tags ${{ steps.metadata.outputs.is_prerelease == 'true' && '--unreleased' || '--latest' }}
+        env:
+          OUTPUT: ${{ runner.temp }}/changelog.md
+
+      - name: Prepare release notes
+        env:
+          IS_PRERELEASE: ${{ steps.metadata.outputs.is_prerelease }}
+          VERSION: ${{ steps.metadata.outputs.version }}
+          COMMIT_SHA: ${{ steps.metadata.outputs.commit_sha }}
+          BUILD_DATE: ${{ steps.metadata.outputs.build_date }}
+        run: |
+          if [ "$IS_PRERELEASE" = true ]; then
+            TEMPLATE=".github/pre-release-template.md"
+          else
+            TEMPLATE=".github/release-template.md"
+          fi
+
+          VERSION=$(printf '%s' "$VERSION" | sed 's/[\\&|]/\\&/g')
+          sed -e "s|{{VERSION}}|$VERSION|g" \
+              -e "s|{{COMMIT_SHA}}|$COMMIT_SHA|g" \
+              -e "s|{{BUILD_DATE}}|$BUILD_DATE|g" \
+              -e "s|{{REPOSITORY}}|$GITHUB_REPOSITORY|g" \
+              "$TEMPLATE" > "$RUNNER_TEMP/release-notes.md"
+          printf '\n' >> "$RUNNER_TEMP/release-notes.md"
+          cat "$RUNNER_TEMP/changelog.md" >> "$RUNNER_TEMP/release-notes.md"
+          cat "$RUNNER_TEMP/release-notes.md"
+
+      - name: Delete existing latest release
+        if: steps.metadata.outputs.tag_name == 'latest' && github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh release view latest >/dev/null 2>&1; then
+            gh release delete latest --yes --cleanup-tag
+          fi
+
+      - name: Create release
+        if: github.event_name != 'pull_request'
+        uses: softprops/action-gh-release@v3
+        with:
+          name: ${{ steps.metadata.outputs.release_name }}
+          tag_name: ${{ steps.metadata.outputs.tag_name }}
+          target_commitish: ${{ steps.metadata.outputs.commit_sha }}
+          body_path: ${{ runner.temp }}/release-notes.md
+          draft: false
+          prerelease: ${{ steps.metadata.outputs.is_prerelease == 'true' }}
+
+  release-required-check:
+    name: Release - Required Check
+    needs: [release]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check for failures
+        if: contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled')
+        run: exit 1

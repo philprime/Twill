@@ -1,0 +1,47 @@
+name: Test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+  workflow_call:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-test-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Test (${{ matrix.os }}, ${{ matrix.configuration }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    strategy:
+      matrix:
+        os: [macos-latest, ubuntu-latest]
+        configuration: [debug, release]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup Swift
+        uses: ./.github/actions/setup-swift
+        with:
+          swift-version: "6.4.0"
+
+      - name: Install Just on macOS
+        if: runner.os == 'macOS'
+        run: brew install just
+
+      - name: Install Just on Linux
+        if: runner.os == 'Linux'
+        run: cargo install just --locked --version 1.58.0
+
+      - name: Unit tests
+        run: just test -c "${{ matrix.configuration }}"
+
+      - name: Integration tests
+        run: just test-integration -c "${{ matrix.configuration }}"

@@ -1,0 +1,4 @@
+brew "actionlint"
+brew "dprint"
+brew "just"
+brew "swiftlint"
