@@ -13,7 +13,7 @@ public final class Application {
     private var inputError: TerminalError?
     private var isStopping = false
 
-    public init(runLoop: RunLoop, terminalSession: TerminalSession = DefaultTerminalSession()) {
+    public init(runLoop: RunLoop = DefaultRunLoop(), terminalSession: TerminalSession = DefaultTerminalSession()) {
         self.runLoop = runLoop
         self.terminalSession = terminalSession
     }

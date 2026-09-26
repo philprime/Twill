@@ -4,8 +4,7 @@ import Twill
 struct Keyboard {
     @MainActor
     static func main() async throws {
-        let runLoop = Twill.DefaultRunLoop()
-        let application = Twill.Application(runLoop: runLoop)
+        let application = Twill.Application()
         print("Press keys to inspect events. Press q or Ctrl-C to quit.")
 
         application.onKeyEvent = { [weak application] key in
