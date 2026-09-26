@@ -24,11 +24,12 @@ setup:
 build *args:
     just _swift batch build "$@"
 
-# Run unit tests. Supports --linux, --container, and SwiftPM arguments such as --filter SomeSuite.
+# Enable injectable collaborators in the library and unit tests, in either configuration.
+# Supports --linux, --container, and SwiftPM arguments such as --filter SomeSuite.
 test *args:
-    just _swift batch test --skip TwillIntegrationTests "$@"
+    just _swift batch test -Xswiftc -DTESTING --skip TwillIntegrationTests "$@"
 
-# Run framework terminal integration tests. Supports --linux and --container.
+# Test production collaborators without TESTING. Supports --linux and --container.
 test-integration *args:
     just _swift batch test --filter TwillIntegrationTests "$@"
 

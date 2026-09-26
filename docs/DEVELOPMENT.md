@@ -66,6 +66,12 @@ just example Clock --linux
 
 Setup, formatting, linting, and cleaning always run on the host and do not accept these execution options.
 
+### Test compilation
+
+`just test` passes `-Xswiftc -DTESTING` to both the library and test targets. This enables protocol-based injection and all unit tests in debug and release configurations. Plain `swift test` does not enable these mock-based tests unless the flag is supplied.
+
+`just test-integration` and `just build` omit `TESTING`, exercising the concrete implementations shipped to consumers. The CI matrix runs both test commands in debug and release.
+
 ### Argument forwarding
 
 Execution options are removed before invoking SwiftPM. Other arguments are forwarded unchanged, including quoted values:
@@ -108,7 +114,7 @@ just analyze
 just build
 ```
 
-After Swift edits, run `just format` and rerun `just analyze`. Check release compilation and tests as well because Twill uses different abstraction definitions in debug and release builds:
+After Swift edits, run `just format` and rerun `just analyze`. Check both optimization configurations with and without `TESTING`. Unit tests use injectable protocols, while integration tests and ordinary builds use concrete typealiases:
 
 ```bash
 just build -c release

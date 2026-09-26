@@ -5,10 +5,10 @@
 - Prefer protocol-oriented boundaries for replaceable collaborators while keeping leaf implementations concrete.
 - Use protocol extensions for shared default behavior where appropriate.
 - Use constructor injection. Choose concrete defaults at composition boundaries.
-- Use protocols for replaceable collaborators in debug builds and alias them to concrete implementations in release builds, as illustrated below.
+- Use `#if TESTING` protocols for replaceable collaborators and concrete typealiases otherwise. `just test` enables `TESTING` for both the library and tests in debug and release. Integration tests run without it, as illustrated below.
 
 ```swift
-#if DEBUG
+#if TESTING
 @MainActor
 protocol TerminalOutput: AnyObject {
     func write(_ text: String)
@@ -62,4 +62,4 @@ just analyze
 just build
 ```
 
-Run `just format` after Swift edits, then rerun `just analyze` before handing changes back. Verify debug and release configurations when changing conditional abstractions. For cross-platform runtime changes, also run the relevant checks with `--linux`.
+Run `just format` after Swift edits, then rerun `just analyze` before handing changes back. Verify debug and release configurations both with `TESTING` (`just test`) and without it (`just test-integration` and `just build`) when changing conditional abstractions. For cross-platform runtime changes, also run the relevant checks with `--linux`.
