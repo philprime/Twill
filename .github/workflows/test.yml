@@ -45,3 +45,13 @@ jobs:
 
       - name: Integration tests
         run: just test-integration -c "${{ matrix.configuration }}"
+
+  test-required-check:
+    name: Test - Required Check
+    needs: [test]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check for failures
+        if: contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled')
+        run: exit 1

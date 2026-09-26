@@ -42,3 +42,13 @@ jobs:
 
       - name: Build package
         run: just build -c "${{ matrix.configuration }}"
+
+  build-required-check:
+    name: Build - Required Check
+    needs: [build]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check for failures
+        if: contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled')
+        run: exit 1
