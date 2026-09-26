@@ -19,12 +19,12 @@ struct ApplicationTests {
 
         // -- Act --
         let task = Task {
-            await application.run()
+            try await application.run()
         }
         defer { task.cancel() }
         try await clock.sleep(for: .milliseconds(2250))
         task.cancel()
-        await task.value
+        try await task.value
         let countAfterCancellation = ticks.count
         try await clock.sleep(for: .milliseconds(1100))
 
@@ -40,7 +40,7 @@ struct ApplicationTests {
     }
 
     @Test("An already cancelled application does not tick", .timeLimit(.minutes(1)))
-    func cancelledBeforeRunning() async {
+    func cancelledBeforeRunning() async throws {
         // -- Arrange --
         var tickCount = 0
         let runLoop = Twill.DefaultRunLoop()
@@ -53,9 +53,9 @@ struct ApplicationTests {
             withUnsafeCurrentTask { $0?.cancel() }
 
             // -- Act --
-            await application.run()
+            try await application.run()
         }
-        await task.value
+        try await task.value
 
         // -- Assert --
         #expect(tickCount == 0)

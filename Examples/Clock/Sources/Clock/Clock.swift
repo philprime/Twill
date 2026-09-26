@@ -4,7 +4,7 @@ import Twill
 @main
 struct Clock {
     @MainActor
-    static func main() async {
+    static func main() async throws {
         let runLoop = Twill.DefaultRunLoop()
         let application = Twill.Application(runLoop: runLoop)
 
@@ -13,6 +13,6 @@ struct Clock {
         }
         runLoop.add(timer)
 
-        await application.run()
+        try await application.run()
     }
 }
