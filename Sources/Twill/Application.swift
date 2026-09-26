@@ -1,80 +1,77 @@
-import Dispatch
-
-/// Owns the serialized TUI application lifecycle.
+/// Owns the serialized TUI application lifecycle and application-level key policy.
 @MainActor
 public final class Application {
-    private static let escapeTimeout: DispatchTimeInterval = .milliseconds(50)
     private static let interruptKey = KeyEvent.control(0x03)
 
     private let runLoop: RunLoop
     private let terminalSession: TerminalSession
-    private var parser = InputParser()
-    private var escapeGeneration = 0
-    private var inputError: TerminalError?
+    private let keyboardEventSource: KeyboardEventSource
     private var isStopping = false
 
-    public init(runLoop: RunLoop = DefaultRunLoop(), terminalSession: TerminalSession = DefaultTerminalSession()) {
+    public init(
+        runLoop: RunLoop = DefaultRunLoop(),
+        terminalSession: TerminalSession = DefaultTerminalSession(),
+        keyboardEventSource: KeyboardEventSource? = nil
+    ) {
         self.runLoop = runLoop
         self.terminalSession = terminalSession
+        self.keyboardEventSource =
+            keyboardEventSource
+            ?? DefaultKeyboardEventSource(
+                inputSource: DefaultInputSource(fileDescriptor: terminalSession.fileDescriptor),
+                runLoop: runLoop
+            )
     }
 
-    /// Set before run() to enable keyboard input. Replacing or clearing this handler
-    /// while running affects the next event, including events in the same input batch.
+    /// May be installed, replaced, or cleared while running. Keyboard input and
+    /// orderly Ctrl-C shutdown remain active even when no handler is installed.
     public var onKeyEvent: (@MainActor (KeyEvent) -> Void)?
 
     public func stop() {
         isStopping = true
+        keyboardEventSource.stop()
         runLoop.stop()
     }
 
-    /// Runs until stopped or cancelled. Without a key handler, terminal modes are untouched.
-    /// With keyboard input enabled, Ctrl-C requests an orderly shutdown in raw mode.
+    /// Owns the terminal until stopped or cancelled. Ctrl-C requests orderly shutdown
+    /// regardless of whether an application key handler is installed.
     public func run() async throws {
-        guard onKeyEvent != nil else {
-            await runLoop.run()
+        guard !isStopping, !Task.isCancelled else {
+            stop()
             return
         }
-        // The run loop cancels readers before returning, so restoring terminal mode
-        // cannot race with a worker that is still draining the descriptor.
         try terminalSession.start()
-        defer { terminalSession.restore() }
-        let input = DefaultInputSource(fileDescriptor: terminalSession.fileDescriptor) { [weak self] event in
-            guard let self else { return }
-            switch event {
-            case .bytes(let bytes):
-                handle(bytes)
-            case .endOfFile:
+        keyboardEventSource.onKeyEvent = { [weak self] key in self?.handle(key) }
+        defer {
+            keyboardEventSource.onKeyEvent = nil
+            terminalSession.restore()
+        }
+
+        // One long-lived task consumes bytes directly on the UI actor, while another
+        // awaits timers. There is no forwarding task, second input queue, or per-key task.
+        try await withThrowingTaskGroup(of: Void.self) { group in
+            defer { stop() }
+            group.addTask { @MainActor @Sendable [self] in
+                try await keyboardEventSource.run()
+            }
+            group.addTask { @MainActor @Sendable [self] in
+                await runLoop.run()
+            }
+            // Observe both results: timer shutdown must not hide an input failure
+            // still awaiting cleanup. Structured scope joins both tasks before restore.
+            for try await _ in group {
                 stop()
-            case .failure(let error):
-                inputError = error
-                stop()
+                group.cancelAll()
             }
         }
-        runLoop.add(input)
-        await runLoop.run()
-        if let inputError { throw inputError }
     }
 
-    private func handle(_ bytes: [UInt8]) {
-        // Escape is both a key and a sequence prefix. A later chunk supersedes the
-        // old deadline, which must not flush a newer partially received sequence.
-        escapeGeneration += 1
-        for key in parser.parse(bytes) {
-            guard !isStopping else { break }
-            if key == Self.interruptKey {
-                stop()
-            } else {
-                onKeyEvent?(key)
-            }
+    private func handle(_ key: KeyEvent) {
+        guard !isStopping else { return }
+        if key == Self.interruptKey {
+            stop()
+        } else {
+            onKeyEvent?(key)
         }
-        guard !isStopping, parser.needsEscapeDeadline else { return }
-        let generation = escapeGeneration
-        runLoop.add(
-            Timer(interval: Self.escapeTimeout) { [weak self] in
-                guard let self, !isStopping, escapeGeneration == generation else { return }
-                for key in parser.expireEscape() {
-                    onKeyEvent?(key)
-                }
-            })
     }
 }

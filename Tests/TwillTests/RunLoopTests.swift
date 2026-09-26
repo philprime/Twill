@@ -21,21 +21,20 @@ struct RunLoopTests {
         #expect(count == 1)
     }
 
-    @Test("Repeating timer actions can stop their application", .timeLimit(.minutes(1)))
-    func repeatingTimerStopsApplication() async throws {
+    @Test("Repeating timer actions can stop their run loop", .timeLimit(.minutes(1)))
+    func repeatingTimerStopsRunLoop() async {
         // -- Arrange --
         let runLoop = DefaultRunLoop()
-        let application = Application(runLoop: runLoop)
         var count = 0
         runLoop.add(
             Twill.Timer(interval: .milliseconds(1), repeats: true) {
                 MainActor.assertIsolated()
                 count += 1
-                if count == 3 { application.stop() }
+                if count == 3 { runLoop.stop() }
             })
 
         // -- Act --
-        try await application.run()
+        await runLoop.run()
 
         // -- Assert --
         #expect(count == 3)

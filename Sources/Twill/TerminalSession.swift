@@ -4,7 +4,7 @@
     import Glibc
 #endif
 
-#if DEBUG
+#if TESTING
     /// Owns temporary input-mode changes, not the input reader or the terminal screen.
     @MainActor
     public protocol TerminalSession: AnyObject {

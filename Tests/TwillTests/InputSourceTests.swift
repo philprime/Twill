@@ -8,94 +8,63 @@ import Twill
     import Glibc
 #endif
 
-@Suite("Run loop input sources")
+@Suite("Input source async sequences")
 @MainActor
 struct InputSourceTests {
-    @Test("Dispatch input reaches a MainActor callback", .timeLimit(.minutes(1)))
-    func deliversBytes() async throws {
-        // -- Arrange --
-        let pipe = Pipe()
-        defer {
-            try? pipe.fileHandleForReading.close()
-            try? pipe.fileHandleForWriting.close()
-        }
-        let runLoop = DefaultRunLoop()
-        var received: [UInt8] = []
-        let source = DefaultInputSource(fileDescriptor: .custom(pipe.fileHandleForReading.fileDescriptor)) { event in
-            MainActor.assertIsolated()
-            if case .bytes(let bytes) = event {
-                received.append(contentsOf: bytes)
-                runLoop.stop()
-            }
-        }
-        runLoop.add(source)
-        try pipe.fileHandleForWriting.write(contentsOf: Data([0x61, 0x62]))
-
-        // -- Act --
-        await runLoop.run()
-
-        // -- Assert --
-        #expect(received == [0x61, 0x62])
-    }
-
-    @Test("Drains a burst before EOF and ignores duplicate registration", .timeLimit(.minutes(1)))
-    func drainsBeforeEOF() async throws {
+    @Test("The stream preserves a burst and completes on EOF", .timeLimit(.minutes(1)))
+    func completesOnEOF() async throws {
         // -- Arrange --
         let pipe = Pipe()
         defer { try? pipe.fileHandleForReading.close() }
         let descriptor = pipe.fileHandleForReading.fileDescriptor
-        let flags = fcntl(descriptor, F_GETFL)
-        let runLoop = DefaultRunLoop()
-        var received: [UInt8] = []
-        var reachedEOF = false
-        let source = DefaultInputSource(fileDescriptor: .custom(descriptor)) { event in
-            switch event {
-            case .bytes(let bytes): received.append(contentsOf: bytes)
-            case .endOfFile:
-                reachedEOF = true
-                runLoop.stop()
-            case .failure(let error):
-                Issue.record("Unexpected input error: \(error)")
-                runLoop.stop()
-            }
-        }
+        let originalFlags = fcntl(descriptor, F_GETFL)
+        let source = DefaultInputSource(fileDescriptor: .custom(descriptor))
         let payload = [UInt8](repeating: 0x61, count: 5000)
         try pipe.fileHandleForWriting.write(contentsOf: Data(payload))
         try pipe.fileHandleForWriting.close()
-        runLoop.add(source)
-        runLoop.add(source)
+        var received: [UInt8] = []
 
         // -- Act --
-        await runLoop.run()
+        source.start()
+        do {
+            for try await bytes in source.events {
+                received.append(contentsOf: bytes)
+            }
+        } catch {
+            await source.stop()
+            throw error
+        }
+        await source.stop()
 
         // -- Assert --
         #expect(received == payload)
-        #expect(reachedEOF)
-        #expect(fcntl(descriptor, F_GETFL) == flags)
+        #expect(fcntl(descriptor, F_GETFL) == originalFlags)
     }
 
-    @Test("Invalid descriptors report their error through the actor", .timeLimit(.minutes(1)))
-    func invalidDescriptor() async {
+    @Test("Configuration errors are thrown by iteration", .timeLimit(.minutes(1)))
+    func throwsConfigurationError() async {
         // -- Arrange --
-        let runLoop = DefaultRunLoop()
+        let source = DefaultInputSource(fileDescriptor: .custom(-1))
         var receivedError: TerminalError?
-        runLoop.add(
-            DefaultInputSource(fileDescriptor: .custom(-1)) { event in
-                if case .failure(let error) = event { receivedError = error }
-                runLoop.stop()
-            })
 
         // -- Act --
-        await runLoop.run()
+        source.start()
+        do {
+            for try await _ in source.events {
+                Issue.record("An invalid descriptor cannot produce bytes")
+            }
+            Issue.record("Expected the input stream to fail")
+        } catch {
+            receivedError = error as? TerminalError
+        }
+        await source.stop()
 
         // -- Assert --
         #expect(receivedError == .configureInput(errno: EBADF))
     }
 
-    @Test(
-        "Cancellation restores descriptor flags without closing or consuming it",
-        .timeLimit(.minutes(1)), arguments: [false, true])
-    func cancellation(initiallyNonblocking: Bool) async throws {
+    @Test("Cancelling an idle consumer allows awaited cleanup", .timeLimit(.minutes(1)))
+    func cancelsIdleConsumer() async throws {
         // -- Arrange --
         let pipe = Pipe()
         defer {
@@ -103,56 +72,55 @@ struct InputSourceTests {
             try? pipe.fileHandleForWriting.close()
         }
         let descriptor = pipe.fileHandleForReading.fileDescriptor
-        if initiallyNonblocking {
-            #expect(fcntl(descriptor, F_SETFL, fcntl(descriptor, F_GETFL) | O_NONBLOCK) == 0)
-        }
         let originalFlags = fcntl(descriptor, F_GETFL)
-        let runLoop = DefaultRunLoop()
+        let source = DefaultInputSource(fileDescriptor: .custom(descriptor))
         let (ready, continuation) = AsyncStream<Void>.makeStream()
-        var deliveries = 0
-        runLoop.add(DefaultInputSource(fileDescriptor: .custom(descriptor)) { _ in deliveries += 1 })
-        runLoop.add(
-            Twill.Timer(interval: .milliseconds(1)) {
-                continuation.yield(())
-                continuation.finish()
-            })
-        let task = Task { await runLoop.run() }
+        var received: [UInt8] = []
+        source.start()
+        let task = Task {
+            continuation.yield(())
+            continuation.finish()
+            for try await bytes in source.events {
+                received.append(contentsOf: bytes)
+            }
+        }
         for await _ in ready {}
-        let runningFlags = fcntl(descriptor, F_GETFL)
 
         // -- Act --
         task.cancel()
-        await task.value
+        await source.stop()
+        try await task.value
         try pipe.fileHandleForWriting.write(contentsOf: Data([0x62]))
         var readiness = pollfd(fd: descriptor, events: Int16(POLLIN), revents: 0)
         let unread = poll(&readiness, 1, 0)
 
         // -- Assert --
-        #expect(runningFlags & O_NONBLOCK != 0)
+        #expect(received.isEmpty)
         #expect(fcntl(descriptor, F_GETFL) == originalFlags)
-        #expect(deliveries == 0)
         #expect(unread == 1)
     }
 
-    @Test("Stopping in a callback suppresses the rest of a queued burst", .timeLimit(.minutes(1)))
-    func stopDuringDelivery() async throws {
+    @Test("Stopping a source finishes an idle consumer", .timeLimit(.minutes(1)))
+    func stopFinishesStream() async throws {
         // -- Arrange --
         let pipe = Pipe()
-        defer { try? pipe.fileHandleForReading.close() }
-        try pipe.fileHandleForWriting.write(contentsOf: Data(repeating: 0x61, count: 5000))
-        try pipe.fileHandleForWriting.close()
-        let runLoop = DefaultRunLoop()
-        var deliveries = 0
-        runLoop.add(
-            DefaultInputSource(fileDescriptor: .custom(pipe.fileHandleForReading.fileDescriptor)) { _ in
-                deliveries += 1
-                runLoop.stop()
-            })
+        defer {
+            try? pipe.fileHandleForReading.close()
+            try? pipe.fileHandleForWriting.close()
+        }
+        let source = DefaultInputSource(fileDescriptor: .custom(pipe.fileHandleForReading.fileDescriptor))
+        source.start()
+        let task = Task {
+            var received: [UInt8] = []
+            for try await bytes in source.events { received.append(contentsOf: bytes) }
+            return received
+        }
 
         // -- Act --
-        await runLoop.run()
+        await source.stop()
+        let received = try await task.value
 
         // -- Assert --
-        #expect(deliveries == 1)
+        #expect(received.isEmpty)
     }
 }

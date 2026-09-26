@@ -23,7 +23,6 @@ struct KeyboardApplicationTests {
         runLoop.add(
             Twill.Timer(interval: .milliseconds(1)) {
                 do {
-                    running = try terminal.snapshot()
                     try terminal.send([0x61, 0x1B, 0x5B, 0x41, 0xC3, 0xA9, 0x71, 0x62])
                 } catch {
                     Issue.record(error)
@@ -32,6 +31,7 @@ struct KeyboardApplicationTests {
             })
         application.onKeyEvent = { [weak application] key in
             MainActor.assertIsolated()
+            do { running = try terminal.snapshot() } catch { Issue.record(error) }
             keys.append(key)
             if key == .character("q") { application?.stop() }
         }

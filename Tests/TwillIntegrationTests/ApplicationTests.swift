@@ -11,7 +11,8 @@ struct ApplicationTests {
         let start = clock.now
         var ticks: [ContinuousClock.Instant] = []
         let runLoop = Twill.DefaultRunLoop()
-        let application = Twill.Application(runLoop: runLoop)
+        let terminal = try TestTerminal()
+        let application = terminal.makeApplication(runLoop: runLoop)
         let timer = Twill.Timer(interval: .seconds(1), repeats: true) {
             ticks.append(clock.now)
         }
@@ -44,7 +45,8 @@ struct ApplicationTests {
         // -- Arrange --
         var tickCount = 0
         let runLoop = Twill.DefaultRunLoop()
-        let application = Twill.Application(runLoop: runLoop)
+        let terminal = try TestTerminal()
+        let application = terminal.makeApplication(runLoop: runLoop)
         let timer = Twill.Timer(interval: .seconds(1), repeats: true) {
             tickCount += 1
         }
