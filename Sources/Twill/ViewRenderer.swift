@@ -5,7 +5,7 @@ import Foundation
 @MainActor
 final class ViewRenderer {
     var onInvalidation: (() -> Void)?
-    private(set) var caretPosition: CellPosition?
+    var caretPosition: CellPosition?
 
     private struct TimelineState {
         let schedule: PeriodicTimelineSchedule
@@ -14,14 +14,14 @@ final class ViewRenderer {
     }
 
     private let viewType: ObjectIdentifier
-    private weak var parent: ViewRenderer?
+    weak var parent: ViewRenderer?
     private var initialView: (any View)?
     private var mountedView: (any View)?
     private var stateLocations: [String: any StateLocation] = [:]
     private var isDirty = false
     private var hasDirtyDescendant = false
-    private var description: ViewDescription?
-    private var children: [ViewRenderer] = []
+    var description: ViewDescription?
+    var children: [ViewRenderer] = []
     private var keyedChildren: [AnyHashable: ViewRenderer] = [:]
     private weak var focusedNode: ViewRenderer?
     private var timeline: TimelineState?
@@ -54,6 +54,7 @@ final class ViewRenderer {
     func drawFrame(proposal: ProposedCellSize) -> CellGrid? {
         let sheet = activeSheet()
         let content = sheet?.sheetBranch ?? self
+        if let sheet { return drawOverlay(sheet: sheet, proposal: proposal) }
         guard !content.layoutItems.isEmpty else {
             caretPosition = nil
             return nil
@@ -72,7 +73,7 @@ final class ViewRenderer {
         return isPresented.wrappedValue ? children.dropFirst().first : children.first
     }
 
-    private func activeSheet() -> ViewRenderer? {
+    func activeSheet() -> ViewRenderer? {
         if case .sheet(_, let isPresented, _) = description {
             guard let branch = sheetBranch else { return nil }
             return branch.activeSheet() ?? (isPresented.wrappedValue ? self : nil)
@@ -104,7 +105,7 @@ final class ViewRenderer {
         }
     }
 
-    private func measure(_ proposal: ProposedCellSize) -> CellSize {
+    func measure(_ proposal: ProposedCellSize) -> CellSize {
         if let drawing { return drawing.sizeThatFits(proposal) }
         let items = children.flatMap(\.layoutItems)
         let sizes = items.map { $0.measure(.unspecified) }
@@ -118,7 +119,7 @@ final class ViewRenderer {
         return layout.sizeThatFits(proposal, subviews: sizes)
     }
 
-    private func draw(in context: inout DrawingContext, focused: ViewRenderer?) {
+    func draw(in context: inout DrawingContext, focused: ViewRenderer?) {
         if let drawing {
             let active = isInsideFocus(focused)
             context.withFocus(active) { region in
@@ -316,13 +317,13 @@ extension ViewRenderer {
         if let parent { parent.requestFocusPresentation() } else { onInvalidation?() }
     }
 
-    private func resolveFocus(in targets: [ViewRenderer]) -> ViewRenderer? {
+    func resolveFocus(in targets: [ViewRenderer]) -> ViewRenderer? {
         if let focusedNode, targets.contains(where: { $0 === focusedNode }) { return focusedNode }
         focusedNode = targets.first
         return focusedNode
     }
 
-    private func focusableNodes() -> [ViewRenderer] {
+    func focusableNodes() -> [ViewRenderer] {
         if case .sheet = description { return sheetBranch?.focusableNodes() ?? [] }
         let target: [ViewRenderer]
         switch description {
