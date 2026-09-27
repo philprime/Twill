@@ -2,7 +2,7 @@
 
 Twill is an event-driven terminal UI framework built around Swift Concurrency. It separates declarative view descriptions from their mounted runtime state and terminal presentation.
 
-This document describes the implementation that exists today. It is a small foundation, not a complete SwiftUI implementation or a full-screen terminal renderer.
+[State and identity](STATE.md) defines mounted state ownership and reconciliation. The [interaction model](INTERACTION.md) defines focus, text editing, and modal key routing.
 
 ## Core principles
 
@@ -15,14 +15,7 @@ This document describes the implementation that exists today. It is a small foun
 
 ## Application and ownership
 
-An application receives its root view through its initializer:
-
-```swift
-let application = Application(rootView: ClockView())
-try await application.run()
-```
-
-The root is fixed for the application's lifetime. Constructing the application does not evaluate its root body or write output. Mounting begins inside `run()`, after terminal setup succeeds. `EmptyView` supplies an explicit non-presenting root for event-only applications.
+An application receives its root view through its initializer. The root is fixed for the application's lifetime. Constructing the application does not evaluate its root body or write output. Mounting begins inside `run()`, after terminal setup succeeds. `EmptyView` supplies an explicit non-presenting root for event-only applications.
 
 ```text
 Application
@@ -31,7 +24,8 @@ Application
 │   └── InputSource       Borrows and reads an input descriptor
 ├── RunLoop               Schedules timer callbacks
 └── ViewHost              Owns mounted presentation and its next wake-up
-    ├── ViewRenderer tree Retains identity, cached content, and deadlines
+    ├── ViewRenderer tree Retains identity, state, content, and deadlines
+    ├── Focus routing     Tracks eligible controls and modal scopes
     └── TerminalOutput    Writes presentation buffers
 ```
 
@@ -48,58 +42,34 @@ Descriptor readiness
 → Dispatch read queue
 → asynchronous byte stream
 → KeyboardEventSource on MainActor
-→ Application key policy and handler
+→ Application lifecycle policy
+→ Modal scope and focused control
+→ Enclosing view and application handlers
 ```
 
 The reader drains available bytes in nonblocking mode. Its byte stream is lossless and unbounded, not backpressured. Dropping arbitrary chunks would corrupt UTF-8 or escape sequences, so the consumer must keep up with input.
 
 `KeyboardEventSource` owns the parser and Escape disambiguation deadlines. It delivers keys synchronously on the UI actor. There is no forwarding task or task per key.
 
-The type named `RunLoop` currently schedules timers. It is not Foundation's `RunLoop`, a `CFRunLoop` clone, or a central queue for all application events. Keyboard events do not pass through its queue. Actor isolation provides serialization, while presentation scheduling is handled separately by the view host.
+The type named `RunLoop` schedules timers. It is not Foundation's `RunLoop`, a `CFRunLoop` clone, or a central queue for all application events. Keyboard events do not pass through its queue. Actor isolation provides serialization, while presentation scheduling is handled separately by the view host.
 
 ## Strongly typed view descriptions
 
-A custom `View` describes its content through its associated `Body` type. Primitive views such as `Text`, `EmptyView`, `TimelineView`, and `HStack` provide internal descriptions directly instead of evaluating a body.
+A custom `View` describes content through its associated `Body` type. Primitive views provide internal descriptions directly rather than evaluating a body. Result-builder composition retains concrete child types using Swift generics and parameter packs, so public view storage does not require type erasure.
 
-Composition preserves concrete types:
-
-- `ViewList<each Content>` stores a heterogeneous tuple using Swift parameter packs.
-- `HStack<Content>` stores its concrete content type.
-- `ConditionalContent<First, Second>` stores one of two typed branches.
-- `ViewBuilder` assembles these values, including empty and conditional content.
-
-For example, a stack containing text and a timeline has a type of this form:
-
-```swift
-HStack<ViewList<Text, TimelineView<Text>>>
-```
-
-Callers normally let the compiler infer that type:
-
-```swift
-HStack {
-    Text("Time:")
-    TimelineView(.periodic(from: .now, by: 0.05)) { context in
-        Text(context.date.formatted(
-            .dateTime.hour().minute().second().secondFraction(.fractional(3))
-        ))
-    }
-}
-```
-
-Type erasure is used at the hosting and mounted-runtime boundaries. Internal `ViewDescription` values describe text, bodies, groups, branches, and timelines. Their heterogeneous child storage lets the runtime traverse different concrete view types without making the entire application generic over its root.
+Hosting and mounted-runtime boundaries erase view types for heterogeneous traversal. Internal descriptions separate view evaluation from layout and drawing. Keyed dynamic content retains identity by element ID; ordinary composition uses structural identity. The supported set of view primitives can grow without changing these boundaries.
 
 ## Mounted identity and reconciliation
 
 View values are descriptions. `ViewRenderer` instances are persistent mounted nodes.
 
-Each node retains its concrete view type, children, cached text fragments, and earliest pending deadline. A timeline node additionally retains its schedule, current context date, and own deadline.
+Each node retains its concrete view type, children, cached presentation, owned state, and earliest pending deadline. A timeline node additionally retains its schedule, current context date, and own deadline.
 
 When a parent produces new child descriptions, reconciliation matches children by structural position and concrete type. Matching nodes receive updated inputs while keeping compatible runtime state. A type change replaces the node. Switching conditional branches mounts fresh branch content, even when both branches contain the same concrete view types.
 
 An absent optional branch still occupies its structural position, so later siblings do not shift identity. Removed nodes are released, and their deadlines disappear from the aggregate schedule. There are no separate per-node operating-system timers to tear down.
 
-A generic composition type is itself part of identity. Changing that type can replace a subtree. Explicit IDs and keyed dynamic collections are not implemented yet.
+A generic composition type is itself part of identity. Changing that type can replace a subtree. Keyed collections reconcile children by stable element ID rather than position. State and binding lifetimes follow the [state and identity contract](STATE.md).
 
 ## Timeline scheduling
 
@@ -115,14 +85,7 @@ When the presentation timer fires:
 4. Write the result only if the composed text changed.
 5. Arm the next earliest deadline, or remain idle if none exists.
 
-For independent 50 ms and 1-second timelines:
-
-| Time          | Evaluation                                            |
-| ------------- | ----------------------------------------------------- |
-| Initial mount | Both timelines and their static content               |
-| 50 ms         | Fast timeline, with slow content reused               |
-| 100 ms        | Fast timeline, with slow content reused               |
-| 1 second      | Both timelines, followed by one combined presentation |
+Timelines with independent schedules reuse unchanged siblings. When multiple deadlines become due together, they share one presentation.
 
 These are requested deadlines, not hard real-time guarantees. No timeline nodes means no presentation timer. A timeline that returns unchanged text still requests periodic evaluation, but unchanged output is not written again.
 
@@ -132,13 +95,11 @@ Consequently, reconstructing `.periodic(from: .now, ...)` during every parent up
 
 ## Presentation
 
-`ViewHost` owns a single-line presenter. It obtains text from the mounted tree, replaces control characters in text with spaces, and writes a carriage return, an erase-line sequence, and the new content as one presentation buffer. Text cannot inject ANSI commands through its content.
+`ViewHost` measures and draws mounted content into a terminal-cell grid. Text control characters are rendered safely rather than emitted as terminal commands. Horizontal and vertical stacks place children at integer cell coordinates; transparent groups and conditionals do not add spacing. Wide graphemes occupy a leading cell and continuation cell so clipping and updates never render half a character.
 
-`HStack` joins child text with spaces. Transparent lists and conditional branches forward their fragments without introducing their own spacing. `EmptyView` contributes no presentation, which is distinct from an empty `Text` line.
+The terminal host encodes changed cells, batches output, and advances its diff baseline only after a successful write. Views cannot write terminal output. State changes, keyboard events, and resize requests coalesce into presentations; static trees remain idle.
 
-The output baseline advances only after a successful write. Removing the last visible content clears the previous line. Shutdown emits a newline if presentation used the line.
-
-This is not cell-buffer rendering or damage tracking. Inherited terminal output processing is currently preserved. Output writes are synchronous on the UI actor, so a slow output destination can delay UI work.
+The host also owns the hardware cursor. It places and shows the cursor at a focused text field's editing caret and hides it in navigation mode. Modal presentation and focus changes do not expose cursor escapes to view bodies. Output writes remain serialized with UI presentation.
 
 ## Shutdown and failures
 
