@@ -10,7 +10,8 @@ struct BindingTests {
         let captureIncrement: @MainActor (@escaping @MainActor () -> Void) -> Void
 
         var body: some View {
-            captureIncrement { count += 1 }
+            let binding = $count
+            captureIncrement { binding.wrappedValue += 1 }
             return Text("\(count)")
         }
     }

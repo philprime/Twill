@@ -26,6 +26,7 @@ Run commands from the repository root. `just` lists the available recipes.
 | `just build`            | Build the Twill package in debug configuration.        |
 | `just test`             | Run unit tests, excluding `TwillIntegrationTests`.     |
 | `just test-integration` | Run `TwillIntegrationTests`.                           |
+| `just test-sanitize`    | Run unit and integration tests with AddressSanitizer.  |
 | `just example Clock`    | Run the standalone package in `Examples/Clock`.        |
 | `just format`           | Apply Swift and dprint formatting, including examples. |
 | `just format-check`     | Check formatting without changing files.               |
@@ -61,6 +62,7 @@ just test --linux
 just test --linux --container
 just build --linux -c release
 just test-integration --linux
+just test-sanitize --linux
 just example Clock --linux
 ```
 
@@ -70,7 +72,7 @@ Setup, formatting, linting, and cleaning always run on the host and do not accep
 
 `just test` passes `-Xswiftc -DTESTING` to both the library and test targets. This enables protocol-based injection and all unit tests in debug and release configurations. Plain `swift test` does not enable these mock-based tests unless the flag is supplied.
 
-`just test-integration` and `just build` omit `TESTING`, exercising the concrete implementations shipped to consumers. The CI matrix runs both test commands in debug and release.
+`just test-integration` and `just build` omit `TESTING`, exercising the concrete implementations shipped to consumers. Builds and tests treat Swift compiler warnings as errors, warn about undeclared target imports, and skip index-store generation. Both test recipes run tests in parallel. The CI matrix runs both test commands in debug and release and runs a separate debug AddressSanitizer job on macOS and Linux. `just test-sanitize` runs both suites with AddressSanitizer and accepts the same execution options and SwiftPM arguments as the test recipes. On macOS, `--linux` runs the sanitizer recipe in Docker. On Linux, it uses the installed Swift toolchain unless `--container` is also specified.
 
 ### Argument forwarding
 

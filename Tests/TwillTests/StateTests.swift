@@ -6,12 +6,17 @@ import Testing
 @Suite("Mounted view state")
 @MainActor
 struct StateTests {
+    private final class ActionSink {
+        var action: (@MainActor () -> Void)?
+    }
+
     private struct Counter: View {
         @State private var count = 0
         let captureIncrement: @MainActor (@escaping @MainActor () -> Void) -> Void
 
         var body: some View {
-            captureIncrement { count += 1 }
+            let binding = $count
+            captureIncrement { binding.wrappedValue += 1 }
             return Text("\(count)")
         }
     }
@@ -21,9 +26,27 @@ struct StateTests {
         let captureIncrement: @MainActor (@escaping @MainActor () -> Void) -> Void
 
         var body: some View {
-            captureIncrement { count += 1 }
+            let binding = $count
+            captureIncrement { binding.wrappedValue += 1 }
             return Text("Unchanged")
         }
+    }
+
+    @Test("Captured state actions release their view when the owner goes away")
+    func capturedActionLifetime() {
+        // -- Arrange --
+        weak var owner: ActionSink?
+
+        // -- Act --
+        do {
+            let sink = ActionSink()
+            owner = sink
+            let renderer = ViewRenderer.make(Counter { sink.action = $0 })
+            _ = renderer.render(.now)
+        }
+
+        // -- Assert --
+        #expect(owner == nil)
     }
 
     @Test("State writes request one presentation for the latest value")

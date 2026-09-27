@@ -31,9 +31,9 @@ struct TextFieldApplicationTests {
             )
         )
         var applicationKeys: [KeyEvent] = []
-        application.onKeyEvent = { key in
+        application.onKeyEvent = { [weak application] key in
             applicationKeys.append(key)
-            application.stop()
+            application?.stop()
         }
         runLoop.add(
             Twill.Timer(interval: .milliseconds(1)) {
