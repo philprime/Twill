@@ -46,6 +46,12 @@ public struct State<Value> {
             handle.location.onChange?()
         }
     }
+
+    public var projectedValue: Binding<Value> {
+        // The binding writes through this handle, which follows the owner's
+        // mounted location when parent descriptions are rebuilt.
+        Binding(get: { wrappedValue }, set: { wrappedValue = $0 })
+    }
 }
 
 extension State: MountedStateProperty {
