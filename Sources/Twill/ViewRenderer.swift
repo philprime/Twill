@@ -25,7 +25,8 @@ final class ViewRenderer {
     private var keyedChildren: [AnyHashable: ViewRenderer] = [:]
     private weak var focusedNode: ViewRenderer?
     private var timeline: TimelineState?
-    private var placements: [(node: ViewRenderer, bounds: CellRect)] = []
+    var placements: [(node: ViewRenderer, bounds: CellRect)] = []
+    var measuredSize = CellSize.zero
     private var nextUpdate: Date?
 
     private init(_ view: any View) {
@@ -88,7 +89,7 @@ final class ViewRenderer {
         switch description {
         case .drawing, .textField:
             return [self]
-        case .group(_, .some):
+        case .group(_, .some), .styled, .border:
             return children.flatMap(\.layoutItems).isEmpty ? [] : [self]
         case .sheet:
             return sheetBranch?.layoutItems ?? []
@@ -97,7 +98,7 @@ final class ViewRenderer {
         }
     }
 
-    private var drawing: (any PrimitiveDrawing)? {
+    var drawing: (any PrimitiveDrawing)? {
         switch description {
         case .drawing(let drawing): return drawing
         case .textField(let field): return field.drawing
@@ -106,7 +107,23 @@ final class ViewRenderer {
     }
 
     func measure(_ proposal: ProposedCellSize) -> CellSize {
-        if let drawing { return drawing.sizeThatFits(proposal) }
+        if let drawing {
+            measuredSize = drawing.sizeThatFits(proposal)
+            return measuredSize
+        }
+        if case .border = description {
+            let inner = ProposedCellSize(
+                width: proposal.width.map { max(0, $0 - 2) },
+                height: proposal.height.map { max(0, $0 - 2) })
+            let size = measureChildren(inner)
+            measuredSize = proposal.constrain(CellSize(width: size.width + 2, height: size.height + 2))
+            return measuredSize
+        }
+        measuredSize = measureChildren(proposal)
+        return measuredSize
+    }
+
+    private func measureChildren(_ proposal: ProposedCellSize) -> CellSize {
         let items = children.flatMap(\.layoutItems)
         let sizes = items.map { $0.measure(.unspecified) }
         let layout: any PrimitiveLayout
@@ -117,34 +134,6 @@ final class ViewRenderer {
         }
         placements = zip(items, layout.placeSubviews(sizes)).map { ($0, $1) }
         return layout.sizeThatFits(proposal, subviews: sizes)
-    }
-
-    func draw(in context: inout DrawingContext, focused: ViewRenderer?) {
-        if let drawing {
-            let active = isInsideFocus(focused)
-            context.withFocus(active) { region in
-                drawing.draw(in: &region)
-                if active, case .textField(let field) = description, let column = field.caretColumn {
-                    region.placeCaret(column: column, row: 0)
-                }
-            }
-        } else {
-            for placement in placements {
-                context.withRegion(placement.bounds) { placement.node.draw(in: &$0, focused: focused) }
-            }
-        }
-    }
-
-    private func isInsideFocus(_ focused: ViewRenderer?) -> Bool {
-        guard let focused else { return false }
-        var node: ViewRenderer? = self
-        while let current = node {
-            if current === focused { return true }
-            // Nested focusable controls retain their own appearance and identity.
-            if case .focusable = current.description { return false }
-            node = current.parent
-        }
-        return false
     }
 
     private static func describe<Content: View>(_ view: Content) -> ViewDescription {
@@ -180,7 +169,7 @@ final class ViewRenderer {
             reconcile(views, at: date)
         case .keyed(let views):
             reconcileKeyed(views, at: date)
-        case .focusable(let content), .keyPress(let content, _):
+        case .focusable(let content), .keyPress(let content, _), .styled(let content, _, _), .border(let content, _, _):
             reconcile([content], at: date)
         case .sheet(let base, let isPresented, let content):
             reconcile(isPresented.wrappedValue ? [base, content()] : [base], at: date)

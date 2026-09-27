@@ -21,19 +21,28 @@ struct NotesBrowserView: View {
 
     var body: some View {
         VStack(spacing: 1) {
-            Text("Notes")
+            Text(" Notes ")
+                .foregroundStyle(NotesPalette.background)
+                .backgroundStyle(NotesPalette.accent)
             TextField("Search notes", text: $query)
+                .foregroundStyle(NotesPalette.foreground)
+                .border(.single, color: NotesPalette.border)
             HStack(spacing: 2) {
                 NoteListView(
                     notes: matchingNotes,
                     selectedNoteID: $selectedNoteID
                 )
                 .frame(maxWidth: 24)
+                .border(.single, color: NotesPalette.border)
                 if let selectedNote {
                     NoteDetailView(note: selectedNote, onShowHelp: { isHelpPresented = true })
+                        .border(.single, color: NotesPalette.border)
                 }
             }
+            Text(" ?: Help  •  Enter: Select  •  s: Summary ")
+                .foregroundStyle(NotesPalette.accent)
         }
+        .backgroundStyle(NotesPalette.background)
         .onKeyPress { key in
             // Editing consumes text input instead of invoking screen shortcuts.
             guard key == .character("?") else { return .ignored }

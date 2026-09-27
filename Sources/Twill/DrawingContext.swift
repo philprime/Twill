@@ -6,6 +6,8 @@ struct DrawingContext {
     private var originY = 0
     private var clip: CellRect
     private var focused = false
+    private var foreground: Color?
+    private var background: Color?
 
     init(size: CellSize) {
         grid = CellGrid(size: size)
@@ -23,6 +25,27 @@ struct DrawingContext {
         originX = previousX
         originY = previousY
         clip = previousClip
+    }
+
+    mutating func withStyle(
+        foreground: Color?, background: Color?, size: CellSize, draw: (inout DrawingContext) -> Void
+    ) {
+        let oldForeground = self.foreground
+        let oldBackground = self.background
+        self.foreground = foreground ?? oldForeground
+        self.background = background ?? oldBackground
+        if let background {
+            let area = clip.intersection(
+                CellRect(column: originX, row: originY, width: size.width, height: size.height))
+            for row in area.row..<(area.row + area.height) {
+                for column in area.column..<(area.column + area.width) {
+                    grid.fillBackground(background, column: column, row: row)
+                }
+            }
+        }
+        draw(&self)
+        self.foreground = oldForeground
+        self.background = oldBackground
     }
 
     mutating func withFocus(_ active: Bool, draw: (inout DrawingContext) -> Void) {
@@ -46,6 +69,8 @@ struct DrawingContext {
         guard column >= clip.column, column + width <= clip.column + clip.width,
             row >= clip.row, row < clip.row + clip.height
         else { return }
-        grid.put(character, width: width, column: column, row: row, focused: focused)
+        grid.put(
+            character, width: width, column: column, row: row, focused: focused,
+            foreground: foreground, background: background ?? grid.background(column: column, row: row))
     }
 }

@@ -12,8 +12,16 @@ struct NoteListView: View {
         VStack {
             ForEach(notes) { note in
                 HStack {
-                    Text(note.id == selectedNote?.id ? ">" : " ")
-                    Text(note.title)
+                    Text(note.id == selectedNote?.id ? "▸" : "•")
+                        .foregroundStyle(NotesPalette.marker)
+                    if note.id == selectedNote?.id {
+                        Text(note.title)
+                            .foregroundStyle(NotesPalette.background)
+                            .backgroundStyle(NotesPalette.accent)
+                    } else {
+                        Text(note.title)
+                            .foregroundStyle(NotesPalette.foreground)
+                    }
                 }
                 .focusable()
                 .onKeyPress { key in
@@ -24,6 +32,7 @@ struct NoteListView: View {
             }
             if notes.isEmpty {
                 Text("No matching notes")
+                    .foregroundStyle(NotesPalette.muted)
             }
         }
     }
