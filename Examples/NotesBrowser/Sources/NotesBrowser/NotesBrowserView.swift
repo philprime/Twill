@@ -22,9 +22,11 @@ struct NotesBrowserView: View {
     var body: some View {
         VStack(spacing: 1) {
             Text(" Notes ")
+                .frame(fillWidth: true)
                 .foregroundStyle(NotesPalette.background)
                 .backgroundStyle(NotesPalette.accent)
             TextField("Search notes", text: $query)
+                .frame(fillWidth: true)
                 .foregroundStyle(NotesPalette.foreground)
                 .border(.single, color: NotesPalette.border)
             HStack(spacing: 2) {
@@ -32,14 +34,18 @@ struct NotesBrowserView: View {
                     notes: matchingNotes,
                     selectedNoteID: $selectedNoteID
                 )
-                .frame(maxWidth: 24)
+                .frame(width: 24)
+                .frame(fillHeight: true)
                 .border(.single, color: NotesPalette.border)
                 if let selectedNote {
                     NoteDetailView(note: selectedNote, onShowHelp: { isHelpPresented = true })
+                        .frame(fillWidth: true, fillHeight: true)
                         .border(.single, color: NotesPalette.border)
                 }
             }
+            .frame(fillWidth: true, fillHeight: true)
             Text(" ?: Help  •  Enter: Select  •  s: Summary ")
+                .frame(fillWidth: true)
                 .foregroundStyle(NotesPalette.accent)
         }
         .backgroundStyle(NotesPalette.background)

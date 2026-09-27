@@ -1,10 +1,12 @@
 struct FrameLayout: PrimitiveLayout {
-    let maxWidth: Int
+    let width: Int?
+    let maxWidth: Int?
 
     func sizeThatFits(_ proposal: ProposedCellSize, subviews: [CellSize]) -> CellSize {
         let content = HorizontalLayout(spacing: 0).sizeThatFits(.unspecified, subviews: subviews)
+        let desiredWidth = width ?? min(content.width, maxWidth ?? content.width)
         return CellSize(
-            width: min(content.width, maxWidth, proposal.width ?? maxWidth),
+            width: min(desiredWidth, proposal.width ?? desiredWidth),
             height: min(content.height, proposal.height ?? content.height))
     }
 
