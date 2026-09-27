@@ -117,6 +117,27 @@ struct CellLayoutTests {
         #expect(frame.grid?.snapshotText == "Long n Detail\nShort        ")
     }
 
+    @Test("A capped frame preserves the order of transparent group children")
+    func cappedGroup() {
+        // -- Arrange --
+        let renderer = ViewRenderer.make(
+            HStack {
+                Group {
+                    Text("AB")
+                    Text("CDE")
+                }
+                .frame(maxWidth: 4)
+                Text("!")
+            })
+
+        // -- Act --
+        let frame = renderer.render(.now, proposal: ProposedCellSize(width: 8, height: 1))
+
+        // -- Assert --
+        #expect(frame.grid?.size == CellSize(width: 6, height: 1))
+        #expect(frame.grid?.snapshotText == "ABCD !")
+    }
+
     @Test("An empty Text remains a layout item but EmptyView does not")
     func emptyContent() {
         // -- Arrange --
