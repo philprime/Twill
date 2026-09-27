@@ -72,4 +72,4 @@ just analyze
 just build
 ```
 
-Run `just format` after Swift edits, then rerun `just analyze` before handing changes back. Verify debug and release configurations both with `TESTING` (`just test`) and without it (`just test-integration` and `just build`) when changing conditional abstractions. For cross-platform runtime changes, also run the relevant checks with `--linux`.
+Run `just format` after Swift edits, then rerun `just analyze` before handing changes back. Verify debug and release configurations both with `TESTING` (`just test`) and without it (`just test-integration` and `just build`) when changing conditional abstractions. For cross-platform runtime changes, also run the relevant checks with `--linux`. For ownership or cleanup changes, run `just test-sanitize --linux` and investigate leak reports rather than disabling detection.
