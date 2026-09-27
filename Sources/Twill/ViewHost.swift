@@ -100,6 +100,9 @@ final class ViewHost {
 
     func handle(_ key: KeyEvent) -> Bool {
         guard isActive, let renderer else { return false }
+        // A prior key may have changed mounted state while its presentation is
+        // still coalesced. Route this key through the current scope immediately.
+        if stateTimer != nil { renderer.refreshContent(at: now()) }
         return renderer.handle(key)
     }
 

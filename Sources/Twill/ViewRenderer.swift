@@ -51,12 +51,31 @@ final class ViewRenderer {
 
     /// Layout and drawing never evaluate bodies or advance timeline deadlines.
     func drawFrame(proposal: ProposedCellSize) -> CellGrid? {
-        guard !layoutItems.isEmpty else { return nil }
-        let size = measure(proposal)
-        let focused = resolveFocus(in: focusableNodes())
+        let sheet = activeSheet()
+        let content = sheet?.sheetBranch ?? self
+        guard !content.layoutItems.isEmpty else { return nil }
+        let size = content.measure(proposal)
+        let scope = sheet ?? self
+        let focused = scope.resolveFocus(in: scope.focusableNodes())
         var context = DrawingContext(size: size)
-        draw(in: &context, focused: focused)
+        content.draw(in: &context, focused: focused)
         return context.grid
+    }
+
+    private var sheetBranch: ViewRenderer? {
+        guard case .sheet(_, let isPresented, _) = description else { return nil }
+        return isPresented.wrappedValue ? children.dropFirst().first : children.first
+    }
+
+    private func activeSheet() -> ViewRenderer? {
+        if case .sheet(_, let isPresented, _) = description {
+            guard let branch = sheetBranch else { return nil }
+            return branch.activeSheet() ?? (isPresented.wrappedValue ? self : nil)
+        }
+        for child in children.reversed() {
+            if let sheet = child.activeSheet() { return sheet }
+        }
+        return nil
     }
 
     private var layoutItems: [ViewRenderer] {
@@ -65,6 +84,8 @@ final class ViewRenderer {
             return [self]
         case .group(_, .some):
             return children.flatMap(\.layoutItems).isEmpty ? [] : [self]
+        case .sheet:
+            return sheetBranch?.layoutItems ?? []
         default:
             return children.flatMap(\.layoutItems)
         }
@@ -113,8 +134,7 @@ final class ViewRenderer {
         return .body(view.body)
     }
 
-    private func update(_ view: any View, at date: Date) {
-        initialView = nil
+    private func bindState(from view: any View) {
         // Fresh view values carry fresh property-wrapper handles. Bind them to this
         // node's locations before evaluating body, so parent updates retain state.
         for property in Mirror(reflecting: view).children {
@@ -124,6 +144,11 @@ final class ViewRenderer {
             location.onChange = { [weak self] in self?.markDirty() }
             stateLocations[name] = location
         }
+    }
+
+    private func update(_ view: any View, at date: Date) {
+        initialView = nil
+        bindState(from: view)
         mountedView = view
         let previous = description
         let updated = Self.describe(view)
@@ -139,6 +164,8 @@ final class ViewRenderer {
             reconcileKeyed(views, at: date)
         case .focusable(let content), .keyPress(let content, _):
             reconcile([content], at: date)
+        case .sheet(let base, let isPresented, let content):
+            reconcile(isPresented.wrappedValue ? [base, content()] : [base], at: date)
         case .conditional(let first, let content):
             if case .conditional(let wasFirst, _) = previous, first != wasFirst {
                 children = []
@@ -194,63 +221,6 @@ final class ViewRenderer {
         keyedChildren = retained
     }
 
-    func handle(_ key: KeyEvent) -> Bool {
-        let targets = focusableNodes()
-        guard let target = resolveFocus(in: targets) else {
-            return route(key, from: self) == .handled
-        }
-        focusedNode = target
-        if route(key, from: target) == .handled { return true }
-
-        guard let index = targets.firstIndex(where: { $0 === target }) else { return false }
-        let destination: Int
-        switch key {
-        case .arrowDown, .arrowRight: destination = index + 1
-        case .arrowUp, .arrowLeft: destination = index - 1
-        default: return false
-        }
-        guard targets.indices.contains(destination) else { return false }
-        focusedNode = targets[destination]
-        // Redraw cached descriptions, not view bodies or timeline schedules.
-        onInvalidation?()
-        return true
-    }
-
-    private func resolveFocus(in targets: [ViewRenderer]) -> ViewRenderer? {
-        if let focusedNode, targets.contains(where: { $0 === focusedNode }) { return focusedNode }
-        focusedNode = targets.first
-        return focusedNode
-    }
-
-    private func focusableNodes() -> [ViewRenderer] {
-        let target: [ViewRenderer]
-        if case .focusable = description { target = [self] } else { target = [] }
-        return target + children.flatMap { $0.focusableNodes() }
-    }
-
-    private func route(_ key: KeyEvent, from target: ViewRenderer) -> KeyPressResult {
-        // A handler can wrap a focusable view or be wrapped by it. Follow only
-        // the single-child modifier chain so sibling controls do not receive keys.
-        var child = target
-        while child.children.count == 1 {
-            let descendant = child.children[0]
-            if case .focusable = descendant.description { break }
-            if case .keyPress(_, let action) = descendant.description, action(key) == .handled {
-                return .handled
-            }
-            child = descendant
-        }
-
-        var node: ViewRenderer? = target
-        while let current = node {
-            if case .keyPress(_, let action) = current.description, action(key) == .handled {
-                return .handled
-            }
-            node = current.parent
-        }
-        return .ignored
-    }
-
     private func markDirty() {
         isDirty = true
         if let parent { parent.markDescendantDirty() } else { onInvalidation?() }
@@ -289,5 +259,81 @@ final class ViewRenderer {
                 nextUpdate = min(nextUpdate ?? deadline, deadline)
             }
         }
+    }
+}
+
+extension ViewRenderer {
+    func handle(_ key: KeyEvent) -> Bool {
+        if let sheet = activeSheet() {
+            // An ignored key cannot escape the presented scope to the base or application.
+            _ = sheet.handleInScope(key, modal: true)
+            return true
+        }
+        return handleInScope(key, modal: false)
+    }
+
+    private func handleInScope(_ key: KeyEvent, modal: Bool) -> Bool {
+        let targets = focusableNodes()
+        guard let target = resolveFocus(in: targets) else {
+            return route(key, from: modal ? sheetBranch ?? self : self, stoppingAt: modal ? self : nil) == .handled
+        }
+        focusedNode = target
+        if route(key, from: target, stoppingAt: modal ? self : nil) == .handled { return true }
+
+        guard let index = targets.firstIndex(where: { $0 === target }) else { return false }
+        let destination: Int
+        switch key {
+        case .arrowDown, .arrowRight: destination = index + 1
+        case .arrowUp, .arrowLeft: destination = index - 1
+        default: return false
+        }
+        guard targets.indices.contains(destination) else { return false }
+        focusedNode = targets[destination]
+        // Redraw cached descriptions, not view bodies or timeline schedules.
+        requestFocusPresentation()
+        return true
+    }
+
+    private func requestFocusPresentation() {
+        if let parent { parent.requestFocusPresentation() } else { onInvalidation?() }
+    }
+
+    private func resolveFocus(in targets: [ViewRenderer]) -> ViewRenderer? {
+        if let focusedNode, targets.contains(where: { $0 === focusedNode }) { return focusedNode }
+        focusedNode = targets.first
+        return focusedNode
+    }
+
+    private func focusableNodes() -> [ViewRenderer] {
+        if case .sheet = description { return sheetBranch?.focusableNodes() ?? [] }
+        let target: [ViewRenderer]
+        if case .focusable = description { target = [self] } else { target = [] }
+        return target + children.flatMap { $0.focusableNodes() }
+    }
+
+    private func route(
+        _ key: KeyEvent, from target: ViewRenderer, stoppingAt boundary: ViewRenderer? = nil
+    ) -> KeyPressResult {
+        // A handler can wrap a focusable view or be wrapped by it. Follow only
+        // the single-child modifier chain so sibling controls do not receive keys.
+        var child = target
+        while child.children.count == 1 {
+            let descendant = child.children[0]
+            if case .focusable = descendant.description { break }
+            if case .keyPress(_, let action) = descendant.description, action(key) == .handled {
+                return .handled
+            }
+            child = descendant
+        }
+
+        var node: ViewRenderer? = target
+        while let current = node {
+            if case .keyPress(_, let action) = current.description, action(key) == .handled {
+                return .handled
+            }
+            if current === boundary { break }
+            node = current.parent
+        }
+        return .ignored
     }
 }

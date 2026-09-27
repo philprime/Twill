@@ -15,6 +15,7 @@ enum ViewDescription {
     case keyed(children: [(id: AnyHashable, view: any View)])
     case focusable(any View)
     case keyPress(any View, @MainActor (KeyEvent) -> KeyPressResult)
+    case sheet(base: any View, isPresented: Binding<Bool>, content: @MainActor () -> any View)
     case conditional(first: Bool, content: any View)
     case timeline(PeriodicTimelineSchedule, @MainActor (Date) -> any View)
 }
