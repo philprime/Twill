@@ -65,23 +65,46 @@ struct ViewStylingTests {
         #expect(frame.grid?.foreground(column: 0, row: 0) == borderColor)
     }
 
-    @Test("Thick borders use block glyphs without expanding layout")
-    func thickBorder() {
+    @Test("Rounded borders use curved corners")
+    func roundedBorder() {
         // -- Arrange --
-        let renderer = ViewRenderer.make(Text("A").border(.thick, color: borderColor))
+        let renderer = ViewRenderer.make(Text("A").border(.rounded, color: borderColor))
 
         // -- Act --
         let frame = renderer.render(.now)
 
         // -- Assert --
-        #expect(frame.grid?.size == CellSize(width: 3, height: 3))
-        #expect(frame.grid?.snapshotText == "▐▀▌\n▐A▌\n▐▄▌")
+        #expect(frame.grid?.snapshotText == "╭─╮\n│A│\n╰─╯")
+    }
+
+    @Test("Heavy borders use heavy box-drawing glyphs")
+    func heavyBorder() {
+        // -- Arrange --
+        let renderer = ViewRenderer.make(Text("A").border(.heavy, color: borderColor))
+
+        // -- Act --
+        let frame = renderer.render(.now)
+
+        // -- Assert --
+        #expect(frame.grid?.snapshotText == "┏━┓\n┃A┃\n┗━┛")
+    }
+
+    @Test("Dashed borders use dashed sides")
+    func dashedBorder() {
+        // -- Arrange --
+        let renderer = ViewRenderer.make(Text("A").border(.dashed, color: borderColor))
+
+        // -- Act --
+        let frame = renderer.render(.now)
+
+        // -- Assert --
+        #expect(frame.grid?.snapshotText == "┌┄┐\n┆A┆\n└┄┘")
     }
 
     @Test("Custom border glyphs draw every corner and edge")
     func customBorder() {
         // -- Arrange --
-        let glyphs = BorderGlyphs(
+        let glyphs = Border.Glyphs(
             topLeft: "1", top: "2", topRight: "3", left: "4", right: "5",
             bottomLeft: "6", bottom: "7", bottomRight: "8")
         let renderer = ViewRenderer.make(Text("AB").border(.custom(glyphs), color: borderColor))
