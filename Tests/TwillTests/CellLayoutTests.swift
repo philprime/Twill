@@ -31,6 +31,44 @@ struct CellLayoutTests {
         #expect(frame.grid?[9, 0] == .glyph("C", width: 1))
     }
 
+    @Test("Vertical stacks place children on separate rows with spacing")
+    func verticalStackLayout() {
+        // -- Arrange --
+        let renderer = ViewRenderer.make(
+            VStack(spacing: 1) {
+                Text("A")
+                HStack(spacing: 1) {
+                    Text("B")
+                    Text("C")
+                }
+                Text("D")
+            })
+
+        // -- Act --
+        let frame = renderer.render(.now)
+
+        // -- Assert --
+        #expect(frame.grid?.size == CellSize(width: 3, height: 5))
+        #expect(frame.grid?.snapshotText == "A  \n   \nB C\n   \nD  ")
+    }
+
+    @Test("Vertical stacks clip rows outside their proposed height")
+    func verticalStackClipping() {
+        // -- Arrange --
+        let renderer = ViewRenderer.make(
+            VStack(spacing: 1) {
+                Text("First")
+                Text("Last")
+            })
+
+        // -- Act --
+        let frame = renderer.render(.now, proposal: ProposedCellSize(width: 5, height: 1))
+
+        // -- Assert --
+        #expect(frame.grid?.size == CellSize(width: 5, height: 1))
+        #expect(frame.grid?.snapshotText == "First")
+    }
+
     @Test("New proposals re-layout cached content without evaluating bodies or advancing timelines")
     func proposalChanges() {
         // -- Arrange --

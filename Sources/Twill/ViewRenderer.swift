@@ -66,7 +66,7 @@ final class ViewRenderer {
         }
         let items = children.flatMap(\.layoutItems)
         let sizes = items.map { $0.measure(.unspecified) }
-        let layout: HorizontalLayout
+        let layout: any PrimitiveLayout
         if case .group(_, let groupLayout?) = description {
             layout = groupLayout
         } else {
