@@ -99,6 +99,8 @@ Consequently, reconstructing `.periodic(from: .now, ...)` during every parent up
 
 The terminal host encodes changed cells, batches output, and advances its diff baseline only after a successful write. Views cannot write terminal output. State changes, keyboard events, and resize requests coalesce into presentations; static trees remain idle.
 
+For multi-row inline frames, the host reserves space below the shell's current line and returns its hidden cursor to the frame's top-left anchor between writes. It clears removed rows and redraws the frame after growing its footprint. Shutdown advances below the last row. The host does not enter an alternate screen or claim unrelated shell output.
+
 The host also owns the hardware cursor. It places and shows the cursor at a focused text field's editing caret and hides it in navigation mode. Modal presentation and focus changes do not expose cursor escapes to view bodies. Output writes remain serialized with UI presentation.
 
 ## Shutdown and failures

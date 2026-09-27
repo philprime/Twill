@@ -4,6 +4,21 @@ import Testing
 
 @Suite("Buffered cell presentation")
 struct InlineFrameEncoderTests {
+    @Test("A multi-row frame presents both rows without trapping")
+    func initialRows() {
+        // -- Arrange --
+        var frame = CellGrid(size: CellSize(width: 1, height: 2))
+        frame.put("A", width: 1, column: 0, row: 0)
+        frame.put("B", width: 1, column: 0, row: 1)
+
+        // -- Act --
+        let output = InlineFrameEncoder.encode(frame, previous: nil)
+
+        // -- Assert --
+        #expect(output.contains("A"))
+        #expect(output.contains("B"))
+    }
+
     @Test("Only changed cell runs are encoded")
     func changedRuns() {
         // -- Arrange --

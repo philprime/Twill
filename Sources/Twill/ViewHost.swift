@@ -53,8 +53,16 @@ final class ViewHost {
         stateTimer = nil
         renderer = nil
         if hasRendered {
+            // Multi-row writes leave the hidden cursor at the frame's top-left.
+            // Finish below the frame before restoring the borrowed shell cursor.
+            let finish: String
+            if let height = lastFrame?.size.height, height > 1 {
+                finish = "\u{1B}[\(height - 1)B\r\n"
+            } else {
+                finish = "\n"
+            }
             // Finishing the presentation must not replace an earlier output error.
-            try? output.write("\n")
+            try? output.write(finish)
         }
         hasRendered = false
         lastFrame = nil
