@@ -117,6 +117,13 @@ enum InlineFrameEncoder {
     private static func colorTransition(to next: Color?, from previous: Color?, code: Int) -> String {
         guard next != previous else { return "" }
         guard let next else { return "\u{1B}[\(code == 38 ? 39 : 49)m" }
-        return "\u{1B}[\(code);2;\(next.red);\(next.green);\(next.blue)m"
+        switch next {
+        case .rgb(let red, let green, let blue):
+            return "\u{1B}[\(code);2;\(red);\(green);\(blue)m"
+        case .ansi(let color):
+            let index = color.rawValue
+            let base = index < 8 ? (code == 38 ? 30 : 40) : (code == 38 ? 90 : 100)
+            return "\u{1B}[\(base + index % 8)m"
+        }
     }
 }
