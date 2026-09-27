@@ -63,7 +63,10 @@ struct DrawingContext {
         caret = position
     }
 
-    mutating func draw(_ character: Character, width: Int, column: Int, row: Int) {
+    mutating func draw(
+        _ character: Character, width: Int, column: Int, row: Int,
+        foreground cellForeground: Color? = nil, background cellBackground: Color? = nil
+    ) {
         let column = originX + column
         let row = originY + row
         guard column >= clip.column, column + width <= clip.column + clip.width,
@@ -71,6 +74,7 @@ struct DrawingContext {
         else { return }
         grid.put(
             character, width: width, column: column, row: row, focused: focused,
-            foreground: foreground, background: background ?? grid.background(column: column, row: row))
+            foreground: cellForeground ?? foreground,
+            background: cellBackground ?? background ?? grid.background(column: column, row: row))
     }
 }

@@ -25,6 +25,7 @@ final class ViewRenderer {
     private var keyedChildren: [AnyHashable: ViewRenderer] = [:]
     private weak var focusedNode: ViewRenderer?
     private var timeline: TimelineState?
+    private var canvasDate: Date?
     var placements: [(node: ViewRenderer, bounds: CellRect)] = []
     var measuredSize = CellSize.zero
     private var nextUpdate: Date?
@@ -88,6 +89,8 @@ final class ViewRenderer {
     var drawing: (any PrimitiveDrawing)? {
         switch description {
         case .drawing(let drawing): return drawing
+        case .canvas(_, let render):
+            return CanvasDrawing(size: measuredSize, date: canvasDate ?? .now, render: render)
         case .textField(let field): return field.drawing
         default: return nil
         }
@@ -120,6 +123,9 @@ final class ViewRenderer {
         switch updated {
         case .empty, .drawing, .textField:
             children = []
+        case .canvas(let interval, _):
+            children = []
+            updateCanvas(interval: interval, at: date)
         case .body(let body):
             reconcile([body], at: date)
         case .group(let views, _):
@@ -140,6 +146,16 @@ final class ViewRenderer {
             reconcile([content(contextDate)], at: date)
         }
         collectDeadlines()
+    }
+
+    private func updateCanvas(interval: TimeInterval?, at date: Date) {
+        guard let interval else {
+            timeline = nil
+            canvasDate = date
+            return
+        }
+        let start = timeline?.schedule.interval == interval ? timeline!.schedule.start : date
+        canvasDate = advanceTimeline(.periodic(from: start, by: interval), at: date)
     }
 
     private func advanceTimeline(_ schedule: PeriodicTimelineSchedule, at date: Date) -> Date {
@@ -207,9 +223,17 @@ final class ViewRenderer {
         guard hasDirtyDescendant || nextUpdate.map({ date >= $0 }) == true else { return }
         hasDirtyDescendant = false
         let timelineIsDue = timeline.map { date >= $0.deadline } ?? false
-        if timelineIsDue, case .timeline(let schedule, let content) = description {
-            let contextDate = advanceTimeline(schedule, at: date)
-            reconcile([content(contextDate)], at: date)
+        if timelineIsDue {
+            switch description {
+            case .timeline(let schedule, let content):
+                let contextDate = advanceTimeline(schedule, at: date)
+                reconcile([content(contextDate)], at: date)
+            case .canvas(let interval?, _):
+                let start = timeline!.schedule.start
+                canvasDate = advanceTimeline(.periodic(from: start, by: interval), at: date)
+            default:
+                break
+            }
         } else {
             for child in children { child.refresh(at: date) }
         }
