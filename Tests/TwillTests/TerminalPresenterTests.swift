@@ -60,7 +60,7 @@ struct TerminalPresenterTests {
         presenter.stop()
 
         // -- Assert --
-        #expect(output.writes == ["\u{1B}[2J\u{1B}[H\r\u{1B}[2KA \r\u{1B}[1B\r\u{1B}[2KB \r\u{1B}[1A"])
+        #expect(output.writes == ["\u{1B}[2J\u{1B}[H\r\u{1B}[2KA \r\u{1B}[1B\r\u{1B}[2KB \r\u{1B}[1A\u{1B}[?25l"])
     }
 
     private enum PresentationFailure: Error { case failed }
