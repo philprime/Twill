@@ -4,6 +4,39 @@ import Testing
 
 @Suite("Buffered cell presentation")
 struct InlineFrameEncoderTests {
+    @Test("ANSI palette entries use terminal foreground and background codes")
+    func ansiPalette() {
+        // -- Arrange --
+        let palette: [(Color, Int)] = [
+            (.black, 30), (.red, 31), (.green, 32), (.yellow, 33),
+            (.blue, 34), (.magenta, 35), (.cyan, 36), (.white, 37),
+            (.brightBlack, 90), (.brightRed, 91), (.brightGreen, 92), (.brightYellow, 93),
+            (.brightBlue, 94), (.brightMagenta, 95), (.brightCyan, 96), (.brightWhite, 97),
+        ]
+
+        // -- Act & Assert --
+        for (color, code) in palette {
+            var frame = CellGrid(size: CellSize(width: 1, height: 1))
+            frame.put("X", width: 1, column: 0, row: 0, foreground: color, background: color)
+            #expect(
+                InlineFrameEncoder.encode(frame, previous: nil)
+                    == "\r\u{1B}[2K\u{1B}[\(code)m\u{1B}[\(code + 10)mX\u{1B}[39m\u{1B}[49m")
+        }
+    }
+
+    @Test("RGB colors still use true-color sequences")
+    func rgbColor() {
+        // -- Arrange --
+        var frame = CellGrid(size: CellSize(width: 1, height: 1))
+        frame.put("X", width: 1, column: 0, row: 0, foreground: Color(red: 12, green: 34, blue: 56))
+
+        // -- Act --
+        let output = InlineFrameEncoder.encode(frame, previous: nil)
+
+        // -- Assert --
+        #expect(output == "\r\u{1B}[2K\u{1B}[38;2;12;34;56mX\u{1B}[39m")
+    }
+
     @Test("A multi-row frame presents both rows without trapping")
     func initialRows() {
         // -- Arrange --
