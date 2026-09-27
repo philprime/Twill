@@ -31,7 +31,7 @@ test *args:
 
 # Test production collaborators without TESTING. Supports --linux and --container.
 test-integration *args:
-    just _swift batch test --filter TwillIntegrationTests "$@"
+    just _swift batch test --test-product TwillIntegrationTests --filter TwillIntegrationTests "$@"
 
 # Run an example, e.g. just example Clock --linux. Supports --container. Use -- before example flags.
 example name *args:
