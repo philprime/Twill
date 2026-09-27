@@ -130,53 +130,6 @@ struct KeyboardApplicationTests {
         #expect(keys == [.escape])
     }
 
-    @Test("A superseded Escape deadline cannot flush a newer sequence", .timeLimit(.minutes(1)))
-    func supersededEscapeDeadline() async throws {
-        // -- Arrange --
-        let terminal = try TestTerminal()
-        let runLoop = DefaultRunLoop()
-        let application = terminal.makeApplication(runLoop: runLoop)
-        let clock = ContinuousClock()
-        var secondEscapeStarted: ContinuousClock.Instant?
-        var escapeDelivered: ContinuousClock.Instant?
-        var keys: [KeyEvent] = []
-        runLoop.add(
-            Twill.Timer(interval: .milliseconds(1)) {
-                do { try terminal.send([0x61, 0x1B]) } catch {
-                    Issue.record(error)
-                    application.stop()
-                }
-            })
-        application.onKeyEvent = { [weak application] key in
-            keys.append(key)
-            switch key {
-            case .character("a"):
-                runLoop.add(
-                    Twill.Timer(interval: .milliseconds(30)) {
-                        do { try terminal.send([0x5B, 0x41, 0x62, 0x1B]) } catch {
-                            Issue.record(error)
-                            application?.stop()
-                        }
-                    })
-            case .character("b"):
-                secondEscapeStarted = clock.now
-            case .escape:
-                escapeDelivered = clock.now
-                application?.stop()
-            default: break
-            }
-        }
-
-        // -- Act --
-        try await application.run()
-
-        // -- Assert --
-        #expect(keys == [.character("a"), .arrowUp, .character("b"), .escape])
-        let start = try #require(secondEscapeStarted)
-        let end = try #require(escapeDelivered)
-        #expect(start.duration(to: end) >= .milliseconds(45))
-    }
-
     @Test("Already cancelled keyboard execution leaves terminal settings unchanged", .timeLimit(.minutes(1)))
     func alreadyCancelled() async throws {
         // -- Arrange --

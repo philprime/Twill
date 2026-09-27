@@ -1,6 +1,7 @@
 import Foundation
 import Testing
-import Twill
+
+@testable import Twill
 
 #if canImport(Darwin)
     import Darwin
@@ -31,6 +32,43 @@ struct KeyboardEventSourceTests {
 
         // -- Assert --
         #expect(received == [.character("a"), .arrowUp, .character("é"), .control(3), .character("b")])
+    }
+
+    @Test("A superseded Escape timer cannot flush a newer sequence", .timeLimit(.minutes(1)))
+    func supersededEscapeDeadline() async throws {
+        // -- Arrange --
+        let input = SequencedInputSource()
+        let runLoop = RecordingRunLoop()
+        let (registrations, registrationContinuation) = AsyncStream<Twill.Timer>.makeStream()
+        runLoop.onAdd = { registrationContinuation.yield($0) }
+        var timers = registrations.makeAsyncIterator()
+        let keyboard = DefaultKeyboardEventSource(inputSource: input, runLoop: runLoop)
+        var received: [KeyEvent] = []
+        keyboard.onKeyEvent = { received.append($0) }
+        let task = Task { try await keyboard.run() }
+
+        // -- Act --
+        input.send([0x61, 0x1B])
+        let firstDeadline = try #require(await timers.next())
+        input.send([0x5B])
+        let supersededDeadline = try #require(await timers.next())
+        firstDeadline.action()
+        input.send([0x41, 0x62, 0x1B])
+        let currentDeadline = try #require(await timers.next())
+        supersededDeadline.action()
+        let beforeCurrentDeadline = received
+        currentDeadline.action()
+        keyboard.stop()
+        try await task.value
+
+        // -- Assert --
+        #expect(beforeCurrentDeadline == [.character("a"), .arrowUp, .character("b")])
+        #expect(received == [.character("a"), .arrowUp, .character("b"), .escape])
+        if case .milliseconds(let timeout) = currentDeadline.interval {
+            #expect(timeout >= 45)
+        } else {
+            Issue.record("Escape deadline must use a millisecond interval")
+        }
     }
 
     @Test("Drains a burst before EOF and restores the descriptor", .timeLimit(.minutes(1)))
@@ -170,4 +208,19 @@ struct KeyboardEventSourceTests {
         // -- Assert --
         #expect(!task.isCancelled)
     }
+}
+
+@MainActor
+private final class SequencedInputSource: InputSource {
+    let events: AsyncThrowingStream<[UInt8], Error>
+    private let continuation: AsyncThrowingStream<[UInt8], Error>.Continuation
+
+    init() {
+        (events, continuation) = AsyncThrowingStream.makeStream()
+    }
+
+    func start() {}
+    func send(_ bytes: [UInt8]) { continuation.yield(bytes) }
+    func cancel() { continuation.finish() }
+    func stop() async { cancel() }
 }
