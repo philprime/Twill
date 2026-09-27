@@ -10,6 +10,6 @@ final class TrackingTerminalSession: TerminalSession {
     init(output: TerminalOutput = DefaultTerminalOutput()) { self.output = output }
 
     func start() throws { isActive = true }
-    func beginPresentation(mode: UIMode) throws {}
+    func beginPresentation(mode: Application.Options.UIOptions.Mode) throws {}
     func restore() { isActive = false }
 }

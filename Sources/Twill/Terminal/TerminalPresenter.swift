@@ -4,14 +4,17 @@ final class TerminalPresenter {
     private static let hideCursor = "\u{1B}[?25l"
     private static let showCursor = "\u{1B}[?25h"
 
-    var mode: UIMode
+    var mode: Application.Options.UIOptions.Mode
     private let output: TerminalOutput
-    private let preparePresentation: () throws -> Void
+    private let preparePresentation: (Application.Options.UIOptions.Mode) throws -> Void
     private var hasRendered = false
     private var lastFrame: CellGrid?
     private var lastCaret: CellPosition?
 
-    init(output: TerminalOutput, mode: UIMode = .inline, preparePresentation: @escaping () throws -> Void = {}) {
+    init(
+        output: TerminalOutput, mode: Application.Options.UIOptions.Mode = .inline,
+        preparePresentation: @escaping (Application.Options.UIOptions.Mode) throws -> Void = { _ in }
+    ) {
         self.mode = mode
         self.output = output
         self.preparePresentation = preparePresentation
@@ -39,7 +42,7 @@ final class TerminalPresenter {
             buffer += Self.hideCursor
         }
         if !buffer.isEmpty {
-            if !hasRendered { try preparePresentation() }
+            if !hasRendered { try preparePresentation(mode) }
             try output.write(buffer)
             hasRendered = true
         }

@@ -11,7 +11,7 @@
         var fileDescriptor: FileDescriptor { get }
         var output: TerminalOutput { get }
         func start() throws
-        func beginPresentation(mode: UIMode) throws
+        func beginPresentation(mode: Application.Options.UIOptions.Mode) throws
         func restore()
     }
 
@@ -56,7 +56,7 @@ public final class DefaultTerminalSession {
     }
 
     /// Acquires presentation modes lazily so event-only applications leave the cursor alone.
-    public func beginPresentation(mode: UIMode = .inline) throws {
+    public func beginPresentation(mode: Application.Options.UIOptions.Mode = .inline) throws {
         guard !needsCursorRestore else { return }
         // A write can fail after partially reaching the terminal. Claim cleanup first.
         if mode == .fullscreen {

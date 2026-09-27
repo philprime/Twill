@@ -11,6 +11,38 @@ import Twill
 @Suite("Multi-row application presentation")
 @MainActor
 struct MultiRowApplicationTests {
+    @Test("Options configured before running control terminal presentation", .timeLimit(.minutes(1)))
+    func configuredMode() async throws {
+        // -- Arrange --
+        let terminal = try TestTerminal()
+        let original = try terminal.snapshot()
+        let pipe = Pipe()
+        let runLoop = DefaultRunLoop()
+        let application = Application(
+            rootView: Text("Inline"),
+            runLoop: runLoop,
+            terminalSession: DefaultTerminalSession(
+                fileDescriptor: .custom(terminal.fileDescriptor),
+                output: DefaultTerminalOutput(fileDescriptor: .custom(pipe.fileHandleForWriting.fileDescriptor))
+            )
+        )
+        application.options = .init(ui: .init(mode: .inline))
+        runLoop.add(Twill.Timer(interval: .milliseconds(1)) { application.stop() })
+
+        // -- Act --
+        try await application.run()
+        try pipe.fileHandleForWriting.close()
+        let data = try #require(try pipe.fileHandleForReading.readToEnd())
+        try pipe.fileHandleForReading.close()
+        let output = try #require(String(bytes: data, encoding: .utf8))
+
+        // -- Assert --
+        #expect(output.hasPrefix("\u{1B}[?25l"))
+        #expect(output.contains("Inline"))
+        #expect(!output.contains("\u{1B}[?1049h"))
+        #expect(try terminal.snapshot() == original)
+    }
+
     @Test("A multi-row view presents through a pipe and restores the borrowed terminal", .timeLimit(.minutes(1)))
     func multiRowRoundTrip() async throws {
         // -- Arrange --

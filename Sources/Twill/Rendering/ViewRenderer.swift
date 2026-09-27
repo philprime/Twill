@@ -90,7 +90,7 @@ final class ViewRenderer {
         switch description {
         case .drawing(let drawing): return drawing
         case .canvas(_, let render):
-            return CanvasDrawing(size: measuredSize, date: canvasDate ?? .now, render: render)
+            return Canvas.Drawing(size: measuredSize, date: canvasDate ?? .now, render: render)
         case .textField(let field): return field.drawing
         default: return nil
         }

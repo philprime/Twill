@@ -111,6 +111,7 @@ struct InputParser {
         Byte.lineFeed: .enter, Byte.carriageReturn: .enter, Byte.tab: .tab,
         Byte.backspace: .backspace, Byte.delete: .backspace,
     ]
+
     private static let arrows: [UInt8: KeyEvent] = [
         Byte.arrowUp: .arrowUp, Byte.arrowDown: .arrowDown,
         Byte.arrowRight: .arrowRight, Byte.arrowLeft: .arrowLeft,

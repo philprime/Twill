@@ -43,7 +43,7 @@ struct TerminalSessionCursorTests {
         let session = DefaultTerminalSession(output: output)
         let host = ViewHost(
             rootView: Text("Clock"), runLoop: RecordingRunLoop(), output: session.output,
-            preparePresentation: { try session.beginPresentation() }
+            preparePresentation: { mode in try session.beginPresentation(mode: mode) }
         )
         try host.start()
 
@@ -64,8 +64,8 @@ struct TerminalSessionCursorTests {
         let session = DefaultTerminalSession(output: output)
         let host = ViewHost(
             rootView: Text("Clock"), runLoop: RecordingRunLoop(), output: session.output,
-            preparePresentation: {
-                try session.beginPresentation()
+            preparePresentation: { mode in
+                try session.beginPresentation(mode: mode)
                 output.nextFailure = Failure.output
             }
         )
@@ -90,7 +90,7 @@ struct TerminalSessionCursorTests {
         let host = ViewHost(
             rootView: TextField("Name", text: Binding(get: { text }, set: { text = $0 })),
             runLoop: runLoop, output: session.output,
-            preparePresentation: { try session.beginPresentation() }
+            preparePresentation: { mode in try session.beginPresentation(mode: mode) }
         )
         var reported: Error?
         host.onError = { reported = $0 }
@@ -118,7 +118,7 @@ struct TerminalSessionCursorTests {
         let session = DefaultTerminalSession(output: output)
         let host = ViewHost(
             rootView: EmptyView(), runLoop: RecordingRunLoop(), output: session.output,
-            preparePresentation: { try session.beginPresentation() }
+            preparePresentation: { mode in try session.beginPresentation(mode: mode) }
         )
 
         // -- Act --
