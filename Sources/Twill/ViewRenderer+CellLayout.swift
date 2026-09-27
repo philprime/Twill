@@ -3,7 +3,7 @@
 extension ViewRenderer {
     var layoutItems: [ViewRenderer] {
         switch description {
-        case .drawing, .textField:
+        case .drawing, .canvas, .textField:
             return [self]
         case .group(_, .some), .styled, .border:
             return children.flatMap(\.layoutItems).isEmpty ? [] : [self]
@@ -15,12 +15,14 @@ extension ViewRenderer {
     }
 
     private var wantsFillWidth: Bool {
+        if case .canvas = description { return true }
         if case .group(_, let fill as FillFrameLayout) = description, fill.fillWidth { return true }
         if case .group(_, let frame as FrameLayout) = description, frame.width != nil { return false }
         return children.contains { $0.wantsFillWidth }
     }
 
     private var wantsFillHeight: Bool {
+        if case .canvas = description { return true }
         if case .group(_, let fill as FillFrameLayout) = description, fill.fillHeight { return true }
         return children.contains { $0.wantsFillHeight }
     }

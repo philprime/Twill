@@ -2,8 +2,8 @@ import Foundation
 
 /// A wall-clock schedule anchored to its start, rather than to completion of each render.
 public struct PeriodicTimelineSchedule: Sendable, Equatable {
-    private let start: Date
-    private let interval: TimeInterval
+    let start: Date
+    let interval: TimeInterval
 
     public static func periodic(from start: Date, by interval: TimeInterval) -> Self {
         precondition(start.timeIntervalSinceReferenceDate.isFinite, "Timeline start must be finite")
