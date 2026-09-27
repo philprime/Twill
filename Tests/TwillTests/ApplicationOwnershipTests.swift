@@ -99,8 +99,8 @@
             // -- Arrange --
             let input = GatedInputSource()
             let runLoop = DefaultRunLoop()
-            let session = TrackingTerminalSession()
             let output = RecordingTerminalOutput()
+            let session = TrackingTerminalSession(output: output)
             let failure = PresentationFailure.output
             let keyboard = DefaultKeyboardEventSource(inputSource: input, runLoop: runLoop)
             var frames = 0
@@ -110,7 +110,7 @@
             }
             let application = Application(
                 rootView: root,
-                runLoop: runLoop, terminalSession: session, keyboardEventSource: keyboard, terminalOutput: output
+                runLoop: runLoop, terminalSession: session, keyboardEventSource: keyboard
             )
             runLoop.add(Twill.Timer(interval: .milliseconds(1)) { output.failure = failure })
             var receivedError: PresentationFailure?

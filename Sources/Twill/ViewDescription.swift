@@ -8,9 +8,10 @@ protocol PrimitiveView {
 
 @MainActor
 enum ViewDescription {
-    case text(String?)
+    case empty
+    case drawing(any PrimitiveDrawing)
     case body(any View)
-    case group(children: [any View], separator: String?)
+    case group(children: [any View], layout: HorizontalLayout?)
     case conditional(first: Bool, content: any View)
     case timeline(PeriodicTimelineSchedule, @MainActor (Date) -> any View)
 }

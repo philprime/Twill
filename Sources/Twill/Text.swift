@@ -1,4 +1,4 @@
-/// Plain text. The initial presenter supports a single line, not terminal-cell layout.
+/// Single-line text measured and drawn in terminal cells. Control characters are replaced with spaces.
 public struct Text: View {
     public typealias Body = Never
     private let content: String
@@ -10,6 +10,6 @@ public struct Text: View {
 
 extension Text: PrimitiveView {
     func makeDescription() -> ViewDescription {
-        .text(content)
+        .drawing(TextDrawing(content))
     }
 }

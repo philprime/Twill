@@ -11,6 +11,6 @@ extension ViewList: PrimitiveView {
         for child in repeat each children {
             views.append(child)
         }
-        return .group(children: views, separator: nil)
+        return .group(children: views, layout: nil)
     }
 }

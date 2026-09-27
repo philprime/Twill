@@ -19,8 +19,8 @@ struct ViewBuilderTests {
         let clock = ViewRenderer.make(children.1).render(start)
 
         // -- Assert --
-        #expect(label.text == "Label")
-        #expect(clock.text == "Clock")
+        #expect(label.grid?.snapshotText == "Label")
+        #expect(clock.grid?.snapshotText == "Clock")
         #expect(clock.nextUpdate == start.addingTimeInterval(1))
     }
 
@@ -36,7 +36,7 @@ struct ViewBuilderTests {
         let frame = ViewRenderer.make(stack).render(.now)
 
         // -- Assert --
-        #expect(frame.text == "Hello World")
+        #expect(frame.grid?.snapshotText == "Hello World")
         #expect(frame.nextUpdate == nil)
     }
 
@@ -52,7 +52,7 @@ struct ViewBuilderTests {
         let frame = ViewRenderer.make(stack).render(.now)
 
         // -- Assert --
-        #expect(frame.text == (visible ? "Visible" : nil))
+        #expect(frame.grid?.snapshotText == (visible ? "Visible" : nil))
     }
 
     @Test("Optional composition uses a typed empty branch", arguments: [false, true])
@@ -67,7 +67,7 @@ struct ViewBuilderTests {
         let frame = ViewRenderer.make(stack).render(.now)
 
         // -- Assert --
-        #expect(frame.text == (visible ? "Visible" : nil))
+        #expect(frame.grid?.snapshotText == (visible ? "Visible" : nil))
     }
 
     @Test("Empty parameter packs produce no presentation")
@@ -79,7 +79,7 @@ struct ViewBuilderTests {
         let frame = ViewRenderer.make(stack).render(.now)
 
         // -- Assert --
-        #expect(frame.text == nil)
+        #expect(frame.grid?.snapshotText == nil)
         #expect(frame.nextUpdate == nil)
     }
 
@@ -105,6 +105,6 @@ struct ViewBuilderTests {
         let frame = ViewRenderer.make(stack).render(.now)
 
         // -- Assert --
-        #expect(frame.text == "0123456789AB")
+        #expect(frame.grid?.snapshotText == "0123456789AB")
     }
 }

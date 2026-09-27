@@ -33,10 +33,10 @@ struct SiblingTimelineTests {
         let shared = renderer.render(start.addingTimeInterval(1))
 
         // -- Assert --
-        #expect(initial.text == "F1 S1 Static")
-        #expect(fastOnly.text == "F2 S1 Static")
+        #expect(initial.grid?.snapshotText == "F1 S1 Static")
+        #expect(fastOnly.grid?.snapshotText == "F2 S1 Static")
         #expect(slowBeforeDeadline == 1)
-        #expect(shared.text == "F3 S2 Static")
+        #expect(shared.grid?.snapshotText == "F3 S2 Static")
         #expect(shared.nextUpdate == start.addingTimeInterval(1.05))
         #expect(staticBodies == 1)
     }
@@ -68,11 +68,11 @@ struct SiblingTimelineTests {
         let reinserted = renderer.render(start.addingTimeInterval(0.2))
 
         // -- Assert --
-        #expect(removed.text == "Static")
+        #expect(removed.grid?.snapshotText == "Static")
         #expect(removed.nextUpdate == start.addingTimeInterval(0.2))
         #expect(countWhileRemoved == 2)
         #expect(childDates == [start, start.addingTimeInterval(0.05), start.addingTimeInterval(0.2)])
-        #expect(reinserted.text == "Child Static")
+        #expect(reinserted.grid?.snapshotText == "Child Static")
         #expect(reinserted.nextUpdate == start.addingTimeInterval(0.25))
     }
 
@@ -103,7 +103,7 @@ struct SiblingTimelineTests {
         let frame = renderer.render(start.addingTimeInterval(0.1))
 
         // -- Assert --
-        #expect(frame.text == "Second")
+        #expect(frame.grid?.snapshotText == "Second")
         #expect(dates == [start, start.addingTimeInterval(0.1)])
     }
 
@@ -127,12 +127,12 @@ struct SiblingTimelineTests {
         let frame = renderer.render(start.addingTimeInterval(0.1))
 
         // -- Assert --
-        #expect(frame.text == "Static")
+        #expect(frame.grid?.snapshotText == "Static")
         #expect(frame.nextUpdate == start.addingTimeInterval(0.2))
     }
 
-    @Test("Unmounting releases objects captured by a removed timeline")
-    func releasesRemovedNode() {
+    @Test("Unmounting releases objects captured by a removed timeline", arguments: [false, true])
+    func releasesRemovedNode(replacement: Bool) {
         // -- Arrange --
         let start = Date(timeIntervalSinceReferenceDate: 100)
         weak var retained: LifetimeProbe?
@@ -146,7 +146,7 @@ struct SiblingTimelineTests {
                 if context.date == start {
                     let probe = makeProbe()
                     TimelineView(.periodic(from: start, by: 1)) { [probe] _ in Text(probe.text) }
-                } else {
+                } else if replacement {
                     Text("Removed")
                 }
             }
@@ -184,7 +184,7 @@ struct SiblingTimelineTests {
         let frame = renderer.render(start.addingTimeInterval(0.1))
 
         // -- Assert --
-        #expect(frame.text == "Child")
+        #expect(frame.grid?.snapshotText == "Child")
         #expect(dates == [start, start])
     }
 

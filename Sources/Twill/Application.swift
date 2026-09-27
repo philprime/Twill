@@ -7,6 +7,7 @@ public final class Application {
     private let terminalSession: TerminalSession
     private let keyboardEventSource: KeyboardEventSource
     private let viewHost: ViewHost
+    private let terminalViewport: TerminalViewport
     private var renderingError: Error?
     private var isStopping = false
 
@@ -15,7 +16,7 @@ public final class Application {
         runLoop: RunLoop = DefaultRunLoop(),
         terminalSession: TerminalSession = DefaultTerminalSession(),
         keyboardEventSource: KeyboardEventSource? = nil,
-        terminalOutput: TerminalOutput = DefaultTerminalOutput()
+        terminalViewport: TerminalViewport = DefaultTerminalViewport()
     ) {
         self.runLoop = runLoop
         self.terminalSession = terminalSession
@@ -25,7 +26,11 @@ public final class Application {
                 inputSource: DefaultInputSource(fileDescriptor: terminalSession.fileDescriptor),
                 runLoop: runLoop
             )
-        viewHost = ViewHost(rootView: rootView, runLoop: runLoop, output: terminalOutput)
+        self.terminalViewport = terminalViewport
+        viewHost = ViewHost(
+            rootView: rootView, runLoop: runLoop, output: terminalSession.output,
+            preparePresentation: { try terminalSession.beginPresentation() }
+        )
     }
 
     /// May be installed, replaced, or cleared while running. Keyboard input and
@@ -35,6 +40,7 @@ public final class Application {
     public func stop() {
         isStopping = true
         keyboardEventSource.stop()
+        terminalViewport.cancel()
         viewHost.stop()
         runLoop.stop()
     }
@@ -55,25 +61,39 @@ public final class Application {
             keyboardEventSource.onKeyEvent = nil
             terminalSession.restore()
         }
-        try viewHost.start()
+        do {
+            let size = try terminalViewport.start()
+            try viewHost.start(size: size)
 
-        // One long-lived task consumes bytes directly on the UI actor, while another
-        // awaits timers. There is no forwarding task, second input queue, or per-key task.
-        try await withThrowingTaskGroup(of: Void.self) { group in
-            defer { stop() }
-            group.addTask { @MainActor @Sendable [self] in
-                try await keyboardEventSource.run()
+            // Long-lived consumers own keyboard bytes, resize events, and timer
+            // scheduling. Dispatch producers never spawn a task per event.
+            try await withThrowingTaskGroup(of: Void.self) { group in
+                defer { stop() }
+                group.addTask { @MainActor @Sendable [self] in
+                    try await keyboardEventSource.run()
+                }
+                group.addTask { @MainActor @Sendable [self] in
+                    await runLoop.run()
+                }
+                group.addTask { @MainActor @Sendable [self] in
+                    for try await size in terminalViewport.events {
+                        guard !isStopping, !Task.isCancelled else { break }
+                        try viewHost.resize(to: size)
+                    }
+                }
+                // Observe every result: another task finishing first must not hide
+                // failures still awaiting cleanup. Join consumers before restoration.
+                for try await _ in group {
+                    stop()
+                    group.cancelAll()
+                }
             }
-            group.addTask { @MainActor @Sendable [self] in
-                await runLoop.run()
-            }
-            // Observe both results: timer shutdown must not hide an input failure
-            // still awaiting cleanup. Structured scope joins both tasks before restore.
-            for try await _ in group {
-                stop()
-                group.cancelAll()
-            }
+        } catch {
+            stop()
+            await terminalViewport.stop()
+            throw error
         }
+        await terminalViewport.stop()
         if let renderingError { throw renderingError }
     }
 

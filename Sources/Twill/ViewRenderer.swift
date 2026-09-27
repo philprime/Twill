@@ -15,7 +15,7 @@ final class ViewRenderer {
     private var description: ViewDescription?
     private var children: [ViewRenderer] = []
     private var timeline: TimelineState?
-    private var textParts: [String] = []
+    private var placements: [(node: ViewRenderer, bounds: CellRect)] = []
     private var nextUpdate: Date?
 
     private init(_ view: any View) {
@@ -27,14 +27,63 @@ final class ViewRenderer {
         ViewRenderer(view)
     }
 
-    func render(_ date: Date) -> (text: String?, nextUpdate: Date?) {
+    func render(_ date: Date, proposal: ProposedCellSize = .unspecified) -> (grid: CellGrid?, nextUpdate: Date?) {
+        refreshContent(at: date)
+        return (drawFrame(proposal: proposal), nextUpdate)
+    }
+
+    func refreshContent(at date: Date) {
         if let initialView {
             update(initialView, at: date)
         } else {
             refresh(at: date)
         }
-        // No presentation (EmptyView) is distinct from a Text containing an empty line.
-        return (textParts.isEmpty ? nil : textParts.joined(), nextUpdate)
+    }
+
+    /// Layout and drawing never evaluate bodies or advance timeline deadlines.
+    func drawFrame(proposal: ProposedCellSize) -> CellGrid? {
+        guard !layoutItems.isEmpty else { return nil }
+        let size = measure(proposal)
+        var context = DrawingContext(size: size)
+        draw(in: &context)
+        return context.grid
+    }
+
+    private var layoutItems: [ViewRenderer] {
+        switch description {
+        case .drawing:
+            return [self]
+        case .group(_, .some):
+            return children.flatMap(\.layoutItems).isEmpty ? [] : [self]
+        default:
+            return children.flatMap(\.layoutItems)
+        }
+    }
+
+    private func measure(_ proposal: ProposedCellSize) -> CellSize {
+        if case .drawing(let drawing) = description {
+            return drawing.sizeThatFits(proposal)
+        }
+        let items = children.flatMap(\.layoutItems)
+        let sizes = items.map { $0.measure(.unspecified) }
+        let layout: HorizontalLayout
+        if case .group(_, let groupLayout?) = description {
+            layout = groupLayout
+        } else {
+            layout = HorizontalLayout(spacing: 0)
+        }
+        placements = zip(items, layout.placeSubviews(sizes)).map { ($0, $1) }
+        return layout.sizeThatFits(proposal, subviews: sizes)
+    }
+
+    private func draw(in context: inout DrawingContext) {
+        if case .drawing(let drawing) = description {
+            drawing.draw(in: &context)
+        } else {
+            for placement in placements {
+                context.withRegion(placement.bounds) { placement.node.draw(in: &$0) }
+            }
+        }
     }
 
     private static func describe<Content: View>(_ view: Content) -> ViewDescription {
@@ -48,7 +97,7 @@ final class ViewRenderer {
         let updated = Self.describe(view)
         description = updated
         switch updated {
-        case .text:
+        case .empty, .drawing:
             children = []
         case .body(let body):
             reconcile([body], at: date)
@@ -63,7 +112,7 @@ final class ViewRenderer {
             let contextDate = advanceTimeline(schedule, at: date)
             reconcile([content(contextDate)], at: date)
         }
-        collectPresentation()
+        collectDeadlines()
     }
 
     private func advanceTimeline(_ schedule: PeriodicTimelineSchedule, at date: Date) -> Date {
@@ -99,20 +148,10 @@ final class ViewRenderer {
         } else {
             for child in children { child.refresh(at: date) }
         }
-        collectPresentation()
+        collectDeadlines()
     }
 
-    private func collectPresentation() {
-        if case .text(let text) = description {
-            textParts = text.map { [$0] } ?? []
-        } else {
-            let parts = children.flatMap(\.textParts)
-            if case .group(_, let separator?) = description {
-                textParts = parts.isEmpty ? [] : [parts.joined(separator: separator)]
-            } else {
-                textParts = parts
-            }
-        }
+    private func collectDeadlines() {
         nextUpdate = timeline?.deadline
         for child in children {
             if let deadline = child.nextUpdate {

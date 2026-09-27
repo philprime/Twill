@@ -49,7 +49,7 @@
             #expect(updates == 2)
             #expect(runLoop.timers.count == 2)
             #expect(runLoop.cancelled.contains { $0 === pending })
-            #expect(output.writes == ["\r\u{1B}[2KTick 1", "\r\u{1B}[2KTick 2", "\n"])
+            #expect(output.writes == ["\r\u{1B}[2KTick 1", "\r\u{1B}[5C2", "\n"])
         }
 
         @Test("The root body is not evaluated until presentation starts")

@@ -31,8 +31,10 @@ struct TimelineApplicationTests {
         }
         let application = Application(
             rootView: root,
-            terminalSession: DefaultTerminalSession(fileDescriptor: .custom(terminal.fileDescriptor)),
-            terminalOutput: DefaultTerminalOutput(fileDescriptor: .custom(pipe.fileHandleForWriting.fileDescriptor))
+            terminalSession: DefaultTerminalSession(
+                fileDescriptor: .custom(terminal.fileDescriptor),
+                output: DefaultTerminalOutput(fileDescriptor: .custom(pipe.fileHandleForWriting.fileDescriptor))
+            )
         )
         let task = Task { try await application.run() }
         defer { task.cancel() }
@@ -52,9 +54,9 @@ struct TimelineApplicationTests {
         let text = try #require(String(data: data, encoding: .utf8))
         #expect(frames >= 2)
         #expect(frames == framesAtShutdown)
-        #expect(text.hasPrefix("\r\u{1B}[2KFrame 1"))
-        #expect(text.contains("\r\u{1B}[2KFrame 2"))
-        #expect(text.hasSuffix("\n"))
+        #expect(text.hasPrefix("\u{1B}[?25l\r\u{1B}[2KFrame 1"))
+        #expect(text.contains("\r\u{1B}[6C2"))
+        #expect(text.hasSuffix("\n\u{1B}[?25h"))
         let restored = try terminal.snapshot()
         #expect(restored == original)
     }
@@ -85,8 +87,10 @@ struct TimelineApplicationTests {
         }
         let application = Application(
             rootView: root,
-            terminalSession: DefaultTerminalSession(fileDescriptor: .custom(terminal.fileDescriptor)),
-            terminalOutput: DefaultTerminalOutput(fileDescriptor: .custom(pipe.fileHandleForWriting.fileDescriptor))
+            terminalSession: DefaultTerminalSession(
+                fileDescriptor: .custom(terminal.fileDescriptor),
+                output: DefaultTerminalOutput(fileDescriptor: .custom(pipe.fileHandleForWriting.fileDescriptor))
+            )
         )
 
         // -- Act --
@@ -100,7 +104,8 @@ struct TimelineApplicationTests {
         #expect(fast >= 3)
         #expect(slow == 1)
         #expect(text.contains("\r\u{1B}[2KFast 1 Slow 1"))
-        #expect(text.contains("\r\u{1B}[2KFast 3 Slow 1"))
+        #expect(text.contains("\r\u{1B}[5C3"))
+        #expect(text.hasSuffix("\n\u{1B}[?25h"))
         let restored = try terminal.snapshot()
         #expect(restored == original)
     }
@@ -114,9 +119,11 @@ struct TimelineApplicationTests {
         let pipe = Pipe()
         let application = Application(
             rootView: Text("Clock"),
-            terminalSession: DefaultTerminalSession(fileDescriptor: .custom(terminal.fileDescriptor)),
-            // An open read-only descriptor fails writes without descriptor-reuse races or SIGPIPE.
-            terminalOutput: DefaultTerminalOutput(fileDescriptor: .custom(pipe.fileHandleForReading.fileDescriptor))
+            terminalSession: DefaultTerminalSession(
+                fileDescriptor: .custom(terminal.fileDescriptor),
+                // An open read-only descriptor fails writes without descriptor-reuse races or SIGPIPE.
+                output: DefaultTerminalOutput(fileDescriptor: .custom(pipe.fileHandleForReading.fileDescriptor))
+            )
         )
         var receivedError: Error?
 

@@ -52,7 +52,7 @@ struct MountedTimelineTests {
         let frame = renderer.render(start.addingTimeInterval(0.05))
 
         // -- Assert --
-        #expect(frame.text == "Parent 2")
+        #expect(frame.grid?.snapshotText == "Parent 2")
         #expect(innerDates == [start, start])
     }
 }

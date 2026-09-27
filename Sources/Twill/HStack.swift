@@ -1,19 +1,19 @@
-/// Composes single-line content with spaces. Measurement, wrapping, and alignment are
-/// not yet implemented; each child retains its own identity and scheduling state.
+/// Places children horizontally at their intrinsic cell widths, with top alignment.
+/// Content that exceeds the available bounds is clipped rather than wrapped.
 public struct HStack<Content: View>: View {
     public typealias Body = Never
     private let content: Content
-    private let separator: String
+    private let spacing: Int
 
     public init(spacing: Int = 1, @ViewBuilder content: () -> Content) {
         precondition(spacing >= 0, "Stack spacing must not be negative")
-        separator = String(repeating: " ", count: spacing)
+        self.spacing = spacing
         self.content = content()
     }
 }
 
 extension HStack: PrimitiveView {
     func makeDescription() -> ViewDescription {
-        .group(children: [content], separator: separator)
+        .group(children: [content], layout: HorizontalLayout(spacing: spacing))
     }
 }

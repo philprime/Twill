@@ -15,7 +15,7 @@ struct TimelineViewTests {
         let frame = renderer.render(Date(timeIntervalSinceReferenceDate: 100))
 
         // -- Assert --
-        #expect(frame.text == "Hello")
+        #expect(frame.grid?.snapshotText == "Hello")
         #expect(frame.nextUpdate == nil)
     }
 
@@ -32,7 +32,7 @@ struct TimelineViewTests {
 
         // -- Assert --
         #expect(bodyEvaluations == 1)
-        #expect(first.text != second.text)
+        #expect(first.grid?.snapshotText != second.grid?.snapshotText)
         #expect(first.nextUpdate != nil)
         #expect(second.nextUpdate != nil)
     }
@@ -54,9 +54,9 @@ struct TimelineViewTests {
         let delayed = renderer.render(later)
 
         // -- Assert --
-        #expect(first.text == "Frame 1")
+        #expect(first.grid?.snapshotText == "Frame 1")
         #expect(first.nextUpdate == start.addingTimeInterval(0.05))
-        #expect(delayed.text == "Frame 2")
+        #expect(delayed.grid?.snapshotText == "Frame 2")
         #expect(delayed.nextUpdate == start.addingTimeInterval(0.20))
         #expect(dates == [start, later])
     }
@@ -86,7 +86,7 @@ struct TimelineViewTests {
         let frame = renderer.render(start.addingTimeInterval(-1))
 
         // -- Assert --
-        #expect(frame.text == "Waiting")
+        #expect(frame.grid?.snapshotText == "Waiting")
         #expect(frame.nextUpdate == start)
     }
 }

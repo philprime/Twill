@@ -5,11 +5,13 @@
 #endif
 
 #if TESTING
-    /// Owns temporary input-mode changes, not the input reader or the terminal screen.
+    /// Owns borrowed input modes and presentation modes, but not input readers or rendering.
     @MainActor
     public protocol TerminalSession: AnyObject {
         var fileDescriptor: FileDescriptor { get }
+        var output: TerminalOutput { get }
         func start() throws
+        func beginPresentation() throws
         func restore()
     }
 
@@ -18,7 +20,7 @@
     public typealias TerminalSession = DefaultTerminalSession
 #endif
 
-/// Temporarily borrows the terminal's input configuration from the host shell.
+/// Temporarily borrows terminal input modes and native cursor visibility from the host shell.
 ///
 /// A shell normally uses canonical input and echo: bytes are held until Enter and
 /// typed characters are printed automatically. A keyboard-driven application needs
@@ -28,20 +30,34 @@
 /// reach the parser unchanged. Read timeouts belong to the event-driven runtime instead
 /// of the terminal driver. Output processing is preserved for the current print-based UI.
 ///
-/// Application must stop its input readers before calling restore(). This object
-/// neither closes the descriptor nor enters an alternate screen or writes output.
+/// Application joins input and resize consumers before calling restore(). Cursor
+/// control uses the same injected output as frame presentation. This object neither
+/// closes borrowed descriptors nor enters an alternate screen.
 /// Restoration covers orderly shutdown, not process crashes or fatal signals.
 @MainActor
 public final class DefaultTerminalSession {
     private static let softwareFlowControl = tcflag_t(IXON | IXOFF | IXANY)
     private static let minimumReadBytes: cc_t = 1
     private static let readTimeoutDeciseconds: cc_t = 0
+    private static let hideCursor = "\u{1B}[?25l"
+    private static let showCursor = "\u{1B}[?25h"
 
     public let fileDescriptor: FileDescriptor
+    public let output: TerminalOutput
     private var original: termios?
+    private var needsCursorRestore = false
 
-    public init(fileDescriptor: FileDescriptor = .standardInput) {
+    public init(fileDescriptor: FileDescriptor = .standardInput, output: TerminalOutput = DefaultTerminalOutput()) {
         self.fileDescriptor = fileDescriptor
+        self.output = output
+    }
+
+    /// Acquires presentation modes lazily so event-only applications leave the cursor alone.
+    public func beginPresentation() throws {
+        guard !needsCursorRestore else { return }
+        // A write can fail after partially reaching the terminal. Claim cleanup first.
+        needsCursorRestore = true
+        try output.write(Self.hideCursor)
     }
 
     public func start() throws {
@@ -78,6 +94,11 @@ public final class DefaultTerminalSession {
     }
 
     public func restore() {
+        if needsCursorRestore {
+            // Output restoration is best-effort and must not skip termios restoration.
+            try? output.write(Self.showCursor)
+            needsCursorRestore = false
+        }
         guard var original else { return }
         _ = tcsetattr(fileDescriptor.rawValue, TCSANOW, &original)
         self.original = nil

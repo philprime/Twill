@@ -40,7 +40,7 @@
             #expect(slow == 2)
             #expect(runLoop.timers.count == 3)
             #expect(runLoop.cancelled.count == 1)
-            #expect(output.writes == ["\r\u{1B}[2KF1 S1", "\r\u{1B}[2KF2 S1", "\r\u{1B}[2KF3 S2", "\n"])
+            #expect(output.writes == ["\r\u{1B}[2KF1 S1", "\r\u{1B}[1C2", "\r\u{1B}[1C3\r\u{1B}[4C2", "\n"])
         }
 
         @Test("A static stack presents once and schedules no wake-ups")

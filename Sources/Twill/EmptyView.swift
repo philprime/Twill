@@ -7,6 +7,6 @@ public struct EmptyView: View {
 
 extension EmptyView: PrimitiveView {
     func makeDescription() -> ViewDescription {
-        .text(nil)
+        .empty
     }
 }
