@@ -21,7 +21,7 @@ extension ViewRenderer {
     }
 
     private func drawBorder(
-        _ glyphs: BorderGlyphs, color: Color, in context: inout DrawingContext, focused: ViewRenderer?
+        _ glyphs: Border.Glyphs, color: Color, in context: inout DrawingContext, focused: ViewRenderer?
     ) {
         let width = measuredSize.width
         let height = measuredSize.height
