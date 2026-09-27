@@ -80,7 +80,7 @@ final class ViewRenderer {
 
     private var layoutItems: [ViewRenderer] {
         switch description {
-        case .drawing:
+        case .drawing, .textField:
             return [self]
         case .group(_, .some):
             return children.flatMap(\.layoutItems).isEmpty ? [] : [self]
@@ -91,10 +91,16 @@ final class ViewRenderer {
         }
     }
 
-    private func measure(_ proposal: ProposedCellSize) -> CellSize {
-        if case .drawing(let drawing) = description {
-            return drawing.sizeThatFits(proposal)
+    private var drawing: (any PrimitiveDrawing)? {
+        switch description {
+        case .drawing(let drawing): return drawing
+        case .textField(let field): return field.drawing
+        default: return nil
         }
+    }
+
+    private func measure(_ proposal: ProposedCellSize) -> CellSize {
+        if let drawing { return drawing.sizeThatFits(proposal) }
         let items = children.flatMap(\.layoutItems)
         let sizes = items.map { $0.measure(.unspecified) }
         let layout: any PrimitiveLayout
@@ -108,7 +114,7 @@ final class ViewRenderer {
     }
 
     private func draw(in context: inout DrawingContext, focused: ViewRenderer?) {
-        if case .drawing(let drawing) = description {
+        if let drawing {
             context.withFocus(isInsideFocus(focused)) { drawing.draw(in: &$0) }
         } else {
             for placement in placements {
@@ -154,7 +160,7 @@ final class ViewRenderer {
         let updated = Self.describe(view)
         description = updated
         switch updated {
-        case .empty, .drawing:
+        case .empty, .drawing, .textField:
             children = []
         case .body(let body):
             reconcile([body], at: date)
@@ -278,6 +284,7 @@ extension ViewRenderer {
             return route(key, from: modal ? sheetBranch ?? self : self, stoppingAt: modal ? self : nil) == .handled
         }
         focusedNode = target
+        if case .textField(let field) = target.description, field.handle(key) == .handled { return true }
         if route(key, from: target, stoppingAt: modal ? self : nil) == .handled { return true }
 
         guard let index = targets.firstIndex(where: { $0 === target }) else { return false }
@@ -307,7 +314,10 @@ extension ViewRenderer {
     private func focusableNodes() -> [ViewRenderer] {
         if case .sheet = description { return sheetBranch?.focusableNodes() ?? [] }
         let target: [ViewRenderer]
-        if case .focusable = description { target = [self] } else { target = [] }
+        switch description {
+        case .focusable, .textField: target = [self]
+        default: target = []
+        }
         return target + children.flatMap { $0.focusableNodes() }
     }
 
@@ -321,6 +331,9 @@ extension ViewRenderer {
             let descendant = child.children[0]
             if case .focusable = descendant.description { break }
             if case .keyPress(_, let action) = descendant.description, action(key) == .handled {
+                return .handled
+            }
+            if case .textField(let field) = descendant.description, field.handle(key) == .handled {
                 return .handled
             }
             child = descendant

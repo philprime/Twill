@@ -10,6 +10,7 @@ protocol PrimitiveView {
 enum ViewDescription {
     case empty
     case drawing(any PrimitiveDrawing)
+    case textField(TextFieldDescription)
     case body(any View)
     case group(children: [any View], layout: (any PrimitiveLayout)?)
     case keyed(children: [(id: AnyHashable, view: any View)])
