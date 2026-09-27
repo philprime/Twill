@@ -25,9 +25,20 @@ struct NoteListView: View {
                 }
                 .focusable()
                 .onKeyPress { key in
-                    guard key == .enter else { return .ignored }
-                    selectedNoteID = note.id
-                    return .handled
+                    if key == .enter {
+                        selectedNoteID = note.id
+                        return .handled
+                    }
+                    guard let index = notes.firstIndex(where: { $0.id == note.id }) else { return .ignored }
+                    switch key {
+                    case .arrowDown, .arrowRight:
+                        if notes.indices.contains(index + 1) { selectedNoteID = notes[index + 1].id }
+                    case .arrowUp, .arrowLeft:
+                        if notes.indices.contains(index - 1) { selectedNoteID = notes[index - 1].id }
+                    default: break
+                    }
+                    // Selection follows list focus, while the runtime still owns focus traversal.
+                    return .ignored
                 }
             }
             if notes.isEmpty {

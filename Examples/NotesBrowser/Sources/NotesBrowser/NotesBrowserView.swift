@@ -26,6 +26,10 @@ struct NotesBrowserView: View {
                 .foregroundStyle(NotesPalette.background)
                 .backgroundStyle(NotesPalette.accent)
             TextField("Search notes", text: $query)
+                .onKeyPress { key in
+                    if key == .arrowDown || key == .arrowRight { selectedNoteID = matchingNotes.first?.id }
+                    return .ignored
+                }
                 .frame(fillWidth: true)
                 .foregroundStyle(NotesPalette.foreground)
                 .border(.single, color: NotesPalette.border)
