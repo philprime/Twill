@@ -36,6 +36,7 @@ struct TimelineApplicationTests {
                 output: DefaultTerminalOutput(fileDescriptor: .custom(pipe.fileHandleForWriting.fileDescriptor))
             )
         )
+        application.options.ui.mode = .inline
         let task = Task { try await application.run() }
         defer { task.cancel() }
         for await _ in ready {}
@@ -92,6 +93,8 @@ struct TimelineApplicationTests {
                 output: DefaultTerminalOutput(fileDescriptor: .custom(pipe.fileHandleForWriting.fileDescriptor))
             )
         )
+
+        application.options.ui.mode = .inline
 
         // -- Act --
         try await application.run()

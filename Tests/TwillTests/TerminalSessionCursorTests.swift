@@ -130,5 +130,20 @@ struct TerminalSessionCursorTests {
         #expect(output.writes.isEmpty)
     }
 
+    @Test("Fullscreen presentation enters and restores the alternate screen on failure")
+    func fullscreenFailure() {
+        // -- Arrange --
+        let output = RecordingTerminalOutput()
+        let session = DefaultTerminalSession(output: output)
+        output.nextFailure = Failure.output
+
+        // -- Act --
+        #expect(throws: Failure.output) { try session.beginPresentation(mode: .fullscreen) }
+        session.restore()
+
+        // -- Assert --
+        #expect(output.writes == ["\u{1B}[?1049l"])
+    }
+
     private enum Failure: Error { case output }
 }

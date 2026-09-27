@@ -46,5 +46,22 @@ struct TerminalPresenterTests {
         #expect(output.writes == ["\r\u{1B}[2KA", "\n"])
     }
 
+    @Test("Fullscreen frames stay anchored without reserving shell rows")
+    func fullscreenFrame() throws {
+        // -- Arrange --
+        let output = RecordingTerminalOutput()
+        let presenter = TerminalPresenter(output: output, mode: .fullscreen)
+        var grid = CellGrid(size: CellSize(width: 2, height: 2))
+        grid.put("A", width: 1, column: 0, row: 0)
+        grid.put("B", width: 1, column: 0, row: 1)
+
+        // -- Act --
+        try presenter.present(FrameSnapshot(grid: grid, caret: nil))
+        presenter.stop()
+
+        // -- Assert --
+        #expect(output.writes == ["\u{1B}[2J\u{1B}[H\r\u{1B}[2KA \r\u{1B}[1B\r\u{1B}[2KB \r\u{1B}[1A"])
+    }
+
     private enum PresentationFailure: Error { case failed }
 }

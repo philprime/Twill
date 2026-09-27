@@ -29,6 +29,7 @@ struct SheetApplicationTests {
                 output: DefaultTerminalOutput(fileDescriptor: .custom(pipe.fileHandleForWriting.fileDescriptor))
             )
         )
+        application.options.ui.mode = .inline
         var applicationKeys: [KeyEvent] = []
         application.onKeyEvent = { applicationKeys.append($0) }
         runLoop.add(

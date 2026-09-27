@@ -1,7 +1,7 @@
 import Foundation
 
 /// Owns mounted content, cell-frame buffering, viewport layout, and the next
-/// timeline wake-up. Presentation remains inline rather than owning the whole screen.
+/// timeline wake-up. Terminal ownership is delegated to the session.
 @MainActor
 final class ViewHost {
     var onError: ((Error) -> Void)?
@@ -27,7 +27,8 @@ final class ViewHost {
         self.now = now
     }
 
-    func start(size: TerminalSize? = nil) throws {
+    func start(size: TerminalSize? = nil, mode: UIMode = .inline) throws {
+        presenter.mode = mode
         // Body evaluation belongs to the running session, not application construction.
         let renderer = ViewRenderer.make(rootView)
         renderer.onInvalidation = { [weak self] in self?.requestPresentation() }

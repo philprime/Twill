@@ -34,6 +34,7 @@ struct FocusApplicationTests {
                     output: DefaultTerminalOutput(fileDescriptor: .custom(pipe.fileHandleForWriting.fileDescriptor))
                 )
             )
+            application.options.ui.mode = .inline
             owner = application
             var applicationKeys: [KeyEvent] = []
             application.onKeyEvent = { [weak application] key in

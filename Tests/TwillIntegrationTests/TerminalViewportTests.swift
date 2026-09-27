@@ -79,6 +79,7 @@ struct TerminalViewportTests {
             ),
             terminalViewport: DefaultTerminalViewport(fileDescriptor: .custom(terminal.fileDescriptor))
         )
+        application.options.ui.mode = .inline
         reader.start()
         let task = Task { try await application.run() }
         defer { task.cancel() }

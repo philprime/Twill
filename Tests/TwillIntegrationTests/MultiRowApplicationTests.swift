@@ -46,11 +46,11 @@ struct MultiRowApplicationTests {
         let output = try #require(String(bytes: data, encoding: .utf8))
 
         // -- Assert --
-        #expect(output.hasPrefix("\u{1B}[?25l\r\r\n"))
+        #expect(output.hasPrefix("\u{1B}[?1049h\u{1B}[2J\u{1B}[H\u{1B}[?25l"))
         #expect(output.contains("Head"))
         #expect(output.contains("Body"))
         #expect(output.contains("\u{1B}[7mBody\u{1B}[27m"))
-        #expect(output.hasSuffix("\u{1B}[1B\r\n\u{1B}[?25h"))
+        #expect(output.hasSuffix("\u{1B}[?1049l\u{1B}[?25h"))
         #expect(try terminal.snapshot() == original)
     }
 }

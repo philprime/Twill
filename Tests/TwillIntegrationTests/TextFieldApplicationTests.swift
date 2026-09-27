@@ -30,6 +30,7 @@ struct TextFieldApplicationTests {
                 output: DefaultTerminalOutput(fileDescriptor: .custom(pipe.fileHandleForWriting.fileDescriptor))
             )
         )
+        application.options.ui.mode = .inline
         var applicationKeys: [KeyEvent] = []
         application.onKeyEvent = { [weak application] key in
             applicationKeys.append(key)
@@ -81,6 +82,7 @@ struct TextFieldApplicationTests {
                 output: DefaultTerminalOutput(fileDescriptor: .custom(pipe.fileHandleForWriting.fileDescriptor))
             )
         )
+        application.options.ui.mode = .inline
         runLoop.add(
             Twill.Timer(interval: .milliseconds(1)) {
                 do { try terminal.send([0x0D]) } catch {
