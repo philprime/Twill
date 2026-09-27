@@ -159,7 +159,7 @@ struct ApplicationOwnershipTests {
         #expect(activeBeforeCleanup)
         #expect(receivedError == failure)
         #expect(!session.isActive)
-        #expect(output.writes == ["\r\u{1B}[2KClock 1"])
+        #expect(output.writes == ["\u{1B}[2J\u{1B}[H\r\u{1B}[2KClock 1"])
     }
 
     @Test("EOF finishes the application without a key handler", .timeLimit(.minutes(1)))

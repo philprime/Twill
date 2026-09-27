@@ -71,9 +71,9 @@ struct ApplicationLifecycleTests {
         let application = terminal.makeApplication(runLoop: runLoop)
         var ticks = 0
         runLoop.add(
-            Twill.Timer(interval: .milliseconds(1), repeats: true) {
+            Twill.Timer(interval: .milliseconds(1), repeats: true) { [weak application] in
                 ticks += 1
-                if ticks == 3 { application.stop() }
+                if ticks == 3 { application?.stop() }
             })
 
         // -- Act --

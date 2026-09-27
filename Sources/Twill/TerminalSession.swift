@@ -11,7 +11,7 @@
         var fileDescriptor: FileDescriptor { get }
         var output: TerminalOutput { get }
         func start() throws
-        func beginPresentation() throws
+        func beginPresentation(mode: UIMode) throws
         func restore()
     }
 
@@ -32,13 +32,15 @@
 ///
 /// Application joins input and resize consumers before calling restore(). Cursor
 /// control uses the same injected output as frame presentation. This object neither
-/// closes borrowed descriptors nor enters an alternate screen.
+/// closes borrowed descriptors. Fullscreen presentation borrows the alternate screen.
 /// Restoration covers orderly shutdown, not process crashes or fatal signals.
 @MainActor
 public final class DefaultTerminalSession {
     private static let softwareFlowControl = tcflag_t(IXON | IXOFF | IXANY)
     private static let minimumReadBytes: cc_t = 1
     private static let readTimeoutDeciseconds: cc_t = 0
+    private static let enterAlternateScreen = "\u{1B}[?1049h\u{1B}[2J\u{1B}[H"
+    private static let leaveAlternateScreen = "\u{1B}[?1049l"
     private static let hideCursor = "\u{1B}[?25l"
     private static let showCursor = "\u{1B}[?25h"
 
@@ -46,6 +48,7 @@ public final class DefaultTerminalSession {
     public let output: TerminalOutput
     private var original: termios?
     private var needsCursorRestore = false
+    private var needsScreenRestore = false
 
     public init(fileDescriptor: FileDescriptor = .standardInput, output: TerminalOutput = DefaultTerminalOutput()) {
         self.fileDescriptor = fileDescriptor
@@ -53,9 +56,13 @@ public final class DefaultTerminalSession {
     }
 
     /// Acquires presentation modes lazily so event-only applications leave the cursor alone.
-    public func beginPresentation() throws {
+    public func beginPresentation(mode: UIMode = .inline) throws {
         guard !needsCursorRestore else { return }
         // A write can fail after partially reaching the terminal. Claim cleanup first.
+        if mode == .fullscreen {
+            needsScreenRestore = true
+            try output.write(Self.enterAlternateScreen)
+        }
         needsCursorRestore = true
         try output.write(Self.hideCursor)
     }
@@ -94,6 +101,10 @@ public final class DefaultTerminalSession {
     }
 
     public func restore() {
+        if needsScreenRestore {
+            try? output.write(Self.leaveAlternateScreen)
+            needsScreenRestore = false
+        }
         if needsCursorRestore {
             // Output restoration is best-effort and must not skip termios restoration.
             try? output.write(Self.showCursor)

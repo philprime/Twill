@@ -3,6 +3,8 @@
 public final class Application {
     private static let interruptKey = KeyEvent.control(0x03)
 
+    public let options: ApplicationOptions
+
     private let runLoop: RunLoop
     private let terminalSession: TerminalSession
     private let keyboardEventSource: KeyboardEventSource
@@ -18,6 +20,8 @@ public final class Application {
         keyboardEventSource: KeyboardEventSource? = nil,
         terminalViewport: TerminalViewport = DefaultTerminalViewport()
     ) {
+        let options = ApplicationOptions()
+        self.options = options
         self.runLoop = runLoop
         self.terminalSession = terminalSession
         self.keyboardEventSource =
@@ -29,7 +33,7 @@ public final class Application {
         self.terminalViewport = terminalViewport
         viewHost = ViewHost(
             rootView: rootView, runLoop: runLoop, output: terminalSession.output,
-            preparePresentation: { try terminalSession.beginPresentation() }
+            preparePresentation: { try terminalSession.beginPresentation(mode: options.ui.mode) }
         )
     }
 
@@ -63,7 +67,7 @@ public final class Application {
         }
         do {
             let size = try terminalViewport.start()
-            try viewHost.start(size: size)
+            try viewHost.start(size: size, mode: options.ui.mode)
 
             // Long-lived consumers own keyboard bytes, resize events, and timer
             // scheduling. Dispatch producers never spawn a task per event.

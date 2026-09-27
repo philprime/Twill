@@ -3,9 +3,11 @@
 enum InlineFrameEncoder {
     private static let clearLine = "\r\u{1B}[2K"
 
-    static func encode(_ next: CellGrid?, previous: CellGrid?, invalidate: Bool = false) -> String {
+    static func encode(
+        _ next: CellGrid?, previous: CellGrid?, invalidate: Bool = false, fullscreen: Bool = false
+    ) -> String {
         if max(next?.size.height ?? 0, previous?.size.height ?? 0) > 1 {
-            return encodeRows(next, previous: previous, invalidate: invalidate)
+            return encodeRows(next, previous: previous, invalidate: invalidate, fullscreen: fullscreen)
         }
         guard let next else { return previous == nil ? "" : clearLine }
         if previous == nil || invalidate {
@@ -14,12 +16,14 @@ enum InlineFrameEncoder {
         return changedRuns(next, previous: previous, row: 0)
     }
 
-    private static func encodeRows(_ next: CellGrid?, previous: CellGrid?, invalidate: Bool) -> String {
+    private static func encodeRows(
+        _ next: CellGrid?, previous: CellGrid?, invalidate: Bool, fullscreen: Bool
+    ) -> String {
         let oldHeight = previous?.size.height ?? 0
         let newHeight = next?.size.height ?? 0
         let addedRows = max(0, newHeight - max(1, oldHeight))
         var output = ""
-        if addedRows > 0 {
+        if addedRows > 0, !fullscreen {
             // Reserve lines before drawing so a frame started at the terminal's
             // bottom edge can scroll into view without displacing a finished row.
             output = "\r"
