@@ -33,6 +33,10 @@ final class TerminalPresenter {
         buffer += cells
         if let caret = snapshot.caret, !cells.isEmpty || caret != lastCaret {
             buffer += showCaret(at: caret)
+        } else if mode == .fullscreen, !cells.isEmpty {
+            // Fullscreen redraws return the hardware cursor home. Hide it after
+            // drawing instead of relying on the session's earlier hide command.
+            buffer += Self.hideCursor
         }
         if !buffer.isEmpty {
             if !hasRendered { try preparePresentation() }

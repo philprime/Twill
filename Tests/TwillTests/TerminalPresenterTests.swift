@@ -60,7 +60,24 @@ struct TerminalPresenterTests {
         presenter.stop()
 
         // -- Assert --
-        #expect(output.writes == ["\u{1B}[2J\u{1B}[H\r\u{1B}[2KA \r\u{1B}[1B\r\u{1B}[2KB \r\u{1B}[1A"])
+        #expect(output.writes == ["\u{1B}[2J\u{1B}[H\r\u{1B}[2KA \r\u{1B}[1B\r\u{1B}[2KB \r\u{1B}[1A\u{1B}[?25l"])
+    }
+
+    @Test("Removing a fullscreen caret hides the cursor without changing cells")
+    func removeFullscreenCaret() throws {
+        // -- Arrange --
+        let output = RecordingTerminalOutput()
+        let presenter = TerminalPresenter(output: output, mode: .fullscreen)
+        var grid = CellGrid(size: CellSize(width: 1, height: 1))
+        grid.put("A", width: 1, column: 0, row: 0)
+        try presenter.present(FrameSnapshot(grid: grid, caret: CellPosition(column: 0, row: 0)))
+
+        // -- Act --
+        try presenter.present(FrameSnapshot(grid: grid, caret: nil))
+
+        // -- Assert --
+        #expect(output.writes.count == 2)
+        #expect(output.writes.last == "\u{1B}[?25l\u{1B}[H")
     }
 
     private enum PresentationFailure: Error { case failed }

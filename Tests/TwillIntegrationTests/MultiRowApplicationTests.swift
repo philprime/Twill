@@ -50,6 +50,8 @@ struct MultiRowApplicationTests {
         #expect(output.contains("Head"))
         #expect(output.contains("Body"))
         #expect(output.contains("\u{1B}[7mBody\u{1B}[27m"))
+        let activeScreen = try #require(output.components(separatedBy: "\u{1B}[?1049l").first)
+        #expect(activeScreen.hasSuffix("\u{1B}[?25l"))
         #expect(output.hasSuffix("\u{1B}[?1049l\u{1B}[?25h"))
         #expect(try terminal.snapshot() == original)
     }
