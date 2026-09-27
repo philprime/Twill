@@ -6,12 +6,16 @@ public final class Application {
     private let runLoop: RunLoop
     private let terminalSession: TerminalSession
     private let keyboardEventSource: KeyboardEventSource
+    private let viewHost: ViewHost
+    private var renderingError: Error?
     private var isStopping = false
 
     public init(
+        rootView: any View,
         runLoop: RunLoop = DefaultRunLoop(),
         terminalSession: TerminalSession = DefaultTerminalSession(),
-        keyboardEventSource: KeyboardEventSource? = nil
+        keyboardEventSource: KeyboardEventSource? = nil,
+        terminalOutput: TerminalOutput = DefaultTerminalOutput()
     ) {
         self.runLoop = runLoop
         self.terminalSession = terminalSession
@@ -21,6 +25,7 @@ public final class Application {
                 inputSource: DefaultInputSource(fileDescriptor: terminalSession.fileDescriptor),
                 runLoop: runLoop
             )
+        viewHost = ViewHost(rootView: rootView, runLoop: runLoop, output: terminalOutput)
     }
 
     /// May be installed, replaced, or cleared while running. Keyboard input and
@@ -30,6 +35,7 @@ public final class Application {
     public func stop() {
         isStopping = true
         keyboardEventSource.stop()
+        viewHost.stop()
         runLoop.stop()
     }
 
@@ -42,10 +48,14 @@ public final class Application {
         }
         try terminalSession.start()
         keyboardEventSource.onKeyEvent = { [weak self] key in self?.handle(key) }
+        viewHost.onError = { [weak self] error in self?.presentationFailed(error) }
         defer {
+            stop()
+            viewHost.onError = nil
             keyboardEventSource.onKeyEvent = nil
             terminalSession.restore()
         }
+        try viewHost.start()
 
         // One long-lived task consumes bytes directly on the UI actor, while another
         // awaits timers. There is no forwarding task, second input queue, or per-key task.
@@ -64,6 +74,12 @@ public final class Application {
                 group.cancelAll()
             }
         }
+        if let renderingError { throw renderingError }
+    }
+
+    private func presentationFailed(_ error: Error) {
+        renderingError = error
+        stop()
     }
 
     private func handle(_ key: KeyEvent) {

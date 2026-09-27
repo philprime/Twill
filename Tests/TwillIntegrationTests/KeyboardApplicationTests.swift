@@ -263,7 +263,7 @@ struct KeyboardApplicationTests {
         let descriptor = pipe.fileHandleForReading.fileDescriptor
         let flags = fcntl(descriptor, F_GETFL)
         let session = DefaultTerminalSession(fileDescriptor: .custom(descriptor))
-        let application = Application(runLoop: DefaultRunLoop(), terminalSession: session)
+        let application = Application(rootView: EmptyView(), runLoop: DefaultRunLoop(), terminalSession: session)
         application.onKeyEvent = { _ in Issue.record("Unexpected keyboard event") }
         var receivedError: TerminalError?
 

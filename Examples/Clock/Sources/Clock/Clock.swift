@@ -5,14 +5,19 @@ import Twill
 struct Clock {
     @MainActor
     static func main() async throws {
-        let runLoop = Twill.DefaultRunLoop()
-        let application = Twill.Application(runLoop: runLoop)
-
-        let timer = Twill.Timer(interval: .seconds(1), repeats: true) {
-            print(Date.now.formatted(date: .omitted, time: .standard))
-        }
-        runLoop.add(timer)
-
+        let application = Twill.Application(rootView: ClockView())
         try await application.run()
+    }
+}
+
+struct ClockView: View {
+    var body: some View {
+        TimelineView(.periodic(from: .now, by: 0.05)) { context in
+            Text(
+                context.date.formatted(
+                    .dateTime.hour().minute().second()
+                        .secondFraction(.fractional(3))
+                ))
+        }
     }
 }

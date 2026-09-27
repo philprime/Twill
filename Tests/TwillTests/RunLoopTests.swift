@@ -103,6 +103,33 @@ struct RunLoopTests {
         #expect(pending == nil)
     }
 
+    @Test("Cancellation suppresses pending and repeating timers", .timeLimit(.minutes(1)), arguments: [false, true])
+    func cancelsTimer(beforeActivation: Bool) async {
+        // -- Arrange --
+        let runLoop = DefaultRunLoop()
+        var count = 0
+        let timer = Twill.Timer(interval: .milliseconds(1), repeats: true) { count += 1 }
+        runLoop.add(timer)
+        var countAtCancellation = 0
+        if beforeActivation {
+            runLoop.cancel(timer)
+        } else {
+            runLoop.add(
+                Twill.Timer(interval: .milliseconds(10)) {
+                    runLoop.cancel(timer)
+                    countAtCancellation = count
+                })
+        }
+        runLoop.add(Twill.Timer(interval: .milliseconds(30)) { runLoop.stop() })
+
+        // -- Act --
+        await runLoop.run()
+
+        // -- Assert --
+        #expect(count == countAtCancellation)
+        if !beforeActivation { #expect(count > 0) }
+    }
+
     @Test("An action can register another timer", .timeLimit(.minutes(1)))
     func registrationFromCallback() async {
         // -- Arrange --

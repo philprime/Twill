@@ -96,7 +96,7 @@ struct ApplicationLifecycleTests {
             inputSource: DefaultInputSource(fileDescriptor: .custom(-1)), runLoop: runLoop
         )
         let application = Application(
-            runLoop: runLoop,
+            rootView: EmptyView(), runLoop: runLoop,
             terminalSession: DefaultTerminalSession(fileDescriptor: .custom(terminal.fileDescriptor)),
             keyboardEventSource: keyboard
         )

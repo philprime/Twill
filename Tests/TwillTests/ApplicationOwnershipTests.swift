@@ -20,7 +20,9 @@
             let input = GatedInputSource()
             let session = TrackingTerminalSession()
             let keyboard = DefaultKeyboardEventSource(inputSource: input, runLoop: runLoop)
-            let application = Application(runLoop: runLoop, terminalSession: session, keyboardEventSource: keyboard)
+            let application = Application(
+                rootView: EmptyView(), runLoop: runLoop, terminalSession: session, keyboardEventSource: keyboard
+            )
             let (ready, continuation) = AsyncStream<Void>.makeStream()
             application.onKeyEvent = { _ in
                 continuation.yield(())
@@ -58,7 +60,9 @@
             let runLoop = DefaultRunLoop()
             let session = TrackingTerminalSession()
             let keyboard = DefaultKeyboardEventSource(inputSource: input, runLoop: runLoop)
-            let application = Application(runLoop: runLoop, terminalSession: session, keyboardEventSource: keyboard)
+            let application = Application(
+                rootView: EmptyView(), runLoop: runLoop, terminalSession: session, keyboardEventSource: keyboard
+            )
             var receivedError: TerminalError?
             let task = Task {
                 do { try await application.run() } catch { receivedError = error as? TerminalError }
@@ -88,6 +92,45 @@
             #expect(!timerFired)
         }
 
+        private enum PresentationFailure: Error { case output }
+
+        @Test("A scheduled output failure awaits input cleanup before restoring the terminal", .timeLimit(.minutes(1)))
+        func renderingFailureCleanup() async throws {
+            // -- Arrange --
+            let input = GatedInputSource()
+            let runLoop = DefaultRunLoop()
+            let session = TrackingTerminalSession()
+            let output = RecordingTerminalOutput()
+            let failure = PresentationFailure.output
+            let keyboard = DefaultKeyboardEventSource(inputSource: input, runLoop: runLoop)
+            var frames = 0
+            let root = TimelineView(.periodic(from: .now, by: 0.05)) { _ -> Text in
+                frames += 1
+                return Text("Clock \(frames)")
+            }
+            let application = Application(
+                rootView: root,
+                runLoop: runLoop, terminalSession: session, keyboardEventSource: keyboard, terminalOutput: output
+            )
+            runLoop.add(Twill.Timer(interval: .milliseconds(1)) { output.failure = failure })
+            var receivedError: PresentationFailure?
+            let task = Task {
+                do { try await application.run() } catch { receivedError = error as? PresentationFailure }
+            }
+            for await _ in input.cleanupStarted {}
+            let activeBeforeCleanup = session.isActive
+
+            // -- Act --
+            input.allowCleanup()
+            await task.value
+
+            // -- Assert --
+            #expect(activeBeforeCleanup)
+            #expect(receivedError == failure)
+            #expect(!session.isActive)
+            #expect(output.writes == ["\r\u{1B}[2KClock 1"])
+        }
+
         @Test("EOF finishes the application without a key handler", .timeLimit(.minutes(1)))
         func endsOnEOF() async throws {
             // -- Arrange --
@@ -95,7 +138,9 @@
             let runLoop = DefaultRunLoop()
             let session = TrackingTerminalSession()
             let keyboard = DefaultKeyboardEventSource(inputSource: input, runLoop: runLoop)
-            let application = Application(runLoop: runLoop, terminalSession: session, keyboardEventSource: keyboard)
+            let application = Application(
+                rootView: EmptyView(), runLoop: runLoop, terminalSession: session, keyboardEventSource: keyboard
+            )
             let task = Task { try await application.run() }
             for await _ in input.cleanupStarted {}
             let activeBeforeCleanup = session.isActive

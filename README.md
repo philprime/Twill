@@ -10,6 +10,10 @@ It brings an event-driven runtime and Swift concurrency together as the foundati
 > [!NOTE]
 > Twill is in early development and the API is subject to change.
 
+## Documentation
+
+See the [documentation index](docs/README.md) for architecture and development guidance.
+
 ## License
 
 Licensed under [FSL-1.1-MIT](LICENSE.md). This is source-available software with restrictions on competing commercial uses. Each version becomes available under the MIT license on the second anniversary of its release. See the license for the full terms.

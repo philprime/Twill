@@ -37,7 +37,10 @@ final class TestTerminal {
 
     @MainActor
     func makeApplication(runLoop: Twill.RunLoop = DefaultRunLoop()) -> Application {
-        Application(runLoop: runLoop, terminalSession: DefaultTerminalSession(fileDescriptor: .custom(fileDescriptor)))
+        Application(
+            rootView: EmptyView(), runLoop: runLoop,
+            terminalSession: DefaultTerminalSession(fileDescriptor: .custom(fileDescriptor))
+        )
     }
 
     func send(_ bytes: [UInt8]) throws {

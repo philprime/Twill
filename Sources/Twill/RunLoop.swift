@@ -4,6 +4,7 @@ import Dispatch
     @MainActor
     public protocol RunLoop: AnyObject {
         func add(_ timer: Timer)
+        func cancel(_ timer: Timer)
         func stop()
         func run() async
     }
@@ -41,6 +42,12 @@ public final class DefaultRunLoop {
         eventContinuation.yield(.scheduleTimer(timer))
     }
 
+    /// Permanently cancels a timer, including a registration still waiting in the queue.
+    public func cancel(_ timer: Timer) {
+        timer.isCancelled = true
+        timers.removeValue(forKey: ObjectIdentifier(timer))?.cancel()
+    }
+
     /// Finishes this single-use run loop after the current callback returns.
     public func stop() {
         isStopped = true
@@ -69,10 +76,10 @@ public final class DefaultRunLoop {
         switch event {
         case .scheduleTimer(let timer):
             let identifier = ObjectIdentifier(timer)
-            guard timers[identifier] == nil else { return }
+            guard !timer.isCancelled, timers[identifier] == nil else { return }
             let source = DispatchSource.makeTimerSource()
             source.schedule(
-                deadline: .now() + timer.interval,
+                deadline: timer.deadline ?? .now() + timer.interval,
                 repeating: timer.repeats ? timer.interval : .never
             )
             source.setEventHandler { @Sendable [eventContinuation] in
