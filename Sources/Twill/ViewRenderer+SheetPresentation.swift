@@ -17,10 +17,10 @@ extension ViewRenderer {
         while let sheet = current, let base = sheet.children.first {
             layers.append(base)
             guard let presented = sheet.children.dropFirst().first else { break }
+            layers.append(presented)
             if let nested = presented.activeSheet(), nested !== sheet {
                 current = nested
             } else {
-                layers.append(presented)
                 break
             }
         }

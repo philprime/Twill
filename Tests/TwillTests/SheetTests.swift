@@ -102,6 +102,27 @@ struct SheetTests {
         #expect(restoredBase.isFocused(column: 0, row: 0))
     }
 
+    @Test("Nested sheets retain the outer modal's surrounding content")
+    func nestedSheetSurroundings() throws {
+        // -- Arrange --
+        let renderer = ViewRenderer.make(
+            Text("Base").sheet(isPresented: Binding(get: { true }, set: { _ in })) {
+                VStack {
+                    Text("Header")
+                    Text("Outer").sheet(isPresented: Binding(get: { true }, set: { _ in })) {
+                        Text("Inner")
+                    }
+                }
+            })
+
+        // -- Act --
+        let grid = try #require(renderer.render(.now, proposal: ProposedCellSize(width: 20, height: 7)).grid)
+
+        // -- Assert --
+        #expect(grid[7, 2] == .glyph("H", width: 1))
+        #expect(grid[7, 3] == .glyph("I", width: 1))
+    }
+
     @Test("The base timeline continues updating beneath a sheet without restarting its deadline")
     func hiddenTimeline() throws {
         // -- Arrange --
