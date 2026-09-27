@@ -22,16 +22,21 @@ setup:
 
 # Build on the host. Supports --linux, --container, and SwiftPM arguments such as -c release.
 build *args:
-    just _swift batch build "$@"
+    just _swift batch build --disable-index-store --explicit-target-dependency-import-check warn -Xswiftc -warnings-as-errors "$@"
 
 # Enable injectable collaborators in the library and unit tests, in either configuration.
 # Supports --linux, --container, and SwiftPM arguments such as --filter SomeSuite.
 test *args:
-    just _swift batch test -Xswiftc -DTESTING --skip TwillIntegrationTests "$@"
+    just _swift batch test --parallel --disable-index-store --explicit-target-dependency-import-check warn -Xswiftc -warnings-as-errors -Xswiftc -DTESTING --skip TwillIntegrationTests "$@"
 
 # Test production collaborators without TESTING. Supports --linux and --container.
 test-integration *args:
-    just _swift batch test --test-product TwillIntegrationTests --filter TwillIntegrationTests "$@"
+    just _swift batch test --parallel --disable-index-store --explicit-target-dependency-import-check warn -Xswiftc -warnings-as-errors --test-product TwillIntegrationTests --filter TwillIntegrationTests "$@"
+
+# Run unit and integration tests with AddressSanitizer. Supports --linux and --container.
+test-sanitize *args:
+    just test --sanitize address "$@"
+    just test-integration --sanitize address "$@"
 
 # Run an example, e.g. just example Clock --linux. Supports --container. Use -- before example flags.
 example name *args:
