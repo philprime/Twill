@@ -40,6 +40,22 @@ struct ViewBuilderTests {
         #expect(frame.nextUpdate == nil)
     }
 
+    @Test("A group forwards its typed children without adding spacing")
+    func transparentGroup() {
+        // -- Arrange --
+        let group: Group<ViewList<Text, Text>> = Group {
+            Text("First")
+            Text("Second")
+        }
+
+        // -- Act --
+        let frame = ViewRenderer.make(group).render(.now)
+
+        // -- Assert --
+        #expect(frame.grid?.snapshotText == "FirstSecond")
+        #expect(frame.nextUpdate == nil)
+    }
+
     @Test("Conditional composition retains both branch types", arguments: [false, true])
     func typedBranches(visible: Bool) {
         // -- Arrange --
