@@ -47,8 +47,14 @@ struct TerminalViewportTests {
         #expect(kill(getpid(), SIGWINCH) == 0)
         var observed: TerminalSize?
         do {
-            observed = try await iterator.next()
-            MainActor.assertIsolated()
+            // Other process-wide resize signals can leave an older size queued.
+            while let size = try await iterator.next() {
+                MainActor.assertIsolated()
+                if size == TerminalSize(columns: 50, rows: 10) {
+                    observed = size
+                    break
+                }
+            }
         } catch {
             await viewport.stop()
             throw error
