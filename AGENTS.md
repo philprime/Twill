@@ -2,7 +2,7 @@
 
 ## Architecture
 
-- Consult [docs/README.md](docs/README.md) for architectural boundaries, interaction and state contracts, and development commands.
+- Consult [Docs/README.md](Docs/README.md) for architectural boundaries, interaction and state contracts, and development commands.
 - Prefer protocol-oriented boundaries for replaceable collaborators while keeping leaf implementations concrete.
 - Use protocol extensions for shared default behavior where appropriate.
 - Use constructor injection. Choose concrete defaults at composition boundaries.
@@ -31,8 +31,8 @@ final class StandardTerminalOutput {
 - Keep the runtime event-driven and idle without polling. Do not couple it to Foundation's `RunLoop`.
 - Preserve concrete types in view composition using generics and parameter packs. Erase types at hosting and mounted-runtime boundaries, not in public composition storage.
 - Keep views as descriptions, identity and cached state in mounted nodes, and terminal output in the host. Do not register timers or perform output from view bodies.
-- Follow [docs/STATE.md](docs/STATE.md) for mounted `@State`, `@Binding`, and keyed identity. State changes invalidate presentation internally; do not expose a public invalidation method.
-- Follow [docs/INTERACTION.md](docs/INTERACTION.md) for focus and key routing. Keep selection, control focus, and the terminal caret distinct; modal scopes trap keys and restore focus. Reserve explicit focus state for programmatic changes.
+- Follow [Docs/STATE.md](Docs/STATE.md) for mounted `@State`, `@Binding`, and keyed identity. State changes invalidate presentation internally; do not expose a public invalidation method.
+- Follow [Docs/INTERACTION.md](Docs/INTERACTION.md) for focus and key routing. Keep selection, control focus, and the terminal caret distinct; modal scopes trap keys and restore focus. Reserve explicit focus state for programmatic changes.
 - Preserve independent timeline deadlines and unchanged child schedules during parent updates. Coalesce due work into one presentation and leave static trees unscheduled.
 - Join owned tasks before restoring borrowed terminal resources. Observe all child results so early completion cannot hide failures still awaiting cleanup.
 - Keep platform-specific terminal behavior behind cross-platform boundaries.

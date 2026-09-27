@@ -3,7 +3,7 @@
 #   --linux: use Docker on macOS, system-installed Swift on Linux.
 #   --container: force Docker on Linux; on macOS it requires --linux and is redundant.
 # Options are consumed before --; remaining arguments are forwarded to SwiftPM unchanged.
-# macOS execution from Linux is not supported. See docs/DEVELOPMENT.md for the full matrix.
+# macOS execution from Linux is not supported. See Docs/DEVELOPMENT.md for the full matrix.
 set positional-arguments := true
 
 root := justfile_directory()

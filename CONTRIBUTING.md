@@ -6,7 +6,7 @@ Twill is still in early development, so public APIs and implementation details m
 
 ## Before you start
 
-Check the existing [issues](https://github.com/philprime/Twill/issues) and [pull requests](https://github.com/philprime/Twill/pulls) to see whether someone is already working on the same thing. The [documentation index](docs/README.md) links to the architecture, state, and interaction contracts. Reading the relevant contract first will help keep a change consistent with the rest of the framework.
+Check the existing [issues](https://github.com/philprime/Twill/issues) and [pull requests](https://github.com/philprime/Twill/pulls) to see whether someone is already working on the same thing. The [documentation index](Docs/README.md) links to the architecture, state, and interaction contracts. Reading the relevant contract first will help keep a change consistent with the rest of the framework.
 
 If you find a bug, please include the Twill revision, Swift version, operating system, steps to reproduce, what you expected, and what happened instead. A small reproduction or failing test is especially helpful. For feature requests, describe the use case and what the current API makes difficult.
 
@@ -19,13 +19,13 @@ brew install just
 just setup
 ```
 
-On Linux, install Swift, Just, Bash, SwiftLint, dprint, and actionlint through your preferred package managers, then run `swift package resolve`. See the [development guide](docs/DEVELOPMENT.md) for toolchain requirements, available recipes, and Linux or container options.
+On Linux, install Swift, Just, Bash, SwiftLint, dprint, and actionlint through your preferred package managers, then run `swift package resolve`. See the [development guide](Docs/DEVELOPMENT.md) for toolchain requirements, available recipes, and Linux or container options.
 
 ## Make a change
 
 Keep pull requests focused on one problem. For behavior changes and bug fixes, add a focused failing test before changing production code. Cover the behavior you changed, including cleanup and error paths when applicable. Place tests in the appropriate unit or integration test target. Examples are manual playgrounds, not substitutes for tests.
 
-Follow the existing Swift style and the relevant [architecture](docs/ARCHITECTURE.md), [state](docs/STATE.md), and [interaction](docs/INTERACTION.md) contracts. If a change affects those contracts, update the corresponding documentation. Avoid unrelated refactoring in the same pull request.
+Follow the existing Swift style and the relevant [architecture](Docs/ARCHITECTURE.md), [state](Docs/STATE.md), and [interaction](Docs/INTERACTION.md) contracts. If a change affects those contracts, update the corresponding documentation. Avoid unrelated refactoring in the same pull request.
 
 ## Run checks
 
@@ -38,7 +38,7 @@ just analyze
 just build
 ```
 
-For Swift changes, run `just format` before the final `just analyze`. The [development guide](docs/DEVELOPMENT.md) explains how to run release checks and cross-platform verification. If a check cannot run locally, say which one and why in your pull request.
+For Swift changes, run `just format` before the final `just analyze`. The [development guide](Docs/DEVELOPMENT.md) explains how to run release checks and cross-platform verification. If a check cannot run locally, say which one and why in your pull request.
 
 ## Open a pull request
 

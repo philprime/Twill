@@ -20,7 +20,7 @@ Twill is a Swift library for terminal user interfaces on macOS and Linux. Descri
 
 A terminal app needs more than text printed to stdout. It must turn input bytes into keys, keep track of which control has focus, lay out content in character cells, update only what changed, and restore the terminal when it exits. Twill keeps that machinery in the runtime so your views can focus on describing the interface.
 
-If you have used SwiftUI, the view-building style will feel familiar. Compose screens from `Text`, `VStack`, and `HStack`, and use `@State` to keep values across updates to a mounted view. The [state model](docs/STATE.md) also describes `@Binding` for sharing that state with child views, but bindings are not implemented yet.
+If you have used SwiftUI, the view-building style will feel familiar. Compose screens from `Text`, `VStack`, and `HStack`, and use `@State` to keep values across updates to a mounted view. The [state model](Docs/STATE.md) also describes `@Binding` for sharing that state with child views, but bindings are not implemented yet.
 
 Keyboard input and timeline deadlines wake the runtime only when there is work to do, so static screens stay idle. Layout happens in terminal cells, and the host writes changed content instead of blindly redrawing everything. The application also owns terminal setup and orderly cleanup, leaving views to describe the interface rather than emit escape sequences.
 
@@ -32,7 +32,7 @@ With Swift 6.4 or later and [Just](https://just.systems/) installed, clone the r
 just example Clock
 ```
 
-Press Ctrl-C to exit. For setup instructions and Linux execution options, see [Development](docs/DEVELOPMENT.md).
+Press Ctrl-C to exit. For setup instructions and Linux execution options, see [Development](Docs/DEVELOPMENT.md).
 
 The example is a small Twill app:
 
@@ -62,13 +62,13 @@ struct ClockView: View {
 
 ## Explore further
 
-- [Documentation index](docs/README.md) for a map of the project docs.
-- [Architecture](docs/ARCHITECTURE.md) for view composition, scheduling, rendering, and lifecycle ownership.
-- [State and identity](docs/STATE.md) for mounted state, bindings, and keyed content.
-- [Interaction model](docs/INTERACTION.md) for focus, keyboard routing, and text editing.
-- [Development](docs/DEVELOPMENT.md) for setup, examples, tests, and macOS/Linux workflows.
+- [Documentation index](Docs/README.md) for a map of the project docs.
+- [Architecture](Docs/ARCHITECTURE.md) for view composition, scheduling, rendering, and lifecycle ownership.
+- [State and identity](Docs/STATE.md) for mounted state, bindings, and keyed content.
+- [Interaction model](Docs/INTERACTION.md) for focus, keyboard routing, and text editing.
+- [Development](Docs/DEVELOPMENT.md) for setup, examples, tests, and macOS/Linux workflows.
 
-Contributions and feedback are welcome. If you want to explore the code or run the checks locally, start with the [development guide](docs/DEVELOPMENT.md).
+Contributions and feedback are welcome. If you want to explore the code or run the checks locally, start with the [development guide](Docs/DEVELOPMENT.md).
 
 ## License
 
