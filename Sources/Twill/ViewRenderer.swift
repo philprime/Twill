@@ -1,9 +1,11 @@
 import Foundation
 
 /// A mounted node. Parents match children by structural position and concrete type,
-/// retaining cached content and timeline state without retaining old view values.
+/// retaining current inputs, cached content, and timeline state.
 @MainActor
 final class ViewRenderer {
+    var onInvalidation: (() -> Void)?
+
     private struct TimelineState {
         let schedule: PeriodicTimelineSchedule
         let date: Date
@@ -11,7 +13,12 @@ final class ViewRenderer {
     }
 
     private let viewType: ObjectIdentifier
+    private weak var parent: ViewRenderer?
     private var initialView: (any View)?
+    private var mountedView: (any View)?
+    private var stateLocations: [String: any StateLocation] = [:]
+    private var isDirty = false
+    private var hasDirtyDescendant = false
     private var description: ViewDescription?
     private var children: [ViewRenderer] = []
     private var keyedChildren: [AnyHashable: ViewRenderer] = [:]
@@ -94,6 +101,16 @@ final class ViewRenderer {
 
     private func update(_ view: any View, at date: Date) {
         initialView = nil
+        // Fresh view values carry fresh property-wrapper handles. Bind them to this
+        // node's locations before evaluating body, so parent updates retain state.
+        for property in Mirror(reflecting: view).children {
+            guard let name = property.label, let state = property.value as? any MountedStateProperty else { continue }
+            let location = stateLocations[name] ?? state.location
+            state.bind(to: location)
+            location.onChange = { [weak self] in self?.markDirty() }
+            stateLocations[name] = location
+        }
+        mountedView = view
         let previous = description
         let updated = Self.describe(view)
         description = updated
@@ -135,6 +152,7 @@ final class ViewRenderer {
                 node = Self.make(view)
             }
             // Parent updates may change child inputs even before the child's own deadline.
+            node.parent = self
             node.update(view, at: date)
             return node
         }
@@ -152,6 +170,7 @@ final class ViewRenderer {
             } else {
                 node = Self.make(view)
             }
+            node.parent = self
             node.update(view, at: date)
             retained[id] = node
             return node
@@ -159,8 +178,27 @@ final class ViewRenderer {
         keyedChildren = retained
     }
 
+    private func markDirty() {
+        isDirty = true
+        if let parent { parent.markDescendantDirty() } else { onInvalidation?() }
+    }
+
+    private func markDescendantDirty() {
+        // Wake ancestors without re-evaluating their bodies or shifting an
+        // unrelated timeline's phase.
+        hasDirtyDescendant = true
+        if let parent { parent.markDescendantDirty() } else { onInvalidation?() }
+    }
+
     private func refresh(at date: Date) {
-        guard let nextUpdate, date >= nextUpdate else { return }
+        if isDirty, let mountedView {
+            isDirty = false
+            hasDirtyDescendant = false
+            update(mountedView, at: date)
+            return
+        }
+        guard hasDirtyDescendant || nextUpdate.map({ date >= $0 }) == true else { return }
+        hasDirtyDescendant = false
         let timelineIsDue = timeline.map { date >= $0.deadline } ?? false
         if timelineIsDue, case .timeline(let schedule, let content) = description {
             let contextDate = advanceTimeline(schedule, at: date)

@@ -13,6 +13,8 @@ final class ViewHost {
     private let now: () -> Date
     private var renderer: ViewRenderer?
     private var timer: Timer?
+    private var scheduledDate: Date?
+    private var stateTimer: Timer?
     private var isActive = false
     private var hasRendered = false
     private var lastFrame: CellGrid?
@@ -31,7 +33,9 @@ final class ViewHost {
 
     func start(size: TerminalSize? = nil) throws {
         // Body evaluation belongs to the running session, not application construction.
-        renderer = ViewRenderer.make(rootView)
+        let renderer = ViewRenderer.make(rootView)
+        renderer.onInvalidation = { [weak self] in self?.requestPresentation() }
+        self.renderer = renderer
         isActive = true
         viewportSize = size
         do {
@@ -45,6 +49,8 @@ final class ViewHost {
     func stop() {
         isActive = false
         cancelTimer()
+        if let stateTimer { runLoop.cancel(stateTimer) }
+        stateTimer = nil
         renderer = nil
         if hasRendered {
             // Finishing the presentation must not replace an earlier output error.
@@ -57,6 +63,24 @@ final class ViewHost {
     private func cancelTimer() {
         if let timer { runLoop.cancel(timer) }
         timer = nil
+        scheduledDate = nil
+    }
+
+    private func requestPresentation() {
+        guard isActive, stateTimer == nil else { return }
+        // State writes share one wake-up; the independent timeline timer remains armed.
+        let pending = Timer(deadline: .now()) { [weak self] in
+            guard let self else { return }
+            self.stateTimer = nil
+            do {
+                try render()
+            } catch {
+                stop()
+                onError?(error)
+            }
+        }
+        stateTimer = pending
+        runLoop.add(pending)
     }
 
     private func present(_ frame: CellGrid?, invalidate: Bool = false) throws {
@@ -84,12 +108,20 @@ final class ViewHost {
 
     private func render() throws {
         guard isActive, let renderer else { return }
+        // A due timeline can consume pending state work in the same frame.
+        if let stateTimer { runLoop.cancel(stateTimer) }
+        stateTimer = nil
         let frame = renderer.render(now(), proposal: proposal)
         try present(frame.grid)
-        guard isActive, let next = frame.nextUpdate else { return }
+        guard isActive else { return }
+        // Parent state updates must not restart an unchanged child's deadline.
+        guard scheduledDate != frame.nextUpdate || timer == nil else { return }
+        cancelTimer()
+        guard let next = frame.nextUpdate else { return }
         let timer = Timer(deadline: .now() + max(0, next.timeIntervalSince(now()))) { [weak self] in
             guard let self else { return }
             self.timer = nil
+            self.scheduledDate = nil
             do {
                 try render()
             } catch {
@@ -98,6 +130,7 @@ final class ViewHost {
             }
         }
         self.timer = timer
+        scheduledDate = next
         runLoop.add(timer)
     }
 }
