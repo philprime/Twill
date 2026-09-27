@@ -53,8 +53,9 @@ final class ViewRenderer {
     func drawFrame(proposal: ProposedCellSize) -> CellGrid? {
         guard !layoutItems.isEmpty else { return nil }
         let size = measure(proposal)
+        let focused = resolveFocus(in: focusableNodes())
         var context = DrawingContext(size: size)
-        draw(in: &context)
+        draw(in: &context, focused: focused)
         return context.grid
     }
 
@@ -85,14 +86,26 @@ final class ViewRenderer {
         return layout.sizeThatFits(proposal, subviews: sizes)
     }
 
-    private func draw(in context: inout DrawingContext) {
+    private func draw(in context: inout DrawingContext, focused: ViewRenderer?) {
         if case .drawing(let drawing) = description {
-            drawing.draw(in: &context)
+            context.withFocus(isInsideFocus(focused)) { drawing.draw(in: &$0) }
         } else {
             for placement in placements {
-                context.withRegion(placement.bounds) { placement.node.draw(in: &$0) }
+                context.withRegion(placement.bounds) { placement.node.draw(in: &$0, focused: focused) }
             }
         }
+    }
+
+    private func isInsideFocus(_ focused: ViewRenderer?) -> Bool {
+        guard let focused else { return false }
+        var node: ViewRenderer? = self
+        while let current = node {
+            if current === focused { return true }
+            // Nested focusable controls retain their own appearance and identity.
+            if case .focusable = current.description { return false }
+            node = current.parent
+        }
+        return false
     }
 
     private static func describe<Content: View>(_ view: Content) -> ViewDescription {
@@ -183,10 +196,7 @@ final class ViewRenderer {
 
     func handle(_ key: KeyEvent) -> Bool {
         let targets = focusableNodes()
-        if let focusedNode, !targets.contains(where: { $0 === focusedNode }) {
-            self.focusedNode = nil
-        }
-        guard let target = focusedNode ?? targets.first else {
+        guard let target = resolveFocus(in: targets) else {
             return route(key, from: self) == .handled
         }
         focusedNode = target
@@ -201,7 +211,15 @@ final class ViewRenderer {
         }
         guard targets.indices.contains(destination) else { return false }
         focusedNode = targets[destination]
+        // Redraw cached descriptions, not view bodies or timeline schedules.
+        onInvalidation?()
         return true
+    }
+
+    private func resolveFocus(in targets: [ViewRenderer]) -> ViewRenderer? {
+        if let focusedNode, targets.contains(where: { $0 === focusedNode }) { return focusedNode }
+        focusedNode = targets.first
+        return focusedNode
     }
 
     private func focusableNodes() -> [ViewRenderer] {

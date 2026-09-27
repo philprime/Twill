@@ -6,6 +6,22 @@ import Testing
 @Suite("Arrow-key focus navigation")
 @MainActor
 struct FocusNavigationTests {
+    @Test("The first focusable control is visibly focused on initial presentation")
+    func focusIndicator() throws {
+        // -- Arrange --
+        let renderer = ViewRenderer.make(
+            HStack(spacing: 1) {
+                Text("One").focusable()
+                Text("Two").focusable()
+            })
+
+        // -- Act --
+        let frame = try #require(renderer.render(.now).grid)
+
+        // -- Assert --
+        #expect(InlineFrameEncoder.encode(frame, previous: nil) == "\r\u{1B}[2K\u{1B}[7mOne\u{1B}[27m Two")
+    }
+
     @Test("A handled arrow stays with the focused control")
     func handledArrow() {
         // -- Arrange --

@@ -54,7 +54,7 @@ struct FocusApplicationTests {
         // -- Assert --
         #expect(activated == ["One", "Two"])
         #expect(applicationKeys == [.character("q")])
-        #expect(data.starts(with: Data("\u{1B}[?25l\r\u{1B}[2KOne Two".utf8)))
+        #expect(data.starts(with: Data("\u{1B}[?25l\r\u{1B}[2K\u{1B}[7mOne\u{1B}[27m Two".utf8)))
         #expect(try terminal.snapshot() == original)
     }
 }
