@@ -13,6 +13,8 @@
 
 Twill is a Swift library for terminal user interfaces on macOS and Linux. Describe what should appear on screen with views, and let Twill handle keyboard input, layout, updates, and terminal output. It brings Swift Concurrency to the terminal without making your views manage a render loop.
 
+![Example](/Resources/example.png)
+
 > [!NOTE]
 > Twill is in early development and the API is subject to change.
 
