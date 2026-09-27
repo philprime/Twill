@@ -102,7 +102,7 @@ struct SheetTests {
         try #require(runLoop.timers.last).action()
         let writesBeforeDeadline = output.writes.count
         now = start.addingTimeInterval(1)
-        try deadline.action()
+        deadline.action()
         let writesAfterDeadline = output.writes.count
         _ = host.handle(.escape)
         try #require(runLoop.timers.last).action()

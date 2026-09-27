@@ -74,7 +74,7 @@ struct TextFieldCursorTests {
         try #require(runLoop.timers.last).action()
         let writesBeforeTick = output.writes.count
         now = start.addingTimeInterval(1)
-        try deadline.action()
+        deadline.action()
         let writesAfterTick = output.writes.count
         host.stop()
 
