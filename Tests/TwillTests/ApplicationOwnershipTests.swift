@@ -10,6 +10,35 @@ import Twill
 @Suite("Application task ownership")
 @MainActor
 struct ApplicationOwnershipTests {
+    @Test("Focused view handles input before the application handler", .timeLimit(.minutes(1)))
+    func focusedDelivery() async throws {
+        // -- Arrange --
+        let input = GatedInputSource(finishesAfterBytes: true)
+        let runLoop = DefaultRunLoop()
+        let keyboard = DefaultKeyboardEventSource(inputSource: input, runLoop: runLoop)
+        let session = TrackingTerminalSession(output: RecordingTerminalOutput())
+        var focusedKeys: [KeyEvent] = []
+        let root = Text("Ready").focusable().onKeyPress { key in
+            focusedKeys.append(key)
+            return .handled
+        }
+        let application = Application(
+            rootView: root, runLoop: runLoop, terminalSession: session, keyboardEventSource: keyboard
+        )
+        var applicationKeys: [KeyEvent] = []
+        application.onKeyEvent = { applicationKeys.append($0) }
+
+        // -- Act --
+        let task = Task { try await application.run() }
+        for await _ in input.cleanupStarted {}
+        input.allowCleanup()
+        try await task.value
+
+        // -- Assert --
+        #expect(focusedKeys == [.character("a")])
+        #expect(applicationKeys.isEmpty)
+    }
+
     @Test(
         "Shutdown awaits reader cleanup before restoring terminal state",
         .timeLimit(.minutes(1)), arguments: [false, true])

@@ -4,9 +4,9 @@ Twill routes keyboard input through mounted views on the UI actor. Views declare
 
 ## Focus, selection, and cursor
 
-Focus identifies the control that receives keyboard input. Selection identifies an active item _within_ a control. Selection can remain visible when that control loses focus. Neither concept is the terminal hardware cursor. A list is one focusable control; its individual text rows do not become tab stops. `TextField` is focusable by default.
+Focus identifies the control that receives keyboard input. Selection identifies an active item _within_ a control. Selection can remain visible when that control loses focus. Neither concept is the terminal hardware cursor. Interactive rows opt in with `.focusable()` individually; static headers and layout containers do not become focus targets. `Button` and `TextField` are focusable by default.
 
-Tab moves to the next focusable control, and Shift-Tab moves to the previous one, in declaration order. The first focusable control on a newly mounted screen receives initial focus. Removing the focused control moves focus to the next eligible control in its scope, or the first when there is no successor. If a scope has no focusable controls, keys can still reach its enclosing handlers.
+The first focusable control on a newly mounted screen receives initial focus. ArrowDown and ArrowRight move to the next focusable control in mounted composition order; ArrowUp and ArrowLeft move to the previous one. This is not spatial navigation, so a horizontal move may reach the first control of the next row. Static content is skipped. Tab and Shift-Tab have no default focus behavior. When a focused control is removed, focus falls back to the first remaining control. If a scope has no focusable controls, keys can still reach its enclosing handlers.
 
 Conditional navigation activates only the mounted screen. Opening a new screen focuses its first control; returning to a screen restores its prior control when still mounted, otherwise its first control.
 
@@ -16,15 +16,15 @@ A `.sheet` establishes a modal focus scope. Presentation remembers the underlyin
 
 A focused text field starts in **navigation mode**. Enter activates **editing mode**. Editing consumes text and caret keys before screen or application shortcuts. Enter or Escape ends editing, retains the current text, and keeps focus on the field. Escape does not also dismiss a sheet or navigate back. Cancelling or reverting text is a separate action.
 
-| Key             | Focused list                | Focused text field, navigation mode | Text field, editing mode                     |
-| --------------- | --------------------------- | ----------------------------------- | -------------------------------------------- |
-| Tab / Shift-Tab | Change focused control      | Change focused control              | Remain in the field                          |
-| Up / Down       | Move selection              | No selection change                 | Edit or move caret as supported by the field |
-| Enter           | Activate selected item      | Begin editing                       | End editing, retaining text                  |
-| Escape          | Route to enclosing handlers | Route to enclosing handlers         | End editing; consume the key                 |
-| Printable keys  | Route to enclosing handlers | Route to enclosing handlers         | Insert text; do not invoke shortcuts         |
+| Key             | Focused interactive row                         | Focused text field, navigation mode | Text field, editing mode                     |
+| --------------- | ----------------------------------------------- | ----------------------------------- | -------------------------------------------- |
+| Tab / Shift-Tab | No default action                               | No default action                   | Remain in the field                          |
+| Arrow keys      | Move focus in mounted order unless handled      | Move focus in mounted order         | Edit or move caret as supported by the field |
+| Enter           | Activate focused row if its handler consumes it | Begin editing                       | End editing, retaining text                  |
+| Escape          | Route to enclosing handlers                     | Route to enclosing handlers         | End editing; consume the key                 |
+| Printable keys  | Route to enclosing handlers                     | Route to enclosing handlers         | Insert text; do not invoke shortcuts         |
 
-Input decoding distinguishes Tab from Shift-Tab so reverse traversal does not depend on a text character. Ctrl-C remains an application-owned orderly shutdown exception in every mode.
+Ctrl-C remains an application-owned orderly shutdown exception in every mode.
 
 ## Key routing
 
@@ -34,4 +34,4 @@ The application handles reserved lifecycle keys first. Other keys are routed wit
 
 The terminal host alone positions and shows the hardware cursor at the editing caret. It hides the cursor outside editing mode and restores inherited terminal settings and cursor visibility during shutdown. Views supply a caret position relative to their laid-out bounds; they do not emit terminal escape sequences. Presentation uses terminal cells, so the caret's column is measured in display cells rather than string indices.
 
-The runtime remains event-driven: input, focus changes, state writes, and modal transitions request coalesced presentation without polling. Unrelated timeline deadlines remain unchanged by those updates.
+The runtime remains event-driven: input, state writes, and modal transitions request coalesced presentation without polling. Unrelated timeline deadlines remain unchanged by those updates.

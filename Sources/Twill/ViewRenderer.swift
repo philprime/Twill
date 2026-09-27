@@ -22,6 +22,7 @@ final class ViewRenderer {
     private var description: ViewDescription?
     private var children: [ViewRenderer] = []
     private var keyedChildren: [AnyHashable: ViewRenderer] = [:]
+    private weak var focusedNode: ViewRenderer?
     private var timeline: TimelineState?
     private var placements: [(node: ViewRenderer, bounds: CellRect)] = []
     private var nextUpdate: Date?
@@ -123,6 +124,8 @@ final class ViewRenderer {
             reconcile(views, at: date)
         case .keyed(let views):
             reconcileKeyed(views, at: date)
+        case .focusable(let content), .keyPress(let content, _):
+            reconcile([content], at: date)
         case .conditional(let first, let content):
             if case .conditional(let wasFirst, _) = previous, first != wasFirst {
                 children = []
@@ -176,6 +179,58 @@ final class ViewRenderer {
             return node
         }
         keyedChildren = retained
+    }
+
+    func handle(_ key: KeyEvent) -> Bool {
+        let targets = focusableNodes()
+        if let focusedNode, !targets.contains(where: { $0 === focusedNode }) {
+            self.focusedNode = nil
+        }
+        guard let target = focusedNode ?? targets.first else {
+            return route(key, from: self) == .handled
+        }
+        focusedNode = target
+        if route(key, from: target) == .handled { return true }
+
+        guard let index = targets.firstIndex(where: { $0 === target }) else { return false }
+        let destination: Int
+        switch key {
+        case .arrowDown, .arrowRight: destination = index + 1
+        case .arrowUp, .arrowLeft: destination = index - 1
+        default: return false
+        }
+        guard targets.indices.contains(destination) else { return false }
+        focusedNode = targets[destination]
+        return true
+    }
+
+    private func focusableNodes() -> [ViewRenderer] {
+        let target: [ViewRenderer]
+        if case .focusable = description { target = [self] } else { target = [] }
+        return target + children.flatMap { $0.focusableNodes() }
+    }
+
+    private func route(_ key: KeyEvent, from target: ViewRenderer) -> KeyPressResult {
+        // A handler can wrap a focusable view or be wrapped by it. Follow only
+        // the single-child modifier chain so sibling controls do not receive keys.
+        var child = target
+        while child.children.count == 1 {
+            let descendant = child.children[0]
+            if case .focusable = descendant.description { break }
+            if case .keyPress(_, let action) = descendant.description, action(key) == .handled {
+                return .handled
+            }
+            child = descendant
+        }
+
+        var node: ViewRenderer? = target
+        while let current = node {
+            if case .keyPress(_, let action) = current.description, action(key) == .handled {
+                return .handled
+            }
+            node = current.parent
+        }
+        return .ignored
     }
 
     private func markDirty() {

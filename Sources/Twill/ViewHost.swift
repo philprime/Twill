@@ -98,6 +98,11 @@ final class ViewHost {
         ProposedCellSize(width: viewportSize?.columns, height: viewportSize?.rows)
     }
 
+    func handle(_ key: KeyEvent) -> Bool {
+        guard isActive, let renderer else { return false }
+        return renderer.handle(key)
+    }
+
     func resize(to size: TerminalSize) throws {
         guard isActive, let renderer, size != viewportSize else { return }
         viewportSize = size

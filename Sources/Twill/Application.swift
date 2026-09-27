@@ -106,7 +106,7 @@ public final class Application {
         guard !isStopping else { return }
         if key == Self.interruptKey {
             stop()
-        } else {
+        } else if !viewHost.handle(key) {
             onKeyEvent?(key)
         }
     }
