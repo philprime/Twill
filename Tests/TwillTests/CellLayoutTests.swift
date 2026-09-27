@@ -6,6 +6,22 @@ import Testing
 @Suite("Mounted cell layout")
 @MainActor
 struct CellLayoutTests {
+    @Test("Cell geometry constructs rectangles from an origin and size")
+    func cellGeometry() {
+        // -- Arrange --
+        let origin = CellPosition(column: 3, row: 4)
+        let size = CellSize(width: 5, height: 6)
+
+        // -- Act --
+        let rect = CellRect(origin: origin, size: size)
+        let zero = CellRect.zero
+
+        // -- Assert --
+        #expect(CellPosition.zero == CellPosition(column: 0, row: 0))
+        #expect(rect == CellRect(column: 3, row: 4, width: 5, height: 6))
+        #expect(zero == CellRect(column: 0, row: 0, width: 0, height: 0))
+    }
+
     @Test("Stacks place children in columns and retain nested spacing")
     func stackLayout() {
         // -- Arrange --
