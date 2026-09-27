@@ -1,6 +1,7 @@
 /// Child contexts share one frame while translating coordinates and narrowing the clip.
 struct DrawingContext {
     private(set) var grid: CellGrid
+    private(set) var caret: CellPosition?
     private var originX = 0
     private var originY = 0
     private var clip: CellRect
@@ -29,6 +30,14 @@ struct DrawingContext {
         focused = active
         draw(&self)
         focused = previous
+    }
+
+    mutating func placeCaret(column: Int, row: Int) {
+        let position = CellPosition(column: originX + column, row: originY + row)
+        guard position.column >= clip.column, position.column <= clip.column + clip.width,
+            position.row >= clip.row, position.row < clip.row + clip.height
+        else { return }
+        caret = position
     }
 
     mutating func draw(_ character: Character, width: Int, column: Int, row: Int) {

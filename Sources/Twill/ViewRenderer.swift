@@ -5,6 +5,7 @@ import Foundation
 @MainActor
 final class ViewRenderer {
     var onInvalidation: (() -> Void)?
+    private(set) var caretPosition: CellPosition?
 
     private struct TimelineState {
         let schedule: PeriodicTimelineSchedule
@@ -53,12 +54,16 @@ final class ViewRenderer {
     func drawFrame(proposal: ProposedCellSize) -> CellGrid? {
         let sheet = activeSheet()
         let content = sheet?.sheetBranch ?? self
-        guard !content.layoutItems.isEmpty else { return nil }
+        guard !content.layoutItems.isEmpty else {
+            caretPosition = nil
+            return nil
+        }
         let size = content.measure(proposal)
         let scope = sheet ?? self
         let focused = scope.resolveFocus(in: scope.focusableNodes())
         var context = DrawingContext(size: size)
         content.draw(in: &context, focused: focused)
+        caretPosition = context.caret
         return context.grid
     }
 
@@ -115,7 +120,13 @@ final class ViewRenderer {
 
     private func draw(in context: inout DrawingContext, focused: ViewRenderer?) {
         if let drawing {
-            context.withFocus(isInsideFocus(focused)) { drawing.draw(in: &$0) }
+            let active = isInsideFocus(focused)
+            context.withFocus(active) { region in
+                drawing.draw(in: &region)
+                if active, case .textField(let field) = description, let column = field.caretColumn {
+                    region.placeCaret(column: column, row: 0)
+                }
+            }
         } else {
             for placement in placements {
                 context.withRegion(placement.bounds) { placement.node.draw(in: &$0, focused: focused) }

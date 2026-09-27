@@ -56,6 +56,85 @@ struct TextFieldApplicationTests {
         #expect(data.suffix(Data("\n\u{1B}[?25h".utf8).count) == Data("\n\u{1B}[?25h".utf8))
         #expect(try terminal.snapshot() == original)
     }
+
+    @Test(
+        "An editing caret restores the terminal after shutdown or cancellation", .timeLimit(.minutes(1)),
+        arguments: [false, true])
+    func caretRestoration(cancel: Bool) async throws {
+        // -- Arrange --
+        let terminal = try TestTerminal()
+        try terminal.configure { $0.c_iflag |= tcflag_t(IXOFF | IXANY) }
+        let original = try terminal.snapshot()
+        let pipe = Pipe()
+        let reader = DefaultInputSource(fileDescriptor: .custom(pipe.fileHandleForReading.fileDescriptor))
+        reader.start()
+        let runLoop = DefaultRunLoop()
+        var text = "界"
+        let application = Application(
+            rootView: VStack {
+                Text("Top")
+                TextField("Name", text: Binding(get: { text }, set: { text = $0 }))
+            },
+            runLoop: runLoop,
+            terminalSession: DefaultTerminalSession(
+                fileDescriptor: .custom(terminal.fileDescriptor),
+                output: DefaultTerminalOutput(fileDescriptor: .custom(pipe.fileHandleForWriting.fileDescriptor))
+            )
+        )
+        runLoop.add(
+            Twill.Timer(interval: .milliseconds(1)) {
+                do { try terminal.send([0x0D]) } catch {
+                    Issue.record(error)
+                    application.stop()
+                }
+            })
+        // Bound an unexpected failure to show the caret instead of leaving a reader waiting forever.
+        runLoop.add(Twill.Timer(interval: .seconds(1)) { application.stop() })
+        let task = Task {
+            defer { try? pipe.fileHandleForWriting.close() }
+            try await application.run()
+        }
+        defer { task.cancel() }
+
+        // -- Act --
+        let (bytes, sawCaret) = try await observeCaret(reader: reader, task: task, terminal: terminal, cancel: cancel)
+        try pipe.fileHandleForReading.close()
+        let output = try #require(String(bytes: bytes, encoding: .utf8))
+
+        // -- Assert --
+        #expect(sawCaret)
+        #expect(output.hasSuffix("\u{1B}[?25l\r\u{1B}[1A\u{1B}[1B\r\n\u{1B}[?25h"))
+        #expect(try terminal.snapshot() == original)
+    }
+
+    private func observeCaret(
+        reader: DefaultInputSource, task: Task<Void, Error>, terminal: TestTerminal, cancel: Bool
+    ) async throws -> (Data, Bool) {
+        let shownCaret = Data("\r\u{1B}[1B\u{1B}[2C\u{1B}[?25h".utf8)
+        var bytes = Data()
+        var sawCaret = false
+        do {
+            for try await chunk in reader.events {
+                bytes.append(contentsOf: chunk)
+                if !sawCaret, bytes.range(of: shownCaret) != nil {
+                    sawCaret = true
+                    if cancel {
+                        task.cancel()
+                    } else {
+                        try terminal.send([0x03])
+                    }
+                }
+            }
+            try await task.value
+        } catch {
+            task.cancel()
+            _ = await task.result
+            await reader.stop()
+            throw error
+        }
+        await reader.stop()
+        return (bytes, sawCaret)
+    }
 }
 
 @MainActor

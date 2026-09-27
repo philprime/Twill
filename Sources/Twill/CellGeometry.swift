@@ -11,6 +11,11 @@ struct CellSize: Equatable, Sendable {
     static let zero = CellSize(width: 0, height: 0)
 }
 
+struct CellPosition: Equatable {
+    let column: Int
+    let row: Int
+}
+
 struct ProposedCellSize {
     let width: Int?
     let height: Int?

@@ -62,6 +62,7 @@ public struct TextField: View {
 
 struct TextFieldDescription {
     let drawing: TextDrawing
+    let caretColumn: Int?
     let handle: @MainActor (KeyEvent) -> KeyPressResult
 }
 
@@ -69,6 +70,10 @@ extension TextField: PrimitiveView {
     func makeDescription() -> ViewDescription {
         let value = text.wrappedValue
         let displayed = value.isEmpty ? (isEditing ? " " : prompt) : value
-        return .textField(TextFieldDescription(drawing: TextDrawing(displayed), handle: { handle($0) }))
+        // Caret positions use rendered cell widths, not character indices.
+        let prefix = String(value.prefix(min(caret, value.count)))
+        let caretColumn = isEditing ? TextDrawing(prefix).sizeThatFits(.unspecified).width : nil
+        return .textField(
+            TextFieldDescription(drawing: TextDrawing(displayed), caretColumn: caretColumn, handle: { handle($0) }))
     }
 }

@@ -80,6 +80,37 @@ struct TerminalSessionCursorTests {
         #expect(output.writes == ["\u{1B}[?25l", "\u{1B}[?25h"])
     }
 
+    @Test("An editing output failure still restores the borrowed cursor")
+    func editingFailure() throws {
+        // -- Arrange --
+        var text = "A"
+        let output = RecordingTerminalOutput()
+        let session = DefaultTerminalSession(output: output)
+        let runLoop = RecordingRunLoop()
+        let host = ViewHost(
+            rootView: TextField("Name", text: Binding(get: { text }, set: { text = $0 })),
+            runLoop: runLoop, output: session.output,
+            preparePresentation: { try session.beginPresentation() }
+        )
+        var reported: Error?
+        host.onError = { reported = $0 }
+        try host.start()
+        _ = host.handle(.enter)
+        try #require(runLoop.timers.last).action()
+        output.nextFailure = Failure.output
+
+        // -- Act --
+        _ = host.handle(.arrowLeft)
+        try #require(runLoop.timers.last).action()
+        let writesBeforeSessionRestore = output.writes
+        session.restore()
+
+        // -- Assert --
+        #expect(reported is Failure)
+        #expect(writesBeforeSessionRestore.last?.contains("\u{1B}[?25l") == true)
+        #expect(output.writes.last == "\u{1B}[?25h")
+    }
+
     @Test("An empty host never requests presentation modes")
     func emptyHost() throws {
         // -- Arrange --

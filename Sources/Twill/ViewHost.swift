@@ -4,6 +4,9 @@ import Foundation
 /// timeline wake-up. Presentation remains inline rather than owning the whole screen.
 @MainActor
 final class ViewHost {
+    private static let hideCursor = "\u{1B}[?25l"
+    private static let showCursor = "\u{1B}[?25h"
+
     var onError: ((Error) -> Void)?
     private let rootView: any View
     private let runLoop: RunLoop
@@ -18,6 +21,7 @@ final class ViewHost {
     private var isActive = false
     private var hasRendered = false
     private var lastFrame: CellGrid?
+    private var lastCaret: CellPosition?
 
     init(
         rootView: any View, runLoop: RunLoop, output: TerminalOutput,
@@ -62,10 +66,11 @@ final class ViewHost {
                 finish = "\n"
             }
             // Finishing the presentation must not replace an earlier output error.
-            try? output.write(finish)
+            try? output.write(returnToFrame() + finish)
         }
         hasRendered = false
         lastFrame = nil
+        lastCaret = nil
     }
 
     private func cancelTimer() {
@@ -91,15 +96,34 @@ final class ViewHost {
         runLoop.add(pending)
     }
 
-    private func present(_ frame: CellGrid?, invalidate: Bool = false) throws {
-        let buffer = InlineFrameEncoder.encode(frame, previous: lastFrame, invalidate: invalidate)
+    private func returnToFrame() -> String {
+        guard let lastCaret else { return "" }
+        var output = Self.hideCursor + "\r"
+        if lastCaret.row > 0 { output += "\u{1B}[\(lastCaret.row)A" }
+        return output
+    }
+
+    private func showCaret(at caret: CellPosition) -> String {
+        var output = "\r"
+        if caret.row > 0 { output += "\u{1B}[\(caret.row)B" }
+        if caret.column > 0 { output += "\u{1B}[\(caret.column)C" }
+        return output + Self.showCursor
+    }
+
+    private func present(_ frame: CellGrid?, caret: CellPosition?, invalidate: Bool = false) throws {
+        let cells = InlineFrameEncoder.encode(frame, previous: lastFrame, invalidate: invalidate)
+        var buffer = ""
+        if lastCaret != nil, !cells.isEmpty || caret != lastCaret { buffer += returnToFrame() }
+        buffer += cells
+        if let caret, !cells.isEmpty || caret != lastCaret { buffer += showCaret(at: caret) }
         if !buffer.isEmpty {
             if !hasRendered { try preparePresentation() }
             try output.write(buffer)
             hasRendered = true
         }
-        // Failed writes must never advance the diff baseline.
+        // Failed writes must never advance either physical baseline.
         lastFrame = frame
+        lastCaret = caret
     }
 
     private var proposal: ProposedCellSize {
@@ -119,7 +143,8 @@ final class ViewHost {
         viewportSize = size
         // Terminal reflow invalidates the physical baseline. Resize only draws
         // cached content, leaving all timeline deadlines and timers untouched.
-        try present(renderer.drawFrame(proposal: proposal), invalidate: true)
+        let frame = renderer.drawFrame(proposal: proposal)
+        try present(frame, caret: renderer.caretPosition, invalidate: true)
     }
 
     private func render() throws {
@@ -128,7 +153,7 @@ final class ViewHost {
         if let stateTimer { runLoop.cancel(stateTimer) }
         stateTimer = nil
         let frame = renderer.render(now(), proposal: proposal)
-        try present(frame.grid)
+        try present(frame.grid, caret: renderer.caretPosition)
         guard isActive else { return }
         // Parent state updates must not restart an unchanged child's deadline.
         guard scheduledDate != frame.nextUpdate || timer == nil else { return }
