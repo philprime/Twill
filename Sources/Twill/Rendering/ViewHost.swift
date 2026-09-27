@@ -18,7 +18,7 @@ final class ViewHost {
 
     init(
         rootView: any View, runLoop: RunLoop, output: TerminalOutput,
-        preparePresentation: @escaping () throws -> Void = {},
+        preparePresentation: @escaping (Application.Options.UIOptions.Mode) throws -> Void = { _ in },
         now: @escaping () -> Date = { .now }
     ) {
         self.rootView = rootView
@@ -27,7 +27,7 @@ final class ViewHost {
         self.now = now
     }
 
-    func start(size: TerminalSize? = nil, mode: UIMode = .inline) throws {
+    func start(size: TerminalSize? = nil, mode: Application.Options.UIOptions.Mode = .inline) throws {
         presenter.mode = mode
         // Body evaluation belongs to the running session, not application construction.
         let renderer = ViewRenderer.make(rootView)

@@ -10,7 +10,7 @@ protocol PrimitiveView {
 enum ViewDescription {
     case empty
     case drawing(any PrimitiveDrawing)
-    case canvas(interval: TimeInterval?, render: @MainActor (CanvasContext, CanvasSize) -> Void)
+    case canvas(interval: TimeInterval?, render: @MainActor (Canvas.Context, Canvas.Size) -> Void)
     case textField(TextFieldDescription)
     case body(any View)
     case group(children: [any View], layout: (any PrimitiveLayout)?)

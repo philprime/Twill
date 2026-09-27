@@ -3,7 +3,12 @@
 public final class Application {
     private static let interruptKey = KeyEvent.control(0x03)
 
-    public let options: ApplicationOptions
+    /// Configure before run(). Changes during a session do not reconfigure presentation.
+    public var options: Application.Options
+
+    /// May be installed, replaced, or cleared while running. Keyboard input and
+    /// orderly Ctrl-C shutdown remain active even when no handler is installed.
+    public var onKeyEvent: (@MainActor (KeyEvent) -> Void)?
 
     private let runLoop: RunLoop
     private let terminalSession: TerminalSession
@@ -20,8 +25,7 @@ public final class Application {
         keyboardEventSource: KeyboardEventSource? = nil,
         terminalViewport: TerminalViewport = DefaultTerminalViewport()
     ) {
-        let options = ApplicationOptions()
-        self.options = options
+        self.options = Application.Options()
         self.runLoop = runLoop
         self.terminalSession = terminalSession
         self.keyboardEventSource =
@@ -33,13 +37,9 @@ public final class Application {
         self.terminalViewport = terminalViewport
         viewHost = ViewHost(
             rootView: rootView, runLoop: runLoop, output: terminalSession.output,
-            preparePresentation: { try terminalSession.beginPresentation(mode: options.ui.mode) }
+            preparePresentation: { mode in try terminalSession.beginPresentation(mode: mode) }
         )
     }
-
-    /// May be installed, replaced, or cleared while running. Keyboard input and
-    /// orderly Ctrl-C shutdown remain active even when no handler is installed.
-    public var onKeyEvent: (@MainActor (KeyEvent) -> Void)?
 
     public func stop() {
         isStopping = true

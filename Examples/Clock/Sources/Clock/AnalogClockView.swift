@@ -8,7 +8,7 @@ struct AnalogClockView: View {
         }
     }
 
-    private func drawClock(in context: CanvasContext, size: CanvasSize) {
+    private func drawClock(in context: Canvas.Context, size: Canvas.Size) {
         guard size.width >= 10, size.height >= 7 else { return }
 
         let centerX = Double(size.width - 1) / 2
@@ -39,18 +39,18 @@ struct AnalogClockView: View {
 
         let center = (column: centerX, row: centerY)
         drawHand(
-            hours / 12, length: radius * 0.5, cell: CanvasCell("█", foreground: ticks), center: center, in: context)
+            hours / 12, length: radius * 0.5, cell: Canvas.Cell("█", foreground: ticks), center: center, in: context)
         drawHand(
-            minutes / 60, length: radius * 0.75, cell: CanvasCell("●", foreground: ticks), center: center, in: context)
+            minutes / 60, length: radius * 0.75, cell: Canvas.Cell("●", foreground: ticks), center: center, in: context)
         drawHand(
             seconds / 60, length: radius * 0.9,
-            cell: CanvasCell("•", foreground: Color(red: 235, green: 95, blue: 85)), center: center, in: context)
+            cell: Canvas.Cell("•", foreground: Color(red: 235, green: 95, blue: 85)), center: center, in: context)
         context.draw("◉", column: Int(centerX.rounded()), row: Int(centerY.rounded()), foreground: ticks)
     }
 
     private func drawHand(
-        _ turn: Double, length: Double, cell: CanvasCell,
-        center: (column: Double, row: Double), in context: CanvasContext
+        _ turn: Double, length: Double, cell: Canvas.Cell,
+        center: (column: Double, row: Double), in context: Canvas.Context
     ) {
         let angle = turn * 2 * Double.pi
         let steps = max(1, Int((length * 3).rounded()))

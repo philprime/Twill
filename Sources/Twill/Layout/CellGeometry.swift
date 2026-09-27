@@ -14,6 +14,8 @@ struct CellSize: Equatable, Sendable {
 struct CellPosition: Equatable {
     let column: Int
     let row: Int
+
+    static let zero = CellPosition(column: 0, row: 0)
 }
 
 struct ProposedCellSize {
@@ -47,6 +49,13 @@ struct CellRect: Equatable {
         self.height = height
     }
 
+    init(origin: CellPosition, size: CellSize) {
+        self.column = origin.column
+        self.row = origin.row
+        self.width = size.width
+        self.height = size.height
+    }
+
     func intersection(_ other: CellRect) -> CellRect {
         let left = max(column, other.column)
         let top = max(row, other.row)
@@ -56,4 +65,6 @@ struct CellRect: Equatable {
             height: max(0, min(row + height, other.row + other.height) - top)
         )
     }
+
+    static let zero = CellRect(origin: .zero, size: .zero)
 }

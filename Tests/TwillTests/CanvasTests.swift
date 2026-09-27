@@ -9,7 +9,7 @@ struct CanvasTests {
     @Test("Canvas fills the proposed space and clips individual cells")
     func drawing() {
         // -- Arrange --
-        var receivedSize: CanvasSize?
+        var receivedSize: Canvas.Size?
         let renderer = ViewRenderer.make(
             Canvas { context, size in
                 receivedSize = size
@@ -21,7 +21,7 @@ struct CanvasTests {
         let frame = renderer.render(Date(timeIntervalSinceReferenceDate: 100), proposal: .init(width: 3, height: 2))
 
         // -- Assert --
-        #expect(receivedSize == CanvasSize(width: 3, height: 2))
+        #expect(receivedSize == Canvas.Size(width: 3, height: 2))
         #expect(frame.nextUpdate == nil)
         #expect(frame.grid?.size == CellSize(width: 3, height: 2))
         #expect(frame.grid?[1, 1] == .glyph("X", width: 1))
@@ -32,9 +32,9 @@ struct CanvasTests {
     @Test("Buffer copying preserves transparent cells and clips wide glyphs")
     func buffer() {
         // -- Arrange --
-        var image = CanvasBuffer(size: CanvasSize(width: 3, height: 1))
-        image[0, 0] = CanvasCell("A", foreground: Color(red: 1, green: 2, blue: 3))
-        image[2, 0] = CanvasCell("界")
+        var image = Canvas.Buffer(size: Canvas.Size(width: 3, height: 1))
+        image[0, 0] = Canvas.Cell("A", foreground: Color(red: 1, green: 2, blue: 3))
+        image[2, 0] = Canvas.Cell("界")
         let renderer = ViewRenderer.make(
             Canvas { context, _ in
                 context.render(image, column: 1, row: 0)
@@ -53,8 +53,8 @@ struct CanvasTests {
     @Test("Wide buffer glyphs do not spill beyond the copied image")
     func wideBufferEdge() {
         // -- Arrange --
-        var image = CanvasBuffer(size: CanvasSize(width: 1, height: 1))
-        image[0, 0] = CanvasCell("界")
+        var image = Canvas.Buffer(size: Canvas.Size(width: 1, height: 1))
+        image[0, 0] = Canvas.Cell("界")
         let renderer = ViewRenderer.make(
             Canvas { context, _ in
                 context.render(image, column: 1, row: 0)
