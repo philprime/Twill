@@ -9,8 +9,10 @@ struct NoteDetailView: View {
     var body: some View {
         VStack {
             Text(note.title)
+                .foregroundStyle(NotesPalette.accent)
             if showsSummary {
                 Text(note.summary)
+                    .foregroundStyle(NotesPalette.foreground)
             }
         }
         .focusable()

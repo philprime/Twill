@@ -15,6 +15,8 @@ enum ViewDescription {
     case group(children: [any View], layout: (any PrimitiveLayout)?)
     case keyed(children: [(id: AnyHashable, view: any View)])
     case focusable(any View)
+    case styled(any View, foreground: Color?, background: Color?)
+    case border(any View, glyphs: BorderGlyphs, color: Color)
     case keyPress(any View, @MainActor (KeyEvent) -> KeyPressResult)
     case sheet(base: any View, isPresented: Binding<Bool>, content: @MainActor () -> any View)
     case conditional(first: Bool, content: any View)

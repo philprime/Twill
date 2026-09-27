@@ -78,14 +78,24 @@ enum InlineFrameEncoder {
     private static func changed(_ next: CellGrid, previous: CellGrid?, column: Int, row: Int) -> Bool {
         next[column, row] != previous?[column, row]
             || next.isFocused(column: column, row: row) != (previous?.isFocused(column: column, row: row) ?? false)
+            || next.foreground(column: column, row: row) != previous?.foreground(column: column, row: row)
+            || next.background(column: column, row: row) != previous?.background(column: column, row: row)
     }
 
     private static func text(_ grid: CellGrid, row: Int, columns: Range<Int>) -> String {
         var result = ""
         var inverted = false
+        var foreground: Color?
+        var background: Color?
         for column in columns {
             let cell = grid[column, row]
             if cell == .continuation { continue }
+            let nextForeground = grid.foreground(column: column, row: row)
+            let nextBackground = grid.background(column: column, row: row)
+            result += colorTransition(to: nextForeground, from: foreground, code: 38)
+            result += colorTransition(to: nextBackground, from: background, code: 48)
+            foreground = nextForeground
+            background = nextBackground
             let focused = grid.isFocused(column: column, row: row)
             if focused != inverted {
                 result += focused ? "\u{1B}[7m" : "\u{1B}[27m"
@@ -99,6 +109,14 @@ enum InlineFrameEncoder {
         }
         // Never leave a borrowed terminal in reverse-video mode between writes.
         if inverted { result += "\u{1B}[27m" }
+        if foreground != nil { result += "\u{1B}[39m" }
+        if background != nil { result += "\u{1B}[49m" }
         return result
+    }
+
+    private static func colorTransition(to next: Color?, from previous: Color?, code: Int) -> String {
+        guard next != previous else { return "" }
+        guard let next else { return "\u{1B}[\(code == 38 ? 39 : 49)m" }
+        return "\u{1B}[\(code);2;\(next.red);\(next.green);\(next.blue)m"
     }
 }
