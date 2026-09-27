@@ -6,6 +6,25 @@ import Testing
 @Suite("Modal sheets")
 @MainActor
 struct SheetTests {
+    @Test("Centered overlay retains the underlying page and traps focus in the sheet")
+    func centeredOverlay() throws {
+        // -- Arrange --
+        let renderer = ViewRenderer.make(
+            Text("Notes").focusable().sheet(isPresented: Binding(get: { true }, set: { _ in })) {
+                Text("Help").focusable()
+            })
+
+        // -- Act --
+        let grid = try #require(renderer.render(.now, proposal: ProposedCellSize(width: 20, height: 7)).grid)
+
+        // -- Assert --
+        #expect(grid.size == CellSize(width: 20, height: 7))
+        #expect(grid[0, 0] == .glyph("N", width: 1))
+        #expect(grid[8, 3] == .glyph("H", width: 1))
+        #expect(grid.isFocused(column: 8, row: 3))
+        #expect(!grid.isFocused(column: 0, row: 0))
+    }
+
     @Test("Consecutive input keys use the new modal scope before presentation")
     func consecutiveInput() throws {
         // -- Arrange --
@@ -83,7 +102,7 @@ struct SheetTests {
         #expect(restoredBase.isFocused(column: 0, row: 0))
     }
 
-    @Test("The base timeline keeps its deadline while a sheet is presented")
+    @Test("The base timeline continues updating beneath a sheet without restarting its deadline")
     func hiddenTimeline() throws {
         // -- Arrange --
         let start = Date(timeIntervalSinceReferenceDate: 100)
@@ -108,7 +127,7 @@ struct SheetTests {
         try #require(runLoop.timers.last).action()
 
         // -- Assert --
-        #expect(writesBeforeDeadline == writesAfterDeadline)
+        #expect(writesAfterDeadline == writesBeforeDeadline + 1)
         #expect(runLoop.cancelled.isEmpty)
         #expect(runLoop.timers.count == 4)
         #expect(output.writes.count == writesAfterDeadline + 1)
@@ -133,7 +152,7 @@ struct SheetTests {
         _ = renderer.handle(.enter)
 
         // -- Assert --
-        #expect(sheet.snapshotText == "Sheet")
+        #expect(sheet.snapshotText == "FirSheetcond")
         #expect(stillPresented.snapshotText == "Sheet")
         #expect(base.snapshotText == "First")
         #expect(base.isFocused(column: 0, row: 0))

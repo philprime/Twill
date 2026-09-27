@@ -97,6 +97,26 @@ struct CellLayoutTests {
         #expect(expanded.nextUpdate == initial.nextUpdate)
     }
 
+    @Test("A capped main pane leaves room for a neighboring detail pane")
+    func cappedPane() {
+        // -- Arrange --
+        let renderer = ViewRenderer.make(
+            HStack {
+                VStack {
+                    Text("Long note title").frame(maxWidth: 6)
+                    Text("Short")
+                }
+                Text("Detail")
+            })
+
+        // -- Act --
+        let frame = renderer.render(.now, proposal: ProposedCellSize(width: 16, height: 3))
+
+        // -- Assert --
+        #expect(frame.grid?.size == CellSize(width: 13, height: 2))
+        #expect(frame.grid?.snapshotText == "Long n Detail\nShort        ")
+    }
+
     @Test("An empty Text remains a layout item but EmptyView does not")
     func emptyContent() {
         // -- Arrange --
