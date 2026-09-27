@@ -25,8 +25,10 @@ struct TimelineApplicationTests {
         let root = TimelineView(.periodic(from: .now, by: 0.05)) { _ -> Text in
             MainActor.assertIsolated()
             frames += 1
-            continuation.yield(())
-            continuation.finish()
+            if frames == 2 {
+                continuation.yield(())
+                continuation.finish()
+            }
             return Text("Frame \(frames)")
         }
         let application = Application(
@@ -42,7 +44,6 @@ struct TimelineApplicationTests {
         for await _ in ready {}
 
         // -- Act --
-        try await Task.sleep(for: .milliseconds(160))
         if cancel { task.cancel() } else { application.stop() }
         try await task.value
         let framesAtShutdown = frames
