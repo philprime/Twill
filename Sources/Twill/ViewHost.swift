@@ -4,14 +4,10 @@ import Foundation
 /// timeline wake-up. Presentation remains inline rather than owning the whole screen.
 @MainActor
 final class ViewHost {
-    private static let hideCursor = "\u{1B}[?25l"
-    private static let showCursor = "\u{1B}[?25h"
-
     var onError: ((Error) -> Void)?
     private let rootView: any View
     private let runLoop: RunLoop
-    private let output: TerminalOutput
-    private let preparePresentation: () throws -> Void
+    private let presenter: TerminalPresenter
     private var viewportSize: TerminalSize?
     private let now: () -> Date
     private var renderer: ViewRenderer?
@@ -19,9 +15,6 @@ final class ViewHost {
     private var scheduledDate: Date?
     private var stateTimer: Timer?
     private var isActive = false
-    private var hasRendered = false
-    private var lastFrame: CellGrid?
-    private var lastCaret: CellPosition?
 
     init(
         rootView: any View, runLoop: RunLoop, output: TerminalOutput,
@@ -30,8 +23,7 @@ final class ViewHost {
     ) {
         self.rootView = rootView
         self.runLoop = runLoop
-        self.output = output
-        self.preparePresentation = preparePresentation
+        presenter = TerminalPresenter(output: output, preparePresentation: preparePresentation)
         self.now = now
     }
 
@@ -56,21 +48,7 @@ final class ViewHost {
         if let stateTimer { runLoop.cancel(stateTimer) }
         stateTimer = nil
         renderer = nil
-        if hasRendered {
-            // Multi-row writes leave the hidden cursor at the frame's top-left.
-            // Finish below the frame before restoring the borrowed shell cursor.
-            let finish: String
-            if let height = lastFrame?.size.height, height > 1 {
-                finish = "\u{1B}[\(height - 1)B\r\n"
-            } else {
-                finish = "\n"
-            }
-            // Finishing the presentation must not replace an earlier output error.
-            try? output.write(returnToFrame() + finish)
-        }
-        hasRendered = false
-        lastFrame = nil
-        lastCaret = nil
+        presenter.stop()
     }
 
     private func cancelTimer() {
@@ -96,36 +74,6 @@ final class ViewHost {
         runLoop.add(pending)
     }
 
-    private func returnToFrame() -> String {
-        guard let lastCaret else { return "" }
-        var output = Self.hideCursor + "\r"
-        if lastCaret.row > 0 { output += "\u{1B}[\(lastCaret.row)A" }
-        return output
-    }
-
-    private func showCaret(at caret: CellPosition) -> String {
-        var output = "\r"
-        if caret.row > 0 { output += "\u{1B}[\(caret.row)B" }
-        if caret.column > 0 { output += "\u{1B}[\(caret.column)C" }
-        return output + Self.showCursor
-    }
-
-    private func present(_ frame: CellGrid?, caret: CellPosition?, invalidate: Bool = false) throws {
-        let cells = InlineFrameEncoder.encode(frame, previous: lastFrame, invalidate: invalidate)
-        var buffer = ""
-        if lastCaret != nil, !cells.isEmpty || caret != lastCaret { buffer += returnToFrame() }
-        buffer += cells
-        if let caret, !cells.isEmpty || caret != lastCaret { buffer += showCaret(at: caret) }
-        if !buffer.isEmpty {
-            if !hasRendered { try preparePresentation() }
-            try output.write(buffer)
-            hasRendered = true
-        }
-        // Failed writes must never advance either physical baseline.
-        lastFrame = frame
-        lastCaret = caret
-    }
-
     private var proposal: ProposedCellSize {
         ProposedCellSize(width: viewportSize?.columns, height: viewportSize?.rows)
     }
@@ -144,7 +92,7 @@ final class ViewHost {
         // Terminal reflow invalidates the physical baseline. Resize only draws
         // cached content, leaving all timeline deadlines and timers untouched.
         let frame = renderer.drawFrame(proposal: proposal)
-        try present(frame, caret: renderer.caretPosition, invalidate: true)
+        try presenter.present(FrameSnapshot(grid: frame, caret: renderer.caretPosition), invalidate: true)
     }
 
     private func render() throws {
@@ -153,7 +101,7 @@ final class ViewHost {
         if let stateTimer { runLoop.cancel(stateTimer) }
         stateTimer = nil
         let frame = renderer.render(now(), proposal: proposal)
-        try present(frame.grid, caret: renderer.caretPosition)
+        try presenter.present(FrameSnapshot(grid: frame.grid, caret: renderer.caretPosition))
         guard isActive else { return }
         // Parent state updates must not restart an unchanged child's deadline.
         guard scheduledDate != frame.nextUpdate || timer == nil else { return }

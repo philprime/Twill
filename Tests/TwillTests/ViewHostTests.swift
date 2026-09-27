@@ -23,6 +23,33 @@ struct ViewHostTests {
         #expect(runLoop.timers.isEmpty)
     }
 
+    @Test("Static content remains idle until a key changes focus")
+    func staticInputAfterIdle() throws {
+        // -- Arrange --
+        let runLoop = RecordingRunLoop()
+        let output = RecordingTerminalOutput()
+        let host = ViewHost(
+            rootView: HStack {
+                Text("A").focusable()
+                Text("B").focusable()
+            }, runLoop: runLoop, output: output
+        )
+        try host.start()
+        #expect(runLoop.timers.isEmpty)
+
+        // -- Act --
+        let handled = host.handle(.arrowRight)
+        let pending = try #require(runLoop.timers.last)
+        pending.action()
+        host.stop()
+
+        // -- Assert --
+        #expect(handled)
+        #expect(runLoop.timers.count == 1)
+        #expect(output.writes.count == 3)
+        #expect(output.writes[1].contains("\u{1B}[7mB\u{1B}[27m"))
+    }
+
     @Test("Timeline ticks reuse the mounted schedule and shutdown cancels it")
     func timelineShutdown() throws {
         // -- Arrange --
