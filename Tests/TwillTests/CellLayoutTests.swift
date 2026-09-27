@@ -138,6 +138,42 @@ struct CellLayoutTests {
         #expect(frame.grid?.snapshotText == "ABCD !")
     }
 
+    @Test("Flexible panels occupy the viewport and leave a capped sidebar beside a filling detail pane")
+    func fillingPanels() {
+        // -- Arrange --
+        let background = Color(red: 30, green: 30, blue: 30)
+        let border = Color(red: 90, green: 90, blue: 90)
+        let renderer = ViewRenderer.make(
+            VStack(spacing: 1) {
+                Text("H").frame(fillWidth: true).backgroundStyle(background)
+                Text("Search").frame(fillWidth: true).border(.single, color: border)
+                HStack(spacing: 2) {
+                    Text("L").frame(width: 8).frame(fillHeight: true).border(.single, color: border)
+                    Text("R").frame(fillWidth: true, fillHeight: true).border(.single, color: border)
+                }
+                .frame(fillHeight: true)
+                Text("F").frame(fillWidth: true)
+            }
+            .backgroundStyle(background))
+
+        // -- Act --
+        let frame = renderer.render(.now, proposal: ProposedCellSize(width: 30, height: 14))
+        let expanded = renderer.render(.now, proposal: ProposedCellSize(width: 40, height: 20))
+
+        // -- Assert --
+        #expect(frame.grid?.size == CellSize(width: 30, height: 14))
+        #expect(frame.grid?[29, 2] == .glyph("┐", width: 1))
+        #expect(frame.grid?[9, 6] == .glyph("┐", width: 1))
+        #expect(frame.grid?[12, 6] == .glyph("┌", width: 1))
+        #expect(frame.grid?[29, 11] == .glyph("┘", width: 1))
+        #expect(frame.grid?[0, 13] == .glyph("F", width: 1))
+        #expect(frame.grid?.background(column: 29, row: 13) == background)
+        #expect(expanded.grid?.size == CellSize(width: 40, height: 20))
+        #expect(expanded.grid?[39, 2] == .glyph("┐", width: 1))
+        #expect(expanded.grid?[39, 17] == .glyph("┘", width: 1))
+        #expect(expanded.grid?[0, 19] == .glyph("F", width: 1))
+    }
+
     @Test("An empty Text remains a layout item but EmptyView does not")
     func emptyContent() {
         // -- Arrange --

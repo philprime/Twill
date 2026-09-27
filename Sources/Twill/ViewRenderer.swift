@@ -69,7 +69,7 @@ final class ViewRenderer {
         return context.grid
     }
 
-    private var sheetBranch: ViewRenderer? {
+    var sheetBranch: ViewRenderer? {
         guard case .sheet(_, let isPresented, _) = description else { return nil }
         return isPresented.wrappedValue ? children.dropFirst().first : children.first
     }
@@ -85,55 +85,12 @@ final class ViewRenderer {
         return nil
     }
 
-    private var layoutItems: [ViewRenderer] {
-        switch description {
-        case .drawing, .textField:
-            return [self]
-        case .group(_, .some), .styled, .border:
-            return children.flatMap(\.layoutItems).isEmpty ? [] : [self]
-        case .sheet:
-            return sheetBranch?.layoutItems ?? []
-        default:
-            return children.flatMap(\.layoutItems)
-        }
-    }
-
     var drawing: (any PrimitiveDrawing)? {
         switch description {
         case .drawing(let drawing): return drawing
         case .textField(let field): return field.drawing
         default: return nil
         }
-    }
-
-    func measure(_ proposal: ProposedCellSize) -> CellSize {
-        if let drawing {
-            measuredSize = drawing.sizeThatFits(proposal)
-            return measuredSize
-        }
-        if case .border = description {
-            let inner = ProposedCellSize(
-                width: proposal.width.map { max(0, $0 - 2) },
-                height: proposal.height.map { max(0, $0 - 2) })
-            let size = measureChildren(inner)
-            measuredSize = proposal.constrain(CellSize(width: size.width + 2, height: size.height + 2))
-            return measuredSize
-        }
-        measuredSize = measureChildren(proposal)
-        return measuredSize
-    }
-
-    private func measureChildren(_ proposal: ProposedCellSize) -> CellSize {
-        let items = children.flatMap(\.layoutItems)
-        let sizes = items.map { $0.measure(.unspecified) }
-        let layout: any PrimitiveLayout
-        if case .group(_, let groupLayout?) = description {
-            layout = groupLayout
-        } else {
-            layout = HorizontalLayout(spacing: 0)
-        }
-        placements = zip(items, layout.placeSubviews(sizes)).map { ($0, $1) }
-        return layout.sizeThatFits(proposal, subviews: sizes)
     }
 
     private static func describe<Content: View>(_ view: Content) -> ViewDescription {
