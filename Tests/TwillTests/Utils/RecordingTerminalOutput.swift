@@ -5,6 +5,7 @@ final class RecordingTerminalOutput: TerminalOutput {
     private(set) var writes: [String] = []
     var failure: Error?
     var nextFailure: Error?
+    var onWrite: ((String) -> Void)?
 
     func write(_ text: String) throws {
         MainActor.assertIsolated()
@@ -14,5 +15,6 @@ final class RecordingTerminalOutput: TerminalOutput {
         }
         if let failure { throw failure }
         writes.append(text)
+        onWrite?(text)
     }
 }

@@ -130,6 +130,10 @@ struct ApplicationOwnershipTests {
         let output = RecordingTerminalOutput()
         let session = TrackingTerminalSession(output: output)
         let failure = PresentationFailure.output
+        output.onWrite = { [weak output] _ in
+            guard let output, output.writes.count == 1 else { return }
+            output.failure = failure
+        }
         let keyboard = DefaultKeyboardEventSource(inputSource: input, runLoop: runLoop)
         var frames = 0
         let root = TimelineView(.periodic(from: .now, by: 0.05)) { _ -> Text in
@@ -140,7 +144,6 @@ struct ApplicationOwnershipTests {
             rootView: root,
             runLoop: runLoop, terminalSession: session, keyboardEventSource: keyboard
         )
-        runLoop.add(Twill.Timer(interval: .milliseconds(1)) { output.failure = failure })
         var receivedError: PresentationFailure?
         let task = Task {
             do { try await application.run() } catch { receivedError = error as? PresentationFailure }
