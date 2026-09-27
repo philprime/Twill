@@ -21,7 +21,7 @@ jobs:
     timeout-minutes: 15
     strategy:
       matrix:
-        example: [Clock]
+        example: [Clock, Keyboard, NotesBrowser]
         os: [macos-latest, ubuntu-latest]
         configuration: [debug, release]
     steps:
