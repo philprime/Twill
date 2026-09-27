@@ -12,6 +12,7 @@ enum ViewDescription {
     case drawing(any PrimitiveDrawing)
     case body(any View)
     case group(children: [any View], layout: (any PrimitiveLayout)?)
+    case keyed(children: [(id: AnyHashable, view: any View)])
     case conditional(first: Bool, content: any View)
     case timeline(PeriodicTimelineSchedule, @MainActor (Date) -> any View)
 }

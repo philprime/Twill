@@ -14,6 +14,7 @@ final class ViewRenderer {
     private var initialView: (any View)?
     private var description: ViewDescription?
     private var children: [ViewRenderer] = []
+    private var keyedChildren: [AnyHashable: ViewRenderer] = [:]
     private var timeline: TimelineState?
     private var placements: [(node: ViewRenderer, bounds: CellRect)] = []
     private var nextUpdate: Date?
@@ -103,6 +104,8 @@ final class ViewRenderer {
             reconcile([body], at: date)
         case .group(let views, _):
             reconcile(views, at: date)
+        case .keyed(let views):
+            reconcileKeyed(views, at: date)
         case .conditional(let first, let content):
             if case .conditional(let wasFirst, _) = previous, first != wasFirst {
                 children = []
@@ -137,6 +140,23 @@ final class ViewRenderer {
         }
         // Removed nodes have no independent timers. Releasing them also removes their
         // deadlines from the aggregate that drives the host's single wake-up timer.
+    }
+
+    private func reconcileKeyed(_ views: [(id: AnyHashable, view: any View)], at date: Date) {
+        let previous = keyedChildren
+        var retained: [AnyHashable: ViewRenderer] = [:]
+        children = views.map { id, view in
+            let node: ViewRenderer
+            if let existing = previous[id], existing.viewType == ObjectIdentifier(type(of: view)) {
+                node = existing
+            } else {
+                node = Self.make(view)
+            }
+            node.update(view, at: date)
+            retained[id] = node
+            return node
+        }
+        keyedChildren = retained
     }
 
     private func refresh(at date: Date) {
