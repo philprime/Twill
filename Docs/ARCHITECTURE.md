@@ -35,7 +35,7 @@ Replaceable collaborators are constructor-injected. Concrete defaults are chosen
 
 ## Execution and input
 
-`Application.run()` owns three structured child tasks: one consumes keyboard input, one consumes viewport changes, and one runs the callback and timer scheduler. Their UI-facing work executes on `MainActor`.
+`Application.run()` owns two structured child tasks: one consumes keyboard input and one runs the callback and timer scheduler. Viewport changes keep their newest unread size and signal a registered run-loop source. Their UI-facing work executes on `MainActor`.
 
 ```text
 Descriptor readiness
@@ -51,7 +51,7 @@ The reader drains available bytes in nonblocking mode. Its byte stream is lossle
 
 `KeyboardEventSource` owns the parser and Escape disambiguation deadlines. It delivers keys synchronously on the UI actor. There is no forwarding task or task per key.
 
-`RunLoop` delivers signaled callbacks and logical timer deadlines. Keyboard and viewport events currently use independent consumers, so `MainActor` serialization does not establish a global FIFO across those producers. See the [run-loop contract](RUN_LOOP.md) for registration, readiness, timer, ordering, and shutdown semantics.
+`RunLoop` delivers signaled callbacks and logical timer deadlines, including viewport readiness. Keyboard events currently use an independent consumer, so `MainActor` serialization does not establish a global FIFO between keyboard input and scheduler events. See the [run-loop contract](RUN_LOOP.md) for registration, readiness, timer, ordering, and shutdown semantics.
 
 ## Strongly typed view descriptions
 

@@ -15,7 +15,10 @@ public final class Application {
     private let keyboardEventSource: KeyboardEventSource
     private let viewHost: ViewHost
     private let terminalViewport: TerminalViewport
-    private var renderingError: Error?
+    private lazy var viewportSource = RunLoopSource { [weak self] in
+        self?.viewportSourceFired()
+    }
+    private var runtimeError: Error?
     private var isStopping = false
 
     public init(
@@ -44,6 +47,7 @@ public final class Application {
     public func stop() {
         isStopping = true
         keyboardEventSource.stop()
+        runLoop.remove(viewportSource)
         terminalViewport.cancel()
         viewHost.stop()
         runLoop.stop()
@@ -66,14 +70,12 @@ public final class Application {
             terminalSession.restore()
         }
         do {
-            let size = try terminalViewport.start()
+            let viewportRegistration = runLoop.add(viewportSource)
+            let size = try terminalViewport.start(signaling: viewportRegistration)
             try viewHost.start(size: size, mode: options.ui.mode)
 
-            // These remain separate because their buffering contracts differ: keyboard
-            // bytes are lossless, viewport changes keep only the newest value, and run
-            // loop sources carry coalescible readiness. Sharing MainActor serialization
-            // would not give these independent producers a global FIFO order.
-            // Dispatch producers never spawn a task per event.
+            // Keyboard remains a lossless stream consumer. Viewport changes retain only
+            // their newest payload and signal the run loop without creating a task per event.
             try await withThrowingTaskGroup(of: Void.self) { group in
                 defer { stop() }
                 group.addTask { @MainActor @Sendable [self] in
@@ -81,12 +83,6 @@ public final class Application {
                 }
                 group.addTask { @MainActor @Sendable [self] in
                     await runLoop.run()
-                }
-                group.addTask { @MainActor @Sendable [self] in
-                    for try await size in terminalViewport.events {
-                        guard !isStopping, !Task.isCancelled else { break }
-                        try viewHost.resize(to: size)
-                    }
                 }
                 // Observe every result: another task finishing first must not hide
                 // failures still awaiting cleanup. Join consumers before restoration.
@@ -101,11 +97,26 @@ public final class Application {
             throw error
         }
         await terminalViewport.stop()
-        if let renderingError { throw renderingError }
+        if let runtimeError { throw runtimeError }
     }
 
     private func presentationFailed(_ error: Error) {
-        renderingError = error
+        fail(error)
+    }
+
+    private func viewportSourceFired() {
+        guard !isStopping else { return }
+        do {
+            if let size = try terminalViewport.consume() {
+                try viewHost.resize(to: size)
+            }
+        } catch {
+            fail(error)
+        }
+    }
+
+    private func fail(_ error: Error) {
+        if runtimeError == nil { runtimeError = error }
         stop()
     }
 

@@ -8,7 +8,7 @@ import Testing
     import Glibc
 #endif
 
-@Suite("Application viewport stream ownership")
+@Suite("Application viewport source ownership")
 @MainActor
 struct ViewportOwnershipTests {
     @Test(
@@ -85,19 +85,17 @@ struct ViewportOwnershipTests {
 
 @MainActor
 private final class GatedViewport: TerminalViewport {
-    let events: AsyncThrowingStream<TerminalSize, Error>
     let cleanupStarted: AsyncStream<Void>
-    private let continuation: AsyncThrowingStream<TerminalSize, Error>.Continuation
     private let cleanupContinuation: AsyncStream<Void>.Continuation
     private var completion: CheckedContinuation<Void, Never>?
 
     init() {
-        (events, continuation) = AsyncThrowingStream.makeStream(bufferingPolicy: .bufferingNewest(1))
         (cleanupStarted, cleanupContinuation) = AsyncStream.makeStream()
     }
 
-    func start() throws -> TerminalSize? { nil }
-    func cancel() { continuation.finish() }
+    func start(signaling registration: RunLoopSourceRegistration) throws -> TerminalSize? { nil }
+    func consume() throws -> TerminalSize? { nil }
+    func cancel() {}
     func stop() async {
         cancel()
         await withCheckedContinuation { completion in
