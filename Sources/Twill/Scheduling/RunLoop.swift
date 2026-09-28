@@ -29,7 +29,7 @@ public final class DefaultRunLoop {
     private enum Event: Sendable {
         case sourceReady(registration: UInt, readiness: UInt)
         case scheduleTimer(Timer)
-        case fireTimer(Timer)
+        case timerWake(generation: UInt)
     }
 
     private struct SourceRegistration {
@@ -37,18 +37,38 @@ public final class DefaultRunLoop {
         let registration: RunLoopSourceRegistration
     }
 
+    private struct TimerRegistration {
+        let timer: Timer
+        var deadline: DispatchTime
+        let order: UInt
+    }
+
     private let eventStream: AsyncStream<Event>
     private let eventContinuation: AsyncStream<Event>.Continuation
+    private let timerBackend: RunLoopTimerBackend
+    private let now: @MainActor () -> DispatchTime
     private var sourceIdentifiers: [ObjectIdentifier: UInt] = [:]
     private var sources: [UInt: SourceRegistration] = [:]
     private var nextRegistrationIdentifier: UInt = 0
-    private var timers: [ObjectIdentifier: DispatchSourceTimer] = [:]
+    private var timers: [ObjectIdentifier: TimerRegistration] = [:]
+    private var nextTimerOrder: UInt = 0
+    private var timerWakeGeneration: UInt = 0
+    private var armedTimerDeadline: DispatchTime?
 
     // Finishing an AsyncStream still drains buffered events. This flag prevents queued
     // callbacks from running after an action has requested shutdown.
     private var isStopped = false
 
-    public init() {
+    public convenience init() {
+        self.init(timerBackend: DispatchRunLoopTimerBackend(), now: { .now() })
+    }
+
+    init(
+        timerBackend: RunLoopTimerBackend,
+        now: @escaping @MainActor () -> DispatchTime
+    ) {
+        self.timerBackend = timerBackend
+        self.now = now
         (eventStream, eventContinuation) = AsyncStream.makeStream()
     }
 
@@ -60,7 +80,8 @@ public final class DefaultRunLoop {
     /// Permanently cancels a timer, including a registration still waiting in the queue.
     public func cancel(_ timer: Timer) {
         timer.isCancelled = true
-        timers.removeValue(forKey: ObjectIdentifier(timer))?.cancel()
+        guard timers.removeValue(forKey: ObjectIdentifier(timer)) != nil else { return }
+        scheduleNextTimerWake()
     }
 
     /// Registers a source and returns a capability that can signal it from any executor.
@@ -112,18 +133,15 @@ public final class DefaultRunLoop {
         }
         sourceIdentifiers.removeAll()
         sources.removeAll()
+        timers.removeAll()
+        armedTimerDeadline = nil
+        timerBackend.stop()
         eventContinuation.finish()
     }
 
     /// Runs until stopped or its task is cancelled.
     public func run() async {
-        defer {
-            stop()
-            for source in timers.values {
-                source.cancel()
-            }
-            timers.removeAll()
-        }
+        defer { stop() }
         for await event in eventStream {
             guard !Task.isCancelled else { break }
             // Discard buffered registrations without dispatching so a stopped loop
@@ -146,25 +164,108 @@ public final class DefaultRunLoop {
             else { return }
             registration.source.action()
         case .scheduleTimer(let timer):
-            let identifier = ObjectIdentifier(timer)
-            guard !timer.isCancelled, timers[identifier] == nil else { return }
-            let source = DispatchSource.makeTimerSource()
-            source.schedule(
-                deadline: timer.deadline ?? .now() + timer.interval,
-                repeating: timer.repeats ? timer.interval : .never
-            )
-            source.setEventHandler { @Sendable [eventContinuation] in
-                eventContinuation.yield(.fireTimer(timer))
+            register(timer)
+        case .timerWake(let generation):
+            fireDueTimers(generation: generation)
+        }
+    }
+
+    private func register(_ timer: Timer) {
+        let identifier = ObjectIdentifier(timer)
+        guard !timer.isCancelled, timers[identifier] == nil else { return }
+        nextTimerOrder &+= 1
+        timers[identifier] = TimerRegistration(
+            timer: timer,
+            deadline: timer.deadline ?? now() + timer.interval,
+            order: nextTimerOrder
+        )
+        scheduleNextTimerWake()
+    }
+
+    private func fireDueTimers(generation: UInt) {
+        guard generation == timerWakeGeneration else { return }
+        armedTimerDeadline = nil
+        let iterationDate = now()
+        let dueTimers = timers.values
+            .filter { $0.deadline <= iterationDate }
+            .sorted {
+                if $0.deadline == $1.deadline { return $0.order < $1.order }
+                return $0.deadline < $1.deadline
             }
-            timers[identifier] = source
-            source.activate()
-        case .fireTimer(let timer):
-            let identifier = ObjectIdentifier(timer)
-            guard timers[identifier] != nil else { return }
-            if !timer.repeats {
-                timers.removeValue(forKey: identifier)?.cancel()
+
+        for dueTimer in dueTimers {
+            guard !isStopped else { return }
+            let identifier = ObjectIdentifier(dueTimer.timer)
+            guard var registration = timers[identifier], registration.order == dueTimer.order else { continue }
+            let nextDeadline =
+                registration.timer.repeats
+                ? nextRepeatingDeadline(
+                    after: registration.deadline,
+                    interval: registration.timer.interval,
+                    now: iterationDate
+                ) : nil
+            if let nextDeadline {
+                registration.deadline = nextDeadline
+                timers[identifier] = registration
+            } else {
+                timers.removeValue(forKey: identifier)
             }
-            timer.action()
+            registration.timer.action()
+        }
+
+        scheduleNextTimerWake()
+    }
+
+    private func scheduleNextTimerWake() {
+        guard !isStopped else { return }
+        guard let nextDeadline = timers.values.map(\.deadline).min() else {
+            guard armedTimerDeadline != nil else { return }
+            armedTimerDeadline = nil
+            timerWakeGeneration &+= 1
+            timerBackend.disarm()
+            return
+        }
+        guard nextDeadline != armedTimerDeadline else { return }
+
+        armedTimerDeadline = nextDeadline
+        timerWakeGeneration &+= 1
+        let generation = timerWakeGeneration
+        let continuation = eventContinuation
+        timerBackend.schedule(deadline: nextDeadline) {
+            continuation.yield(.timerWake(generation: generation))
+        }
+    }
+
+    private func nextRepeatingDeadline(
+        after deadline: DispatchTime,
+        interval: DispatchTimeInterval,
+        now: DispatchTime
+    ) -> DispatchTime? {
+        guard let intervalNanoseconds = interval.nanoseconds, intervalNanoseconds > 0 else { return nil }
+        let elapsed = now.uptimeNanoseconds - deadline.uptimeNanoseconds
+        let skippedIntervals = elapsed / intervalNanoseconds + 1
+        let (advance, overflowed) = intervalNanoseconds.multipliedReportingOverflow(by: skippedIntervals)
+        guard !overflowed else { return .distantFuture }
+        let (uptime, additionOverflowed) = deadline.uptimeNanoseconds.addingReportingOverflow(advance)
+        return additionOverflowed ? .distantFuture : DispatchTime(uptimeNanoseconds: uptime)
+    }
+}
+
+extension DispatchTimeInterval {
+    fileprivate var nanoseconds: UInt64? {
+        switch self {
+        case .seconds(let value):
+            value > 0 ? UInt64(value) * 1_000_000_000 : nil
+        case .milliseconds(let value):
+            value > 0 ? UInt64(value) * 1_000_000 : nil
+        case .microseconds(let value):
+            value > 0 ? UInt64(value) * 1_000 : nil
+        case .nanoseconds(let value):
+            value > 0 ? UInt64(value) : nil
+        case .never:
+            nil
+        @unknown default:
+            nil
         }
     }
 }
