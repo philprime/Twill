@@ -244,17 +244,20 @@ struct RunLoopTests {
     func multiplexesLogicalTimers() async {
         // -- Arrange --
         let backend = RecordingRunLoopTimerBackend()
-        let clock = ControlledRunLoopClock(now: DispatchTime(uptimeNanoseconds: 1_000))
+        let initialDate = DispatchTime(uptimeNanoseconds: 1_000)
+        let firstTimerDeadline = DispatchTime(uptimeNanoseconds: 1_010)
+        let secondTimerDeadline = DispatchTime(uptimeNanoseconds: 1_020)
+        let clock = ControlledRunLoopClock(now: initialDate)
         let runLoop = DefaultRunLoop(timerBackend: backend, now: { clock.now })
         let (actions, actionContinuation) = AsyncStream<Int>.makeStream()
         var actionIterator = actions.makeAsyncIterator()
         var deadlineIterator = backend.scheduledDeadlines.makeAsyncIterator()
         runLoop.add(
-            Twill.Timer(deadline: DispatchTime(uptimeNanoseconds: 1_010)) {
+            Twill.Timer(deadline: firstTimerDeadline) {
                 actionContinuation.yield(1)
             })
         runLoop.add(
-            Twill.Timer(deadline: DispatchTime(uptimeNanoseconds: 1_020)) {
+            Twill.Timer(deadline: secondTimerDeadline) {
                 actionContinuation.yield(2)
                 actionContinuation.finish()
                 runLoop.stop()
@@ -263,19 +266,19 @@ struct RunLoopTests {
 
         // -- Act --
         let firstDeadline = await deadlineIterator.next()
-        clock.now = DispatchTime(uptimeNanoseconds: 1_010)
+        clock.now = firstTimerDeadline
         backend.fire()
         let firstAction = await actionIterator.next()
         let secondDeadline = await deadlineIterator.next()
-        clock.now = DispatchTime(uptimeNanoseconds: 1_020)
+        clock.now = secondTimerDeadline
         backend.fire()
         let secondAction = await actionIterator.next()
         await task.value
 
         // -- Assert --
-        #expect(firstDeadline?.uptimeNanoseconds == 1_010)
+        #expect(firstDeadline == firstTimerDeadline)
         #expect(firstAction == 1)
-        #expect(secondDeadline?.uptimeNanoseconds == 1_020)
+        #expect(secondDeadline == secondTimerDeadline)
         #expect(secondAction == 2)
         #expect(backend.stopCount == 1)
     }
