@@ -1,116 +1,85 @@
 # Architecture
 
-Twill is an event-driven terminal UI framework built around Swift Concurrency. It separates declarative view descriptions from their mounted runtime state and terminal presentation.
+Twill is an event-driven terminal UI framework built around Swift Concurrency. Declarative view descriptions, mounted runtime state, scheduling, and terminal presentation have separate ownership.
 
-[State and identity](STATE.md) defines mounted state ownership and reconciliation. The [interaction model](INTERACTION.md) defines focus, text editing, and modal key routing. The [run loop](RUN_LOOP.md) defines source readiness, logical timer delivery, and scheduler lifecycle.
+[State and identity](STATE.md) defines mounted state and reconciliation. The [interaction model](INTERACTION.md) defines focus and key routing. The [run-loop contract](RUN_LOOP.md) defines readiness and logical deadlines.
 
 ## Core principles
 
-- Keep UI work serialized on `MainActor`.
-- Suspend when no work is pending. Static content does not start a refresh timer.
-- Preserve concrete view types in declarative composition.
-- Retain identity, cached content, and scheduling state in mounted nodes.
-- Share presentation scheduling across the view tree rather than creating a task or timer per view.
+- Serialize UI work on `MainActor`.
+- Suspend when no work is pending.
+- Preserve concrete view types until hosting and mounted-runtime boundaries.
+- Keep identity, cached content, and scheduling state in mounted nodes.
+- Share presentation scheduling across the mounted tree.
 - Keep terminal ownership and cleanup explicit.
 
 ## Application and ownership
 
-An application receives its root view through its initializer. The root is fixed for the application's lifetime. Constructing the application does not evaluate its root body or write output. Mounting begins inside `run()`, after terminal setup succeeds. `EmptyView` supplies an explicit non-presenting root for event-only applications.
+Application construction stores a root description that remains fixed for the session. It does not evaluate the root or write output. Mounting begins in `run()` after terminal setup succeeds. `EmptyView` provides an explicit non-presenting root.
 
-```text
-Application
-├── TerminalSession       Saves and restores terminal input modes
-├── KeyboardEventSource   Decodes input and manages Escape deadlines
-│   └── InputSource       Borrows and reads an input descriptor
-├── RunLoop               Delivers signaled callbacks and timer deadlines
-└── ViewHost              Owns mounted presentation and its next wake-up
-    ├── ViewRenderer tree Retains identity, state, content, and deadlines
-    ├── Focus routing     Tracks eligible controls and modal scopes
-    └── TerminalOutput    Writes presentation buffers
+```mermaid
+flowchart TD
+    Application --> TerminalSession[TerminalSession<br/>terminal modes and output resources]
+    Application --> KeyboardEventSource[KeyboardEventSource<br/>decoding and Escape deadlines]
+    KeyboardEventSource --> InputSource[InputSource<br/>borrowed input descriptor]
+    Application --> TerminalViewport[TerminalViewport<br/>latest terminal size]
+    Application --> RunLoop[RunLoop<br/>readiness and logical deadlines]
+    Application --> ViewHost[ViewHost<br/>mounted presentation]
+    ViewHost --> ViewRenderer[ViewRenderer tree<br/>identity, state, content, deadlines]
 ```
 
-Replaceable collaborators are constructor-injected. Concrete defaults are chosen at composition boundaries, and descriptors remain owned by their callers.
-
-`Application` owns lifecycle and application-level keyboard policy, including Ctrl-C shutdown. `ViewHost` owns presentation. Views themselves neither write to the terminal nor register timers.
+Replaceable collaborators are constructor-injected, while concrete defaults are chosen at composition boundaries. Descriptors remain owned by their callers. `Application` owns lifecycle and application-level key policy. `ViewHost` owns presentation. Views neither write terminal output nor register timers.
 
 ## Execution and input
 
-`Application.run()` owns two structured child tasks: one consumes keyboard input and one runs the callback and timer scheduler. Viewport changes keep their newest unread size and signal a registered run-loop source. Their UI-facing work executes on `MainActor`.
+`Application.run()` owns one keyboard consumer task and one run-loop task. Viewport changes store their newest unread result and signal a registered run-loop source. UI-facing work executes on `MainActor`.
 
-```text
-Descriptor readiness
-→ Dispatch read queue
-→ asynchronous byte stream
-→ KeyboardEventSource on MainActor
-→ Application lifecycle policy
-→ Modal scope and focused control
-→ Enclosing view and application handlers
+```mermaid
+flowchart LR
+    Descriptor[Input descriptor] --> DispatchQueue[Nonblocking Dispatch read]
+    DispatchQueue --> ByteStream[Lossless byte stream]
+    ByteStream --> Keyboard[KeyboardEventSource]
+    Keyboard --> ApplicationPolicy[Application policy]
+    ApplicationPolicy --> Interaction[Modal scope and focused control]
+    Interaction --> Handlers[View and application handlers]
 ```
 
-The reader drains available bytes in nonblocking mode. Its byte stream is lossless and unbounded, not backpressured. Dropping arbitrary chunks would corrupt UTF-8 or escape sequences, so the consumer must keep up with input.
+Input bytes are lossless and unbounded because dropping chunks can corrupt UTF-8 and escape sequences. `KeyboardEventSource` parses bytes, manages Escape disambiguation, and delivers keys synchronously without a task per key.
 
-`KeyboardEventSource` owns the parser and Escape disambiguation deadlines. It delivers keys synchronously on the UI actor. There is no forwarding task or task per key.
+Viewport readiness and logical deadlines pass through the run loop, while keyboard input currently has an independent consumer. Actor serialization therefore does not establish a global FIFO between keyboard and scheduler events.
 
-`RunLoop` delivers signaled callbacks and logical timer deadlines, including viewport readiness. Keyboard events currently use an independent consumer, so `MainActor` serialization does not establish a global FIFO between keyboard input and scheduler events. See the [run-loop contract](RUN_LOOP.md) for registration, readiness, timer, ordering, and shutdown semantics.
+## Views and mounted identity
 
-## Strongly typed view descriptions
+A `View` is a typed description. Primitive views provide internal descriptions directly, while result-builder composition preserves concrete child types with generics and parameter packs. Type erasure occurs only where heterogeneous mounted traversal requires it.
 
-A custom `View` describes content through its associated `Body` type. Primitive views provide internal descriptions directly rather than evaluating a body. Result-builder composition retains concrete child types using Swift generics and parameter packs, so public view storage does not require type erasure.
+Persistent `ViewRenderer` nodes retain concrete type, children, owned state, cached presentation, and pending deadlines. Reconciliation updates nodes with matching structural identity and replaces nodes whose identity changes. A changed conditional branch mounts fresh content even when both branches contain the same concrete view type.
 
-Hosting and mounted-runtime boundaries erase view types for heterogeneous traversal. Internal descriptions separate view evaluation from layout and drawing. Keyed dynamic content retains identity by element ID; ordinary composition uses structural identity. The supported set of view primitives can grow without changing these boundaries.
-
-## Mounted identity and reconciliation
-
-View values are descriptions. `ViewRenderer` instances are persistent mounted nodes.
-
-Each node retains its concrete view type, children, cached presentation, owned state, and earliest pending deadline. A timeline node additionally retains its schedule, current context date, and own deadline.
-
-When a parent produces new child descriptions, reconciliation matches children by structural position and concrete type. Matching nodes receive updated inputs while keeping compatible runtime state. A type change replaces the node. Switching conditional branches mounts fresh branch content, even when both branches contain the same concrete view types.
-
-An absent optional branch still occupies its structural position, so later siblings do not shift identity. Removed nodes are released, and their deadlines disappear from the aggregate schedule. There are no separate per-node operating-system timers to tear down.
-
-A generic composition type is itself part of identity. Changing that type can replace a subtree. Keyed collections reconcile children by stable element ID rather than position. State and binding lifetimes follow the [state and identity contract](STATE.md).
+Optional absence retains its structural position so later siblings do not shift identity. Keyed collections use stable element IDs rather than positions. Generic composition type is part of structural identity. Removed nodes release their state and deadlines. The full ownership contract is defined in [State and identity](STATE.md).
 
 ## Timeline scheduling
 
-`TimelineView` evaluates its content initially and then according to its periodic schedule. Schedules are anchored to their start dates. Missed entries are skipped instead of producing a burst of catch-up renders.
+Timeline nodes retain their schedule, current context date, and independent deadline. Periodic schedules remain anchored to their start date, and missed entries are skipped rather than replayed.
 
-The mounted tree caches each subtree's earliest deadline. The host schedules one one-shot presentation timer for the root's earliest deadline. Other application timers and keyboard Escape deadlines can coexist in the run loop.
+The mounted tree caches each subtree's earliest deadline. `ViewHost` registers one logical timer for the root's earliest deadline. On delivery it refreshes due subtrees, reuses unchanged siblings, combines cached and updated content, writes only changed output, and registers the next aggregate deadline. Static trees remain unscheduled, and deadlines disappear when their branches are removed.
 
-When the presentation timer fires:
+Parent updates may reevaluate child descriptions without advancing unchanged child timelines. Equal schedules preserve timing, while changed schedule values reconfigure it. Reconstructing `.periodic(from: .now, ...)` during each parent update intentionally resets the schedule. Use a stable start date when phase must survive parent updates.
 
-1. Refresh subtrees whose deadlines are due.
-2. Re-evaluate due timeline content and reconcile its children.
-3. Combine updated and cached content into the root presentation.
-4. Write the result only if the composed text changed.
-5. Arm the next earliest deadline, or remain idle if none exists.
-
-Timelines with independent schedules reuse unchanged siblings. When multiple deadlines become due together, they share one presentation.
-
-These are requested deadlines, not hard real-time guarantees. No timeline nodes means no presentation timer. A timeline that returns unchanged text still requests periodic evaluation, but unchanged output is not written again.
-
-Parent updates are a separate reason to evaluate child content. A child timeline can receive new parent inputs before its deadline while retaining its current context date. Equal schedule values preserve its timing. Changing the start date or interval reconfigures it.
-
-Consequently, reconstructing `.periodic(from: .now, ...)` during every parent update changes the schedule. Use a stable start date when the phase should survive those updates.
+Deadlines are scheduling requests rather than real-time guarantees. Due siblings share one presentation. Scheduled evaluation continues even when it produces unchanged output, but unchanged output is not written again.
 
 ## Presentation
 
-`ViewHost` measures and draws mounted content into a terminal-cell grid. Text control characters are rendered safely rather than emitted as terminal commands. Horizontal and vertical stacks place children at integer cell coordinates; transparent groups and conditionals do not add spacing. Wide graphemes occupy a leading cell and continuation cell so clipping and updates never render half a character.
+`ViewHost` measures mounted content into terminal cells, diffs committed frames, and serializes output. It advances the diff baseline only after a successful write. Control characters are rendered safely, and wide graphemes are never partially drawn.
 
-The terminal host encodes changed cells, batches output, and advances its diff baseline only after a successful write. Views cannot write terminal output. The host registers one presentation source for its lifetime. State changes and keyboard-driven mutations signal that source, and repeated signals coalesce until delivery. A due timeline render consumes pending presentation readiness in the same frame. Readiness is cleared before rendering so a state change during rendering requests a later frame rather than being lost.
+State invalidation signals one coalescing presentation source. A due timeline render may consume the same pending work. Readiness is cleared before rendering so state changes during rendering request a later frame.
 
-Resize events keep only the newest unread size and redraw cached content directly. They do not reevaluate view bodies or disturb timeline deadlines. Static trees remain idle after presentation.
+Resize keeps only the newest unread dimensions and redraws cached content without reevaluating view bodies or changing timeline deadlines. Static trees return to idle after presentation.
 
-For multi-row inline frames, the host reserves space below the shell's current line and returns its hidden cursor to the frame's top-left anchor between writes. It clears removed rows and redraws the frame after growing its footprint. Shutdown advances below the last row. The host does not enter an alternate screen or claim unrelated shell output.
-
-The host also owns the hardware cursor. It places and shows the cursor at a focused text field's editing caret and hides it in navigation mode. Modal presentation and focus changes do not expose cursor escapes to view bodies. Output writes remain serialized with UI presentation.
+The host owns physical cursor placement. Inline presentation reserves only its frame, clears removed rows, and restores the shell cursor below it. Fullscreen presentation owns the alternate-screen lifecycle. Focus and editing state determine caret visibility without exposing terminal escape sequences to views.
 
 ## Shutdown and failures
 
-Stop requests, keyboard EOF, caller cancellation, and runtime errors end the application session.
+Stop requests, keyboard EOF, cancellation, and runtime failures end the session. Shutdown deactivates run-loop work, cancels producers, joins their queue barriers and child tasks, releases mounted content, and only then restores borrowed terminal resources.
 
-Shutdown removes the presentation source, cancels the pending timeline timer, releases the mounted tree, requests reader cancellation, and stops callback and timer processing. Structured task ownership ensures input cleanup completes before terminal input settings are restored. The reader restores inherited descriptor flags without closing the borrowed descriptor.
+Initial setup and presentation failures throw directly. Later source or timer failures are recorded, trigger orderly shutdown, and are reported after cleanup. Every owned child result is observed so early completion cannot hide a failure still awaiting resource restoration.
 
-Initial presentation failures throw from `run()`. Later output failures can originate in source or timer callbacks, so the application records the error, initiates shutdown, and reports it after cleanup. The task group also observes input failures that finish after scheduler shutdown.
-
-Terminal restoration is best-effort on orderly shutdown. Crash recovery and fatal-signal cleanup are not implemented. Raw-mode Ctrl-C is handled as a keyboard event, not through a process signal handler.
+The input reader restores inherited descriptor flags without closing the borrowed descriptor. Raw-mode Ctrl-C is handled as keyboard input. Terminal restoration is best-effort on orderly shutdown; crash recovery and fatal-signal cleanup are outside the runtime contract.
