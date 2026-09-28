@@ -1,5 +1,7 @@
+import Dispatch
 import Testing
-import Twill
+
+@testable import Twill
 
 @Suite("Run loop lifecycle")
 @MainActor
@@ -236,5 +238,45 @@ struct RunLoopTests {
 
         // -- Assert --
         #expect(count == 1)
+    }
+
+    @Test("Logical timers share one physical wake-up backend", .timeLimit(.minutes(1)))
+    func multiplexesLogicalTimers() async {
+        // -- Arrange --
+        let backend = RecordingRunLoopTimerBackend()
+        let clock = ControlledRunLoopClock(now: DispatchTime(uptimeNanoseconds: 1_000))
+        let runLoop = DefaultRunLoop(timerBackend: backend, now: { clock.now })
+        let (actions, actionContinuation) = AsyncStream<Int>.makeStream()
+        var actionIterator = actions.makeAsyncIterator()
+        var deadlineIterator = backend.scheduledDeadlines.makeAsyncIterator()
+        runLoop.add(
+            Twill.Timer(deadline: DispatchTime(uptimeNanoseconds: 1_010)) {
+                actionContinuation.yield(1)
+            })
+        runLoop.add(
+            Twill.Timer(deadline: DispatchTime(uptimeNanoseconds: 1_020)) {
+                actionContinuation.yield(2)
+                actionContinuation.finish()
+                runLoop.stop()
+            })
+        let task = Task { await runLoop.run() }
+
+        // -- Act --
+        let firstDeadline = await deadlineIterator.next()
+        clock.now = DispatchTime(uptimeNanoseconds: 1_010)
+        backend.fire()
+        let firstAction = await actionIterator.next()
+        let secondDeadline = await deadlineIterator.next()
+        clock.now = DispatchTime(uptimeNanoseconds: 1_020)
+        backend.fire()
+        let secondAction = await actionIterator.next()
+        await task.value
+
+        // -- Assert --
+        #expect(firstDeadline?.uptimeNanoseconds == 1_010)
+        #expect(firstAction == 1)
+        #expect(secondDeadline?.uptimeNanoseconds == 1_020)
+        #expect(secondAction == 2)
+        #expect(backend.stopCount == 1)
     }
 }
