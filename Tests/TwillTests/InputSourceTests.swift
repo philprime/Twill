@@ -19,25 +19,33 @@ struct InputSourceTests {
         let descriptor = pipe.fileHandleForReading.fileDescriptor
         let originalFlags = fcntl(descriptor, F_GETFL)
         let source = DefaultInputSource(fileDescriptor: .custom(descriptor))
+        let runLoop = DefaultRunLoop()
         let payload = [UInt8](repeating: 0x61, count: 5000)
         try pipe.fileHandleForWriting.write(contentsOf: Data(payload))
         try pipe.fileHandleForWriting.close()
         var received: [UInt8] = []
+        var receivedError: Error?
+        let readiness = RunLoopSource {
+            for event in source.takeEvents(limit: 16) {
+                switch event {
+                case .bytes(let bytes): received.append(contentsOf: bytes)
+                case .end: runLoop.stop()
+                case .failure(let error):
+                    receivedError = error
+                    runLoop.stop()
+                }
+            }
+        }
+        let registration = runLoop.add(readiness)
 
         // -- Act --
-        source.start()
-        do {
-            for try await bytes in source.events {
-                received.append(contentsOf: bytes)
-            }
-        } catch {
-            await source.stop()
-            throw error
-        }
+        source.start(signaling: registration)
+        await runLoop.run()
         await source.stop()
 
         // -- Assert --
         #expect(received == payload)
+        #expect(receivedError == nil)
         #expect(fcntl(descriptor, F_GETFL) == originalFlags)
     }
 
