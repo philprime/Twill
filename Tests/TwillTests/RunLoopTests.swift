@@ -244,9 +244,9 @@ struct RunLoopTests {
     func multiplexesLogicalTimers() async {
         // -- Arrange --
         let backend = RecordingRunLoopTimerBackend()
-        let initialDate = DispatchTime(uptimeNanoseconds: 1_000)
-        let firstTimerDeadline = DispatchTime(uptimeNanoseconds: 1_010)
-        let secondTimerDeadline = DispatchTime(uptimeNanoseconds: 1_020)
+        let initialDate = DispatchTime(uptimeNanoseconds: 1_000_000_000)
+        let firstTimerDeadline = initialDate + .milliseconds(10)
+        let secondTimerDeadline = initialDate + .milliseconds(20)
         let clock = ControlledRunLoopClock(now: initialDate)
         let runLoop = DefaultRunLoop(timerBackend: backend, now: { clock.now })
         let (actions, actionContinuation) = AsyncStream<Int>.makeStream()
