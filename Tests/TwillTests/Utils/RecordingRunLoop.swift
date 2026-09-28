@@ -18,8 +18,10 @@ final class RecordingRunLoop: RunLoop {
         timer.isCancelled = true
         cancelled.append(timer)
     }
-    func add(_ source: RunLoopSource) {
+    @discardableResult
+    func add(_ source: RunLoopSource) -> RunLoopSourceRegistration {
         sources.append(source)
+        return RunLoopSourceRegistration(identifier: UInt(sources.count)) { _, _ in }
     }
     func signal(_ source: RunLoopSource) {
         signalled.append(source)
