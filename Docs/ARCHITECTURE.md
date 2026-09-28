@@ -2,7 +2,7 @@
 
 Twill is an event-driven terminal UI framework built around Swift Concurrency. It separates declarative view descriptions from their mounted runtime state and terminal presentation.
 
-[State and identity](STATE.md) defines mounted state ownership and reconciliation. The [interaction model](INTERACTION.md) defines focus, text editing, and modal key routing.
+[State and identity](STATE.md) defines mounted state ownership and reconciliation. The [interaction model](INTERACTION.md) defines focus, text editing, and modal key routing. The [run loop](RUN_LOOP.md) defines source readiness, logical timer delivery, and scheduler lifecycle.
 
 ## Core principles
 
@@ -51,9 +51,7 @@ The reader drains available bytes in nonblocking mode. Its byte stream is lossle
 
 `KeyboardEventSource` owns the parser and Escape disambiguation deadlines. It delivers keys synchronously on the UI actor. There is no forwarding task or task per key.
 
-The type named `RunLoop` delivers manually signaled callback sources and timer deadlines. A source represents coalescible readiness without a payload. Signaling a pending source has no additional effect; readiness is cleared before its action runs so the action can signal distinct follow-up work. Consuming readiness or removing and re-registering a source invalidates its stale queued notifications. Stopping the run loop suppresses all queued callbacks.
-
-`RunLoop` is not Foundation's `RunLoop`, a `CFRunLoop` clone, or a central queue for all application events. Keyboard and viewport events do not pass through its queue. `MainActor` isolation serializes UI work but does not establish a global FIFO across independently produced keyboard, viewport, source, and timer events. The run loop preserves only its own stream's observed order, and no ordering policy should be inferred between concurrent producers.
+`RunLoop` delivers signaled callbacks and logical timer deadlines. Keyboard and viewport events currently use independent consumers, so `MainActor` serialization does not establish a global FIFO across those producers. See the [run-loop contract](RUN_LOOP.md) for registration, readiness, timer, ordering, and shutdown semantics.
 
 ## Strongly typed view descriptions
 
