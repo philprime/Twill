@@ -61,15 +61,16 @@ struct StateTests {
         try host.start()
 
         // -- Act --
+        let source = try #require(runLoop.sources.first)
         let action = try #require(increment)
         action()
         action()
-        let pendingCount = runLoop.timers.count
-        try #require(runLoop.timers.last).action()
+        source.action()
         host.stop()
 
         // -- Assert --
-        #expect(pendingCount == 1)
+        #expect(runLoop.timers.isEmpty)
+        #expect(runLoop.signalled.count == 1)
         #expect(output.writes == ["\r\u{1B}[2K0", "\r2", "\n"])
     }
 
@@ -85,9 +86,10 @@ struct StateTests {
         try host.start()
 
         // -- Act --
+        let source = try #require(runLoop.sources.first)
         let action = try #require(increment)
         action()
-        try #require(runLoop.timers.last).action()
+        source.action()
         host.stop()
 
         // -- Assert --
@@ -137,19 +139,20 @@ struct StateTests {
         )
         try host.start()
         let timelineTimer = try #require(runLoop.timers.first)
+        let source = try #require(runLoop.sources.first)
 
         // -- Act --
         now = start.addingTimeInterval(0.5)
         let action = try #require(increment)
         action()
-        try #require(runLoop.timers.last).action()
+        source.action()
         let timersAfterState = runLoop.timers.count
         now = start.addingTimeInterval(1)
         timelineTimer.action()
         host.stop()
 
         // -- Assert --
-        #expect(timersAfterState == 2)
+        #expect(timersAfterState == 1)
         #expect(runLoop.cancelled.filter { $0 === timelineTimer }.isEmpty)
         #expect(timelineDates == [start, start.addingTimeInterval(1)])
         #expect(output.writes == ["\r\u{1B}[2K0 T0", "\r1", "\r\u{1B}[3C1", "\n"])
@@ -185,7 +188,8 @@ struct StateTests {
 
         // -- Assert --
         #expect(output.writes == ["\r\u{1B}[2K0", "\rGone", "\n"])
-        #expect(runLoop.cancelled.count == 2)
+        #expect(runLoop.consumed.count == 2)
+        #expect(runLoop.cancelled.count == 1)
     }
 
     @Test("A nested state write refreshes a static parent")

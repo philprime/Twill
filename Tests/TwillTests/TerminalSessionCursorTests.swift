@@ -95,13 +95,14 @@ struct TerminalSessionCursorTests {
         var reported: Error?
         host.onError = { reported = $0 }
         try host.start()
+        let source = try #require(runLoop.sources.first)
         _ = host.handle(.enter)
-        try #require(runLoop.timers.last).action()
+        source.action()
         output.nextFailure = Failure.output
 
         // -- Act --
         _ = host.handle(.arrowLeft)
-        try #require(runLoop.timers.last).action()
+        source.action()
         let writesBeforeSessionRestore = output.writes
         session.restore()
 

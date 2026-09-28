@@ -69,8 +69,11 @@ public final class Application {
             let size = try terminalViewport.start()
             try viewHost.start(size: size, mode: options.ui.mode)
 
-            // Long-lived consumers own keyboard bytes, resize events, and timer
-            // scheduling. Dispatch producers never spawn a task per event.
+            // These remain separate because their buffering contracts differ: keyboard
+            // bytes are lossless, viewport changes keep only the newest value, and run
+            // loop sources carry coalescible readiness. Sharing MainActor serialization
+            // would not give these independent producers a global FIFO order.
+            // Dispatch producers never spawn a task per event.
             try await withThrowingTaskGroup(of: Void.self) { group in
                 defer { stop() }
                 group.addTask { @MainActor @Sendable [self] in

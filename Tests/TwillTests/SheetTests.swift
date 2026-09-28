@@ -136,21 +136,22 @@ struct SheetTests {
         )
         try host.start()
         let deadline = try #require(runLoop.timers.first)
+        let source = try #require(runLoop.sources.first)
 
         // -- Act --
         _ = host.handle(.character("o"))
-        try #require(runLoop.timers.last).action()
+        source.action()
         let writesBeforeDeadline = output.writes.count
         now = start.addingTimeInterval(1)
         deadline.action()
         let writesAfterDeadline = output.writes.count
         _ = host.handle(.escape)
-        try #require(runLoop.timers.last).action()
+        source.action()
 
         // -- Assert --
         #expect(writesAfterDeadline == writesBeforeDeadline + 1)
         #expect(runLoop.cancelled.isEmpty)
-        #expect(runLoop.timers.count == 4)
+        #expect(runLoop.timers.count == 2)
         #expect(output.writes.count == writesAfterDeadline + 1)
         host.stop()
     }

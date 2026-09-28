@@ -50,6 +50,8 @@ public final class DefaultTerminalViewport {
         // SIGWINCH's default disposition is ignore. No process-global SIG_IGN override
         // is needed. All descriptor reads are serialized with stop()'s queue barrier.
         let source = DispatchSource.makeSignalSource(signal: SIGWINCH, queue: queue)
+        // Dispatch invokes this as an ordinary queue callback, not as a raw POSIX signal
+        // handler, so reading the descriptor and yielding to the stream are safe here.
         let readDimensions: @Sendable () -> Void = { [continuation] in
             guard !source.isCancelled else { return }
             do {

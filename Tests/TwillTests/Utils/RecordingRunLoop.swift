@@ -4,6 +4,10 @@
 final class RecordingRunLoop: RunLoop {
     private(set) var timers: [Twill.Timer] = []
     private(set) var cancelled: [Twill.Timer] = []
+    private(set) var sources: [RunLoopSource] = []
+    private(set) var signalled: [RunLoopSource] = []
+    private(set) var consumed: [RunLoopSource] = []
+    private(set) var removed: [RunLoopSource] = []
     var onAdd: ((Twill.Timer) -> Void)?
 
     func add(_ timer: Twill.Timer) {
@@ -13,6 +17,19 @@ final class RecordingRunLoop: RunLoop {
     func cancel(_ timer: Twill.Timer) {
         timer.isCancelled = true
         cancelled.append(timer)
+    }
+    func add(_ source: RunLoopSource) {
+        sources.append(source)
+    }
+    func signal(_ source: RunLoopSource) {
+        signalled.append(source)
+    }
+    func consume(_ source: RunLoopSource) {
+        consumed.append(source)
+    }
+    func remove(_ source: RunLoopSource) {
+        removed.append(source)
+        sources.removeAll { $0 === source }
     }
     func stop() {}
     func run() async {}

@@ -20,19 +20,19 @@ struct FocusPresentationTests {
         try host.start()
 
         // -- Act --
+        let source = try #require(runLoop.sources.first)
         let moved = host.handle(.arrowRight)
-        let pending = runLoop.timers.count
-        try #require(runLoop.timers.last).action()
+        source.action()
         let tabHandled = host.handle(.tab)
         let boundaryHandled = host.handle(.arrowRight)
         host.stop()
 
         // -- Assert --
         #expect(moved)
-        #expect(pending == 1)
+        #expect(runLoop.signalled.count == 1)
         #expect(!tabHandled)
         #expect(!boundaryHandled)
-        #expect(runLoop.timers.count == 1)
+        #expect(runLoop.timers.isEmpty)
         #expect(
             output.writes == [
                 "\r\u{1B}[2K\u{1B}[7mA\u{1B}[27m B",
@@ -60,15 +60,16 @@ struct FocusPresentationTests {
         )
         try host.start()
         let deadline = try #require(runLoop.timers.first)
+        let source = try #require(runLoop.sources.first)
 
         // -- Act --
         let moved = host.handle(.arrowRight)
-        try #require(runLoop.timers.last).action()
+        source.action()
 
         // -- Assert --
         #expect(moved)
         #expect(evaluations == 1)
-        #expect(runLoop.timers.count == 2)
+        #expect(runLoop.timers.count == 1)
         #expect(!deadline.isCancelled)
         #expect(runLoop.cancelled.isEmpty)
         #expect(output.writes.count == 2)
