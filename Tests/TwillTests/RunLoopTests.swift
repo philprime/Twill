@@ -216,4 +216,25 @@ struct RunLoopTests {
         // -- Assert --
         #expect(count == 1)
     }
+
+    @Test("A source registration can be signalled outside MainActor", .timeLimit(.minutes(1)))
+    func offActorSourceSignal() async {
+        // -- Arrange --
+        let runLoop = DefaultRunLoop()
+        var count = 0
+        let source = RunLoopSource {
+            count += 1
+            runLoop.stop()
+        }
+        let registration = runLoop.add(source)
+
+        // -- Act --
+        await Task.detached {
+            registration.signal()
+        }.value
+        await runLoop.run()
+
+        // -- Assert --
+        #expect(count == 1)
+    }
 }
