@@ -66,6 +66,12 @@ format-check:
 
 # Check Swift code and GitHub Actions workflows.
 lint:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    if [[ "$(uname -s)" == Linux ]]; then
+        runtime_library_path="$(swiftc -print-target-info | jq -er '.paths.runtimeLibraryPaths[] | select(endswith("/swift/linux"))')"
+        export LINUX_SOURCEKIT_LIB_PATH="$(dirname "$(dirname "$runtime_library_path")")"
+    fi
     swiftlint lint --strict --config .swiftlint.yml
     actionlint
 
