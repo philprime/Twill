@@ -37,29 +37,41 @@ struct TerminalViewportTests {
         let terminal = try TestTerminal()
         try resize(terminal, columns: 80, rows: 24)
         let viewport = DefaultTerminalViewport(fileDescriptor: .custom(terminal.fileDescriptor))
-        let initial = try viewport.start()
-        var iterator = viewport.events.makeAsyncIterator()
+        let runLoop = DefaultRunLoop()
+        let (sizes, sizeContinuation) = AsyncStream<TerminalSize>.makeStream()
+        var failure: Error?
+        let source = RunLoopSource {
+            do {
+                if let size = try viewport.consume() { sizeContinuation.yield(size) }
+            } catch {
+                failure = error
+                sizeContinuation.finish()
+                runLoop.stop()
+            }
+        }
+        let registration = runLoop.add(source)
+        let initial = try viewport.start(signaling: registration)
+        let runLoopTask = Task { await runLoop.run() }
+        var iterator = sizes.makeAsyncIterator()
         // Wait for the registration snapshot before explicitly exercising SIGWINCH.
-        _ = try await iterator.next()
+        _ = await iterator.next()
 
         // -- Act --
         try resize(terminal, columns: 50, rows: 10)
         #expect(kill(getpid(), SIGWINCH) == 0)
         var observed: TerminalSize?
-        do {
-            // Other process-wide resize signals can leave an older size queued.
-            while let size = try await iterator.next() {
-                MainActor.assertIsolated()
-                if size == TerminalSize(columns: 50, rows: 10) {
-                    observed = size
-                    break
-                }
+        // Other process-wide resize signals can leave an older size queued.
+        while let size = await iterator.next() {
+            MainActor.assertIsolated()
+            if size == TerminalSize(columns: 50, rows: 10) {
+                observed = size
+                break
             }
-        } catch {
-            await viewport.stop()
-            throw error
         }
         await viewport.stop()
+        runLoop.stop()
+        await runLoopTask.value
+        if let failure { throw failure }
 
         // -- Assert --
         #expect(initial == TerminalSize(columns: 80, rows: 24))

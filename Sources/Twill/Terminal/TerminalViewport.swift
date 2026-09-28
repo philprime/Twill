@@ -1,5 +1,6 @@
 // Linux's Dispatch overlay lacks Sendable annotations for thread-safe source cancellation.
 @preconcurrency import Dispatch
+import Synchronization
 
 #if canImport(Darwin)
     import Darwin
@@ -10,8 +11,8 @@
 #if TESTING
     @MainActor
     public protocol TerminalViewport: AnyObject, Sendable {
-        var events: AsyncThrowingStream<TerminalSize, Error> { get }
-        func start() throws -> TerminalSize?
+        func start(signaling registration: RunLoopSourceRegistration) throws -> TerminalSize?
+        func consume() throws -> TerminalSize?
         func cancel()
         func stop() async
     }
@@ -21,28 +22,56 @@
     public typealias TerminalViewport = DefaultTerminalViewport
 #endif
 
-/// A single-use viewport stream over a borrowed output descriptor. Unlike input
-/// bytes, intermediate resize events may be coalesced: only the newest size matters.
+private final class PendingViewportResult: Sendable {
+    private struct State {
+        var result: Result<TerminalSize, any Error>?
+        var isAccepting = true
+    }
+
+    private let state = Mutex(State())
+
+    func store(_ result: Result<TerminalSize, any Error>, terminal: Bool = false) -> Bool {
+        state.withLock { state in
+            guard state.isAccepting else { return false }
+            state.result = result
+            if terminal { state.isAccepting = false }
+            return true
+        }
+    }
+
+    func take() -> Result<TerminalSize, any Error>? {
+        state.withLock { state in
+            defer { state.result = nil }
+            return state.result
+        }
+    }
+
+    func cancel() {
+        state.withLock { state in
+            state.isAccepting = false
+            state.result = nil
+        }
+    }
+}
+
+/// Observes a borrowed output descriptor and buffers its newest unread viewport result.
 @MainActor
 public final class DefaultTerminalViewport {
-    public let events: AsyncThrowingStream<TerminalSize, Error>
-    private let continuation: AsyncThrowingStream<TerminalSize, Error>.Continuation
     private let fileDescriptor: FileDescriptor
     private let queue = DispatchQueue(label: "Twill.TerminalViewport")
+    private let pendingResult = PendingViewportResult()
     private var source: DispatchSourceSignal?
 
     public init(fileDescriptor: FileDescriptor = .standardOutput) {
         self.fileDescriptor = fileDescriptor
-        (events, continuation) = AsyncThrowingStream.makeStream(bufferingPolicy: .bufferingNewest(1))
     }
 
     public func size() throws -> TerminalSize? {
         try Self.readSize(fileDescriptor.rawValue)
     }
 
-    /// Returns the initial proposal before the first frame. Pipes stay unscheduled,
-    /// but their stream stays open until cancellation rather than ending the app.
-    public func start() throws -> TerminalSize? {
+    /// Returns the initial proposal before the first frame. Pipes stay unscheduled.
+    public func start(signaling registration: RunLoopSourceRegistration) throws -> TerminalSize? {
         let descriptor = fileDescriptor.rawValue
         let initial = try Self.readSize(descriptor)
         guard initial != nil || isatty(descriptor) != 0 else { return nil }
@@ -50,29 +79,40 @@ public final class DefaultTerminalViewport {
         // SIGWINCH's default disposition is ignore. No process-global SIG_IGN override
         // is needed. All descriptor reads are serialized with stop()'s queue barrier.
         let source = DispatchSource.makeSignalSource(signal: SIGWINCH, queue: queue)
+        let pendingResult = pendingResult
         // Dispatch invokes this as an ordinary queue callback, not as a raw POSIX signal
-        // handler, so reading the descriptor and yielding to the stream are safe here.
-        let readDimensions: @Sendable () -> Void = { [continuation] in
+        // handler, so reading the descriptor and signaling readiness are safe here.
+        let readDimensions: @Sendable () -> Void = {
             guard !source.isCancelled else { return }
             do {
-                if let size = try Self.readSize(descriptor) { continuation.yield(size) }
+                if let size = try Self.readSize(descriptor), pendingResult.store(.success(size)) {
+                    registration.signal()
+                }
             } catch {
-                continuation.finish(throwing: error)
+                if pendingResult.store(.failure(error), terminal: true) {
+                    registration.signal()
+                }
+                source.cancel()
             }
         }
         // Re-read after registration to cover a resize between the initial read and
         // installation of the signal observer. Duplicate sizes are ignored by the host.
         source.setRegistrationHandler(handler: readDimensions)
         source.setEventHandler(handler: readDimensions)
-        continuation.onTermination = { @Sendable _ in source.cancel() }
         self.source = source
         source.activate()
         return initial
     }
 
+    /// Consumes the newest unread size or throws the terminal observation failure.
+    public func consume() throws -> TerminalSize? {
+        guard let result = pendingResult.take() else { return nil }
+        return try result.get()
+    }
+
     public func cancel() {
+        pendingResult.cancel()
         source?.cancel()
-        continuation.finish()
     }
 
     /// Join an in-flight ioctl before the caller may release its borrowed descriptor.
