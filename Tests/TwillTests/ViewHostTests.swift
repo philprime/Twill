@@ -36,16 +36,17 @@ struct ViewHostTests {
         )
         try host.start()
         #expect(runLoop.timers.isEmpty)
+        let source = try #require(runLoop.sources.first)
 
         // -- Act --
         let handled = host.handle(.arrowRight)
-        let pending = try #require(runLoop.timers.last)
-        pending.action()
+        source.action()
         host.stop()
 
         // -- Assert --
         #expect(handled)
-        #expect(runLoop.timers.count == 1)
+        #expect(runLoop.timers.isEmpty)
+        #expect(runLoop.signalled.count == 1)
         #expect(output.writes.count == 3)
         #expect(output.writes[1].contains("\u{1B}[7mB\u{1B}[27m"))
     }

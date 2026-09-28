@@ -13,10 +13,11 @@ struct TextFieldCursorTests {
         let runLoop = RecordingRunLoop()
         let host = ViewHost(rootView: MultilineCursorFixture(), runLoop: runLoop, output: output)
         try host.start()
+        let source = try #require(runLoop.sources.first)
 
         // -- Act --
         _ = host.handle(.enter)
-        try #require(runLoop.timers.last).action()
+        source.action()
         let shown = try #require(output.writes.last)
         host.stop()
 
@@ -32,8 +33,9 @@ struct TextFieldCursorTests {
         let runLoop = RecordingRunLoop()
         let host = ViewHost(rootView: MultilineCursorFixture(), runLoop: runLoop, output: output)
         try host.start(size: TerminalSize(columns: 3, rows: 2))
+        let source = try #require(runLoop.sources.first)
         _ = host.handle(.enter)
-        try #require(runLoop.timers.last).action()
+        source.action()
 
         // -- Act --
         try host.resize(to: TerminalSize(columns: 3, rows: 1))
@@ -68,10 +70,11 @@ struct TextFieldCursorTests {
         )
         try host.start()
         let deadline = try #require(runLoop.timers.first)
+        let source = try #require(runLoop.sources.first)
 
         // -- Act --
         _ = host.handle(.enter)
-        try #require(runLoop.timers.last).action()
+        source.action()
         let writesBeforeTick = output.writes.count
         now = start.addingTimeInterval(1)
         deadline.action()
@@ -90,17 +93,18 @@ struct TextFieldCursorTests {
         let runLoop = RecordingRunLoop()
         let host = ViewHost(rootView: CursorFixture(), runLoop: runLoop, output: output)
         try host.start()
+        let source = try #require(runLoop.sources.first)
         let initial = try #require(output.writes.last)
 
         // -- Act --
         _ = host.handle(.enter)
-        try #require(runLoop.timers.last).action()
+        source.action()
         let shown = try #require(output.writes.last)
         _ = host.handle(.arrowLeft)
-        try #require(runLoop.timers.last).action()
+        source.action()
         let moved = try #require(output.writes.last)
         _ = host.handle(.escape)
-        try #require(runLoop.timers.last).action()
+        source.action()
         let hidden = try #require(output.writes.last)
         host.stop()
 

@@ -13,8 +13,13 @@ final class ViewHost {
     private var renderer: ViewRenderer?
     private var timer: Timer?
     private var scheduledDate: Date?
-    private var stateTimer: Timer?
+    private var isPresentationPending = false
     private var isActive = false
+    // Presentation invalidation is readiness, not a time deadline. Keeping one source
+    // avoids creating timer machinery and lets a due timeline consume the same work.
+    private lazy var presentationSource = RunLoopSource { [weak self] in
+        self?.presentationSourceFired()
+    }
 
     init(
         rootView: any View, runLoop: RunLoop, output: TerminalOutput,
@@ -35,6 +40,7 @@ final class ViewHost {
         self.renderer = renderer
         isActive = true
         viewportSize = size
+        runLoop.add(presentationSource)
         do {
             try render()
         } catch {
@@ -46,8 +52,8 @@ final class ViewHost {
     func stop() {
         isActive = false
         cancelTimer()
-        if let stateTimer { runLoop.cancel(stateTimer) }
-        stateTimer = nil
+        runLoop.remove(presentationSource)
+        isPresentationPending = false
         renderer = nil
         presenter.stop()
     }
@@ -59,20 +65,19 @@ final class ViewHost {
     }
 
     private func requestPresentation() {
-        guard isActive, stateTimer == nil else { return }
-        // State writes share one wake-up; the independent timeline timer remains armed.
-        let pending = Timer(deadline: .now()) { [weak self] in
-            guard let self else { return }
-            self.stateTimer = nil
-            do {
-                try render()
-            } catch {
-                stop()
-                onError?(error)
-            }
+        guard isActive, !isPresentationPending else { return }
+        isPresentationPending = true
+        runLoop.signal(presentationSource)
+    }
+
+    private func presentationSourceFired() {
+        isPresentationPending = false
+        do {
+            try render()
+        } catch {
+            stop()
+            onError?(error)
         }
-        stateTimer = pending
-        runLoop.add(pending)
     }
 
     private var proposal: ProposedCellSize {
@@ -83,7 +88,7 @@ final class ViewHost {
         guard isActive, let renderer else { return false }
         // A prior key may have changed mounted state while its presentation is
         // still coalesced. Route this key through the current scope immediately.
-        if stateTimer != nil { renderer.refreshContent(at: now()) }
+        if isPresentationPending { renderer.refreshContent(at: now()) }
         return renderer.handle(key)
     }
 
@@ -98,9 +103,10 @@ final class ViewHost {
 
     private func render() throws {
         guard isActive, let renderer else { return }
-        // A due timeline can consume pending state work in the same frame.
-        if let stateTimer { runLoop.cancel(stateTimer) }
-        stateTimer = nil
+        // Clear readiness before evaluating content. A state write during rendering
+        // signals distinct follow-up work instead of being consumed by this frame.
+        runLoop.consume(presentationSource)
+        isPresentationPending = false
         let frame = renderer.render(now(), proposal: proposal)
         try presenter.present(FrameSnapshot(grid: frame.grid, caret: renderer.caretPosition))
         guard isActive else { return }

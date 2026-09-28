@@ -22,7 +22,7 @@ Application
 ├── TerminalSession       Saves and restores terminal input modes
 ├── KeyboardEventSource   Decodes input and manages Escape deadlines
 │   └── InputSource       Borrows and reads an input descriptor
-├── RunLoop               Schedules timer callbacks
+├── RunLoop               Delivers signaled callbacks and timer deadlines
 └── ViewHost              Owns mounted presentation and its next wake-up
     ├── ViewRenderer tree Retains identity, state, content, and deadlines
     ├── Focus routing     Tracks eligible controls and modal scopes
@@ -35,7 +35,7 @@ Replaceable collaborators are constructor-injected. Concrete defaults are chosen
 
 ## Execution and input
 
-`Application.run()` owns two structured child tasks: one consumes keyboard input and one runs the timer scheduler. Their UI-facing work executes on `MainActor`.
+`Application.run()` owns three structured child tasks: one consumes keyboard input, one consumes viewport changes, and one runs the callback and timer scheduler. Their UI-facing work executes on `MainActor`.
 
 ```text
 Descriptor readiness
@@ -51,7 +51,9 @@ The reader drains available bytes in nonblocking mode. Its byte stream is lossle
 
 `KeyboardEventSource` owns the parser and Escape disambiguation deadlines. It delivers keys synchronously on the UI actor. There is no forwarding task or task per key.
 
-The type named `RunLoop` schedules timers. It is not Foundation's `RunLoop`, a `CFRunLoop` clone, or a central queue for all application events. Keyboard events do not pass through its queue. Actor isolation provides serialization, while presentation scheduling is handled separately by the view host.
+The type named `RunLoop` delivers manually signaled callback sources and timer deadlines. A source represents coalescible readiness without a payload. Signaling a pending source has no additional effect; readiness is cleared before its action runs so the action can signal distinct follow-up work. Consuming readiness or removing and re-registering a source invalidates its stale queued notifications. Stopping the run loop suppresses all queued callbacks.
+
+`RunLoop` is not Foundation's `RunLoop`, a `CFRunLoop` clone, or a central queue for all application events. Keyboard and viewport events do not pass through its queue. `MainActor` isolation serializes UI work but does not establish a global FIFO across independently produced keyboard, viewport, source, and timer events. The run loop preserves only its own stream's observed order, and no ordering policy should be inferred between concurrent producers.
 
 ## Strongly typed view descriptions
 
@@ -97,7 +99,9 @@ Consequently, reconstructing `.periodic(from: .now, ...)` during every parent up
 
 `ViewHost` measures and draws mounted content into a terminal-cell grid. Text control characters are rendered safely rather than emitted as terminal commands. Horizontal and vertical stacks place children at integer cell coordinates; transparent groups and conditionals do not add spacing. Wide graphemes occupy a leading cell and continuation cell so clipping and updates never render half a character.
 
-The terminal host encodes changed cells, batches output, and advances its diff baseline only after a successful write. Views cannot write terminal output. State changes, keyboard events, and resize requests coalesce into presentations; static trees remain idle.
+The terminal host encodes changed cells, batches output, and advances its diff baseline only after a successful write. Views cannot write terminal output. The host registers one presentation source for its lifetime. State changes and keyboard-driven mutations signal that source, and repeated signals coalesce until delivery. A due timeline render consumes pending presentation readiness in the same frame. Readiness is cleared before rendering so a state change during rendering requests a later frame rather than being lost.
+
+Resize events keep only the newest unread size and redraw cached content directly. They do not reevaluate view bodies or disturb timeline deadlines. Static trees remain idle after presentation.
 
 For multi-row inline frames, the host reserves space below the shell's current line and returns its hidden cursor to the frame's top-left anchor between writes. It clears removed rows and redraws the frame after growing its footprint. Shutdown advances below the last row. The host does not enter an alternate screen or claim unrelated shell output.
 
@@ -107,8 +111,8 @@ The host also owns the hardware cursor. It places and shows the cursor at a focu
 
 Stop requests, keyboard EOF, caller cancellation, and runtime errors end the application session.
 
-Shutdown cancels the pending presentation timer, releases the mounted tree, requests reader cancellation, and stops timer processing. Structured task ownership ensures input cleanup completes before terminal input settings are restored. The reader restores inherited descriptor flags without closing the borrowed descriptor.
+Shutdown removes the presentation source, cancels the pending timeline timer, releases the mounted tree, requests reader cancellation, and stops callback and timer processing. Structured task ownership ensures input cleanup completes before terminal input settings are restored. The reader restores inherited descriptor flags without closing the borrowed descriptor.
 
-Initial presentation failures throw from `run()`. Later output failures originate in timer callbacks, so the application records the error, initiates shutdown, and reports it after cleanup. The task group also observes input failures that finish after timer shutdown.
+Initial presentation failures throw from `run()`. Later output failures can originate in source or timer callbacks, so the application records the error, initiates shutdown, and reports it after cleanup. The task group also observes input failures that finish after scheduler shutdown.
 
 Terminal restoration is best-effort on orderly shutdown. Crash recovery and fatal-signal cleanup are not implemented. Raw-mode Ctrl-C is handled as a keyboard event, not through a process signal handler.

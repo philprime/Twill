@@ -63,15 +63,16 @@ struct BindingTests {
         try host.start()
 
         // -- Act --
+        let source = try #require(runLoop.sources.first)
         let action = try #require(increment)
         action()
         action()
-        let pendingCount = runLoop.timers.count
-        try #require(runLoop.timers.last).action()
+        source.action()
         host.stop()
 
         // -- Assert --
-        #expect(pendingCount == 1)
+        #expect(runLoop.timers.isEmpty)
+        #expect(runLoop.signalled.count == 1)
         #expect(output.writes == ["\r\u{1B}[2K0", "\r2", "\n"])
     }
 }

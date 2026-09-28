@@ -151,4 +151,69 @@ struct RunLoopTests {
         // -- Assert --
         #expect(actions == [1, 2])
     }
+
+    @Test("Repeated source signals coalesce until delivery", .timeLimit(.minutes(1)))
+    func coalescesSourceSignals() async {
+        // -- Arrange --
+        let runLoop = DefaultRunLoop()
+        var count = 0
+        let source = RunLoopSource {
+            count += 1
+            runLoop.stop()
+        }
+        runLoop.add(source)
+
+        // -- Act --
+        runLoop.signal(source)
+        runLoop.signal(source)
+        await runLoop.run()
+
+        // -- Assert --
+        #expect(count == 1)
+    }
+
+    @Test("Consuming readiness suppresses its stale notification but permits a later signal", .timeLimit(.minutes(1)))
+    func consumesSourceReadiness() async {
+        // -- Arrange --
+        let runLoop = DefaultRunLoop()
+        var count = 0
+        let source = RunLoopSource {
+            count += 1
+            runLoop.stop()
+        }
+        runLoop.add(source)
+        runLoop.signal(source)
+
+        // -- Act --
+        runLoop.consume(source)
+        runLoop.signal(source)
+        await runLoop.run()
+
+        // -- Assert --
+        #expect(count == 1)
+    }
+
+    @Test(
+        "Removing and re-registering a source discards notifications from its old registration", .timeLimit(.minutes(1))
+    )
+    func reRegistersSource() async {
+        // -- Arrange --
+        let runLoop = DefaultRunLoop()
+        var count = 0
+        let source = RunLoopSource {
+            count += 1
+            runLoop.stop()
+        }
+        runLoop.add(source)
+        runLoop.signal(source)
+
+        // -- Act --
+        runLoop.remove(source)
+        runLoop.add(source)
+        runLoop.signal(source)
+        await runLoop.run()
+
+        // -- Assert --
+        #expect(count == 1)
+    }
 }
