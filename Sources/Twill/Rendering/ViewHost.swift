@@ -97,7 +97,7 @@ final class ViewHost {
         viewportSize = size
         // Terminal reflow invalidates the physical baseline. Resize only draws
         // cached content, leaving all timeline deadlines and timers untouched.
-        let frame = renderer.drawFrame(proposal: proposal)
+        let frame = renderer.drawFrame(proposal: proposal, centeredInViewport: presenter.mode == .fullscreen)
         try presenter.present(FrameSnapshot(grid: frame, caret: renderer.caretPosition), invalidate: true)
     }
 
@@ -107,7 +107,7 @@ final class ViewHost {
         // signals distinct follow-up work instead of being consumed by this frame.
         runLoop.consume(presentationSource)
         isPresentationPending = false
-        let frame = renderer.render(now(), proposal: proposal)
+        let frame = renderer.render(now(), proposal: proposal, centeredInViewport: presenter.mode == .fullscreen)
         try presenter.present(FrameSnapshot(grid: frame.grid, caret: renderer.caretPosition))
         guard isActive else { return }
         // Parent state updates must not restart an unchanged child's deadline.

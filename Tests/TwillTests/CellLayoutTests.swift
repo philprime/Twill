@@ -65,7 +65,61 @@ struct CellLayoutTests {
 
         // -- Assert --
         #expect(frame.grid?.size == CellSize(width: 3, height: 5))
-        #expect(frame.grid?.snapshotText == "A  \n   \nB C\n   \nD  ")
+        #expect(frame.grid?.snapshotText == " A \n   \nB C\n   \n D ")
+    }
+
+    @Test("Stacks remain content-sized and center children on the cross axis")
+    func centeredStackChildren() {
+        // -- Arrange --
+        let vertical = ViewRenderer.make(
+            VStack {
+                Text("A")
+                Text("WIDE")
+            })
+        let horizontal = ViewRenderer.make(
+            HStack(spacing: 0) {
+                Text("A")
+                VStack {
+                    Text("B")
+                    Text("C")
+                    Text("D")
+                }
+            })
+
+        // -- Act --
+        let verticalGrid = vertical.render(.now).grid
+        let horizontalGrid = horizontal.render(.now).grid
+
+        // -- Assert --
+        #expect(verticalGrid?.snapshotText == " A  \nWIDE")
+        #expect(horizontalGrid?.snapshotText == " B\nAC\n D")
+    }
+
+    @Test("Stack alignment changes child placement, not the stack's size")
+    func stackAlignment() {
+        // -- Arrange --
+        let vertical = ViewRenderer.make(
+            VStack(alignment: .trailing) {
+                Text("A")
+                Text("WIDE")
+            })
+        let horizontal = ViewRenderer.make(
+            HStack(alignment: .bottom, spacing: 0) {
+                Text("A")
+                VStack {
+                    Text("B")
+                    Text("C")
+                    Text("D")
+                }
+            })
+
+        // -- Act --
+        let verticalGrid = vertical.render(.now).grid
+        let horizontalGrid = horizontal.render(.now).grid
+
+        // -- Assert --
+        #expect(verticalGrid?.snapshotText == "   A\nWIDE")
+        #expect(horizontalGrid?.snapshotText == " B\n C\nAD")
     }
 
     @Test("Vertical stacks clip rows outside their proposed height")
@@ -154,6 +208,74 @@ struct CellLayoutTests {
         #expect(frame.grid?.snapshotText == "ABCD !")
     }
 
+    @Test("A flexible frame expands while keeping intrinsic content centered")
+    func flexibleFrame() {
+        // -- Arrange --
+        let background = Color(red: 8, green: 16, blue: 24)
+        let renderer = ViewRenderer.make(
+            Text("Hi")
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .backgroundStyle(background))
+
+        // -- Act --
+        let frame = renderer.render(.now, proposal: ProposedCellSize(width: 8, height: 5))
+        let intrinsic = renderer.render(.now)
+
+        // -- Assert --
+        #expect(frame.grid?.size == CellSize(width: 8, height: 5))
+        #expect(frame.grid?[3, 2] == .glyph("H", width: 1))
+        #expect(frame.grid?[4, 2] == .glyph("i", width: 1))
+        #expect(frame.grid?.background(column: 0, row: 0) == background)
+        #expect(intrinsic.grid?.size == CellSize(width: 2, height: 1))
+    }
+
+    @Test("Frame alignment positions content without stretching it")
+    func alignedFrame() {
+        // -- Arrange --
+        let renderer = ViewRenderer.make(
+            Text("Hi").frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing))
+
+        // -- Act --
+        let frame = renderer.render(.now, proposal: ProposedCellSize(width: 8, height: 5))
+
+        // -- Assert --
+        #expect(frame.grid?.size == CellSize(width: 8, height: 5))
+        #expect(frame.grid?[6, 4] == .glyph("H", width: 1))
+        #expect(frame.grid?[7, 4] == .glyph("i", width: 1))
+    }
+
+    @Test("Finite frame limits accept space up to their caps")
+    func finiteFrameLimits() {
+        // -- Arrange --
+        let renderer = ViewRenderer.make(Text("Hi").frame(maxWidth: 6, maxHeight: 3))
+
+        // -- Act --
+        let frame = renderer.render(.now, proposal: ProposedCellSize(width: 10, height: 5))
+        let intrinsic = renderer.render(.now)
+
+        // -- Assert --
+        #expect(frame.grid?.size == CellSize(width: 6, height: 3))
+        #expect(frame.grid?[2, 1] == .glyph("H", width: 1))
+        #expect(intrinsic.grid?.size == CellSize(width: 2, height: 1))
+    }
+
+    @Test("A wide framed stack centers its intrinsic children unless alignment changes")
+    func wideFramedStack() {
+        // -- Arrange --
+        let centered = ViewRenderer.make(
+            HStack { Text("Hi") }.frame(maxWidth: .infinity))
+        let leading = ViewRenderer.make(
+            HStack { Text("Hi") }.frame(maxWidth: .infinity, alignment: .leading))
+
+        // -- Act --
+        let centerGrid = centered.render(.now, proposal: ProposedCellSize(width: 8, height: 1)).grid
+        let leadingGrid = leading.render(.now, proposal: ProposedCellSize(width: 8, height: 1)).grid
+
+        // -- Assert --
+        #expect(centerGrid?.snapshotText == "   Hi   ")
+        #expect(leadingGrid?.snapshotText == "Hi      ")
+    }
+
     @Test("Flexible panels occupy the viewport and leave a capped sidebar beside a filling detail pane")
     func fillingPanels() {
         // -- Arrange --
@@ -161,14 +283,16 @@ struct CellLayoutTests {
         let border = Color(red: 90, green: 90, blue: 90)
         let renderer = ViewRenderer.make(
             VStack(spacing: 1) {
-                Text("H").frame(fillWidth: true).backgroundStyle(background)
-                Text("Search").frame(fillWidth: true).border(.single, color: border)
+                Text("H").frame(maxWidth: .infinity, alignment: .leading).backgroundStyle(background)
+                Text("Search").frame(maxWidth: .infinity, alignment: .leading).border(.single, color: border)
                 HStack(spacing: 2) {
-                    Text("L").frame(width: 8).frame(fillHeight: true).border(.single, color: border)
-                    Text("R").frame(fillWidth: true, fillHeight: true).border(.single, color: border)
+                    Text("L").frame(width: 8).frame(maxHeight: .infinity, alignment: .top).border(
+                        .single, color: border)
+                    Text("R").frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+                        .border(.single, color: border)
                 }
-                .frame(fillHeight: true)
-                Text("F").frame(fillWidth: true)
+                .frame(maxHeight: .infinity)
+                Text("F").frame(maxWidth: .infinity, alignment: .leading)
             }
             .backgroundStyle(background))
 

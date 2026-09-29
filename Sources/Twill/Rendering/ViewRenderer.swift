@@ -39,9 +39,11 @@ final class ViewRenderer {
         ViewRenderer(view)
     }
 
-    func render(_ date: Date, proposal: ProposedCellSize = .unspecified) -> (grid: CellGrid?, nextUpdate: Date?) {
+    func render(
+        _ date: Date, proposal: ProposedCellSize = .unspecified, centeredInViewport: Bool = false
+    ) -> (grid: CellGrid?, nextUpdate: Date?) {
         refreshContent(at: date)
-        return (drawFrame(proposal: proposal), nextUpdate)
+        return (drawFrame(proposal: proposal, centeredInViewport: centeredInViewport), nextUpdate)
     }
 
     func refreshContent(at date: Date) {
@@ -53,7 +55,7 @@ final class ViewRenderer {
     }
 
     /// Layout and drawing never evaluate bodies or advance timeline deadlines.
-    func drawFrame(proposal: ProposedCellSize) -> CellGrid? {
+    func drawFrame(proposal: ProposedCellSize, centeredInViewport: Bool = false) -> CellGrid? {
         let sheet = activeSheet()
         let content = sheet?.sheetBranch ?? self
         if let sheet { return drawOverlay(sheet: sheet, proposal: proposal) }
@@ -64,8 +66,14 @@ final class ViewRenderer {
         let size = content.measure(proposal)
         let scope = sheet ?? self
         let focused = scope.resolveFocus(in: scope.focusableNodes())
-        var context = DrawingContext(size: size)
-        content.draw(in: &context, focused: focused)
+        let viewport =
+            centeredInViewport
+            ? CellSize(width: proposal.width ?? size.width, height: proposal.height ?? size.height) : size
+        var context = DrawingContext(size: viewport)
+        let origin = CellRect(
+            column: max(0, (viewport.width - size.width) / 2),
+            row: max(0, (viewport.height - size.height) / 2), width: size.width, height: size.height)
+        context.withRegion(origin) { content.draw(in: &$0, focused: focused) }
         caretPosition = context.caret
         return context.grid
     }
