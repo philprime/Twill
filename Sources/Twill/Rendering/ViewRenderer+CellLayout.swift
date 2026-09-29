@@ -16,14 +16,21 @@ extension ViewRenderer {
 
     private var wantsFillWidth: Bool {
         if case .canvas = description { return true }
-        if case .group(_, let fill as FillFrameLayout) = description, fill.fillWidth { return true }
-        if case .group(_, let frame as FrameLayout) = description, frame.width != nil { return false }
+        if case .group(_, let frame as FrameLayout) = description {
+            if frame.width != nil { return false }
+            if case .cells = frame.maxWidth { return false }
+            if frame.fillsWidth { return true }
+        }
         return children.contains { $0.wantsFillWidth }
     }
 
     private var wantsFillHeight: Bool {
         if case .canvas = description { return true }
-        if case .group(_, let fill as FillFrameLayout) = description, fill.fillHeight { return true }
+        if case .group(_, let frame as FrameLayout) = description {
+            if frame.height != nil { return false }
+            if case .cells = frame.maxHeight { return false }
+            if frame.fillsHeight { return true }
+        }
         return children.contains { $0.wantsFillHeight }
     }
 
@@ -58,19 +65,15 @@ extension ViewRenderer {
         } else if let vertical = layout as? VerticalLayout {
             sizes = measureVertical(items, proposal: proposal, spacing: vertical.spacing)
         } else if let frame = layout as? FrameLayout, items.count == 1 {
-            sizes = [
-                items[0].measure(
-                    ProposedCellSize(
-                        width: min(frame.width ?? frame.maxWidth ?? proposal.width ?? 0, proposal.width ?? Int.max),
-                        height: proposal.height))
-            ]
+            sizes = [items[0].measure(frame.childProposal(proposal))]
         } else if items.count == 1 {
             sizes = [items[0].measure(proposal)]
         } else {
             sizes = items.map { $0.measure(.unspecified) }
         }
-        placements = zip(items, layout.placeSubviews(sizes)).map { ($0, $1) }
-        return layout.sizeThatFits(proposal, subviews: sizes)
+        let size = layout.sizeThatFits(proposal, subviews: sizes)
+        placements = zip(items, layout.placeSubviews(sizes, in: size)).map { ($0, $1) }
+        return size
     }
 
     private func measureHorizontal(_ items: [ViewRenderer], proposal: ProposedCellSize, spacing: Int) -> [CellSize] {

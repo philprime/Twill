@@ -6,6 +6,23 @@ import Testing
 @Suite("Event-driven viewport layout")
 @MainActor
 struct ViewHostResizeTests {
+    @Test("Fullscreen root content is centered within the viewport and recenters on resize")
+    func centeredFullscreenRoot() throws {
+        // -- Arrange --
+        let output = RecordingTerminalOutput()
+        let host = ViewHost(rootView: VStack { Text("Hello") }, runLoop: RecordingRunLoop(), output: output)
+
+        // -- Act --
+        try host.start(size: TerminalSize(columns: 11, rows: 5), mode: .fullscreen)
+        try host.resize(to: TerminalSize(columns: 9, rows: 3))
+        host.stop()
+
+        // -- Assert --
+        #expect(output.writes.count == 2)
+        #expect(output.writes[0].contains("\r\u{1B}[2K   Hello   "))
+        #expect(output.writes[1].contains("\r\u{1B}[2K  Hello  "))
+    }
+
     @Test("Resize redraws cached content and preserves the pending timeline timer")
     func resizeTimeline() throws {
         // -- Arrange --

@@ -22,7 +22,7 @@ struct NotesBrowserView: View {
     var body: some View {
         VStack(spacing: 1) {
             Text(" Notes ")
-                .frame(fillWidth: true)
+                .frame(maxWidth: .infinity, alignment: .leading)
                 .foregroundStyle(NotesPalette.background)
                 .backgroundStyle(NotesPalette.accent)
             TextField("Search notes", text: $query)
@@ -30,7 +30,7 @@ struct NotesBrowserView: View {
                     if key == .arrowDown || key == .arrowRight { selectedNoteID = matchingNotes.first?.id }
                     return .ignored
                 }
-                .frame(fillWidth: true)
+                .frame(maxWidth: .infinity, alignment: .leading)
                 .foregroundStyle(NotesPalette.foreground)
                 .border(.single, color: NotesPalette.border)
             HStack(spacing: 2) {
@@ -39,17 +39,17 @@ struct NotesBrowserView: View {
                     selectedNoteID: $selectedNoteID
                 )
                 .frame(width: 24)
-                .frame(fillHeight: true)
+                .frame(maxHeight: .infinity, alignment: .top)
                 .border(.single, color: NotesPalette.border)
                 if let selectedNote {
                     NoteDetailView(note: selectedNote, onShowHelp: { isHelpPresented = true })
-                        .frame(fillWidth: true, fillHeight: true)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
                         .border(.single, color: NotesPalette.border)
                 }
             }
-            .frame(fillWidth: true, fillHeight: true)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             Text(" ?: Help  •  Enter: Select  •  s: Summary ")
-                .frame(fillWidth: true)
+                .frame(maxWidth: .infinity, alignment: .leading)
                 .foregroundStyle(NotesPalette.accent)
         }
         .backgroundStyle(NotesPalette.background)

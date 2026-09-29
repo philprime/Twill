@@ -22,7 +22,7 @@ struct ViewStylingTests {
 
         // -- Assert --
         #expect(frame.grid?.size == CellSize(width: 5, height: 3))
-        #expect(frame.grid?.snapshotText == "┌──┐!\n│Hi│ \n└──┘ ")
+        #expect(frame.grid?.snapshotText == "┌──┐ \n│Hi│!\n└──┘ ")
     }
 
     @Test("Borders clip safely when the viewport is smaller than their content")
