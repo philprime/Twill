@@ -63,12 +63,6 @@ public final class Application {
         try terminalSession.start()
         keyboardEventSource.onKeyEvent = { [weak self] key in self?.handle(key) }
         viewHost.onError = { [weak self] error in self?.presentationFailed(error) }
-        defer {
-            stop()
-            viewHost.onError = nil
-            keyboardEventSource.onKeyEvent = nil
-            terminalSession.restore()
-        }
         do {
             let viewportRegistration = runLoop.add(viewportSource)
             let size = try terminalViewport.start(signaling: viewportRegistration)
@@ -92,12 +86,20 @@ public final class Application {
                 }
             }
         } catch {
-            stop()
-            await terminalViewport.stop()
+            await finish()
             throw error
         }
-        await terminalViewport.stop()
+        await finish()
         if let runtimeError { throw runtimeError }
+    }
+
+    private func finish() async {
+        stop()
+        await terminalViewport.stop()
+        await viewHost.joinTasks()
+        viewHost.onError = nil
+        keyboardEventSource.onKeyEvent = nil
+        terminalSession.restore()
     }
 
     private func presentationFailed(_ error: Error) {
