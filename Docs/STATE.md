@@ -10,6 +10,12 @@ Writing `@State` invalidates the affected content. The host coalesces multiple w
 
 `@Binding` provides read/write access to a value owned by another node. Writing through a binding updates that owner and triggers the same invalidation as a direct state write. Bindings do not extend the owner's lifetime or create independent storage. Shared mutable values use bindings; commands such as navigation use actions.
 
+## Asynchronous view work
+
+Attach `.task` to a view to start an asynchronous, UI-actor-isolated action when that view mounts. The action can update `@State` to present a result. Its default priority is `.userInitiated`; pass `priority:` to choose another priority. Handle thrown errors within the action because the modifier accepts a nonthrowing closure.
+
+The mounted node owns the task. Parent reevaluation and state updates that preserve the node's identity do not start another task. Replacing or removing the node cancels its task; remounting starts a new one. If a node disappears before its action begins, that action is skipped. Cancellation is cooperative, so long-running actions must respond to cancellation. On application shutdown, outstanding view tasks are cancelled and joined before terminal resources are restored. A task that does not finish after cancellation can delay shutdown.
+
 ## Identity and reconciliation
 
 Structural position and concrete view type determine identity for ordinary children. Compatible descriptions update their mounted nodes while retaining state. Switching conditional branches or changing a child's type replaces the affected subtree. An absent optional branch retains its position so later siblings do not inherit its state. Removing a branch releases its children and their pending deadlines.

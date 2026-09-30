@@ -85,6 +85,36 @@ struct ApplicationLifecycleTests {
         #expect(restored == original)
     }
 
+    @Test("View tasks finish before terminal modes are restored", .timeLimit(.minutes(1)))
+    func viewTaskShutdown() async throws {
+        // -- Arrange --
+        let terminal = try TestTerminal()
+        let original = try terminal.snapshot()
+        let started = AsyncStream.makeStream(of: Void.self)
+        var modesDuringCancellation: TerminalSnapshot?
+        let application = Application(
+            rootView: Text("Active").task {
+                started.continuation.yield(())
+                do { try await Task.sleep(for: .seconds(60)) } catch {
+                    modesDuringCancellation = try? terminal.snapshot()
+                }
+            },
+            terminalSession: DefaultTerminalSession(fileDescriptor: .custom(terminal.fileDescriptor))
+        )
+        let running = Task { try await application.run() }
+        var starts = started.stream.makeAsyncIterator()
+        _ = await starts.next()
+
+        // -- Act --
+        application.stop()
+        try await running.value
+
+        // -- Assert --
+        #expect(modesDuringCancellation != nil)
+        #expect(modesDuringCancellation != original)
+        #expect(try terminal.snapshot() == original)
+    }
+
     @Test("Reader setup failure restores inherited terminal modes", .timeLimit(.minutes(1)))
     func readerFailureRestoresTerminal() async throws {
         // -- Arrange --

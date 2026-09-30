@@ -14,6 +14,8 @@ final class ViewRenderer {
     }
 
     private let viewType: ObjectIdentifier
+    private let taskRegistry: MountedTaskRegistry
+    private var viewTask: Task<Void, Never>?
     weak var parent: ViewRenderer?
     private var initialView: (any View)?
     private var mountedView: (any View)?
@@ -30,13 +32,32 @@ final class ViewRenderer {
     var measuredSize = CellSize.zero
     private var nextUpdate: Date?
 
-    private init(_ view: any View) {
+    private init(_ view: any View, taskRegistry: MountedTaskRegistry) {
         viewType = ObjectIdentifier(type(of: view))
+        self.taskRegistry = taskRegistry
         initialView = view
     }
 
-    static func make<Content: View>(_ view: Content) -> ViewRenderer {
-        ViewRenderer(view)
+    static func make<Content: View>(
+        _ view: Content, taskRegistry: MountedTaskRegistry = MountedTaskRegistry()
+    ) -> ViewRenderer {
+        ViewRenderer(view, taskRegistry: taskRegistry)
+    }
+
+    func unmount() {
+        parent = nil
+        onInvalidation = nil
+        viewTask?.cancel()
+        viewTask = nil
+        for child in children { child.unmount() }
+        children = []
+        keyedChildren = [:]
+    }
+
+    private func removeChildren() {
+        for child in children { child.unmount() }
+        children = []
+        keyedChildren = [:]
     }
 
     func render(
@@ -130,9 +151,9 @@ final class ViewRenderer {
         description = updated
         switch updated {
         case .empty, .drawing, .textField:
-            children = []
+            removeChildren()
         case .canvas(let interval, _):
-            children = []
+            removeChildren()
             updateCanvas(interval: interval, at: date)
         case .body(let body):
             reconcile([body], at: date)
@@ -142,13 +163,12 @@ final class ViewRenderer {
             reconcileKeyed(views, at: date)
         case .focusable(let content), .keyPress(let content, _), .styled(let content, _, _), .border(let content, _, _):
             reconcile([content], at: date)
+        case .task(let content, let priority, let action):
+            updateTask(content, priority: priority, action: action, at: date)
         case .sheet(let base, let isPresented, let content):
             reconcile(isPresented.wrappedValue ? [base, content()] : [base], at: date)
         case .conditional(let first, let content):
-            if case .conditional(let wasFirst, _) = previous, first != wasFirst {
-                children = []
-            }
-            reconcile([content], at: date)
+            updateConditional(first: first, content: content, previous: previous, at: date)
         case .timeline(let schedule, let content):
             let contextDate = advanceTimeline(schedule, at: date)
             reconcile([content(contextDate)], at: date)
@@ -175,18 +195,21 @@ final class ViewRenderer {
     }
 
     private func reconcile(_ views: [any View], at date: Date) {
+        let previous = children
         children = views.enumerated().map { index, view in
             let node: ViewRenderer
-            if index < children.count, children[index].viewType == ObjectIdentifier(type(of: view)) {
-                node = children[index]
+            if index < previous.count, previous[index].viewType == ObjectIdentifier(type(of: view)) {
+                node = previous[index]
             } else {
-                node = Self.make(view)
+                if index < previous.count { previous[index].unmount() }
+                node = Self.make(view, taskRegistry: taskRegistry)
             }
             // Parent updates may change child inputs even before the child's own deadline.
             node.parent = self
             node.update(view, at: date)
             return node
         }
+        for child in previous.dropFirst(views.count) { child.unmount() }
         // Removed nodes have no independent timers. Releasing them also removes their
         // deadlines from the aggregate that drives the host's single wake-up timer.
     }
@@ -199,13 +222,15 @@ final class ViewRenderer {
             if let existing = previous[id], existing.viewType == ObjectIdentifier(type(of: view)) {
                 node = existing
             } else {
-                node = Self.make(view)
+                previous[id]?.unmount()
+                node = Self.make(view, taskRegistry: taskRegistry)
             }
             node.parent = self
             node.update(view, at: date)
             retained[id] = node
             return node
         }
+        for (id, child) in previous where retained[id] == nil { child.unmount() }
         keyedChildren = retained
     }
 
@@ -259,6 +284,21 @@ final class ViewRenderer {
 }
 
 extension ViewRenderer {
+    private func updateTask(
+        _ content: any View, priority: TaskPriority, action: @escaping @MainActor @Sendable () async -> Void,
+        at date: Date
+    ) {
+        reconcile([content], at: date)
+        if viewTask == nil { viewTask = taskRegistry.start(priority: priority, action: action) }
+    }
+
+    private func updateConditional(first: Bool, content: any View, previous: ViewDescription?, at date: Date) {
+        if case .conditional(let wasFirst, _) = previous, first != wasFirst {
+            removeChildren()
+        }
+        reconcile([content], at: date)
+    }
+
     func handle(_ key: KeyEvent) -> Bool {
         if let sheet = activeSheet() {
             // An ignored key cannot escape the presented scope to the base or application.
