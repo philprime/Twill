@@ -1,6 +1,22 @@
 /// Draws the retained page and each modal sheet into one viewport-sized frame.
 @MainActor
 extension ViewRenderer {
+    var sheetBranch: ViewRenderer? {
+        guard case .sheet(_, let isPresented, _) = description else { return nil }
+        return isPresented.wrappedValue ? children.dropFirst().first : children.first
+    }
+
+    func activeSheet() -> ViewRenderer? {
+        if case .sheet(_, let isPresented, _) = description {
+            guard let branch = sheetBranch else { return nil }
+            return branch.activeSheet() ?? (isPresented.wrappedValue ? self : nil)
+        }
+        for child in children.reversed() {
+            if let sheet = child.activeSheet() { return sheet }
+        }
+        return nil
+    }
+
     func drawOverlay(sheet: ViewRenderer, proposal: ProposedCellSize) -> CellGrid? {
         // Walk from the outermost modal layer so nested sheets retain their
         // enclosing presentation underneath the active keyboard scope.
@@ -33,13 +49,14 @@ extension ViewRenderer {
         )
         var context = DrawingContext(size: size)
         base.draw(in: &context, focused: nil)
-        let focused = sheet.resolveFocus(in: sheet.focusableNodes())
+        let focused = sheet.focusTarget()
         for (layer, layerSize) in overlays {
             let position = CellRect(
                 column: max(0, (size.width - layerSize.width) / 2),
                 row: max(0, (size.height - layerSize.height) / 2),
                 width: layerSize.width, height: layerSize.height
             )
+            layer.revealFocus(focused)
             context.withRegion(position) { layer.draw(in: &$0, focused: focused) }
         }
         caretPosition = context.caret

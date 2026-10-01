@@ -25,7 +25,10 @@ final class ViewRenderer {
     var description: ViewDescription?
     var children: [ViewRenderer] = []
     private var keyedChildren: [AnyHashable: ViewRenderer] = [:]
-    private weak var focusedNode: ViewRenderer?
+    weak var focusedNode: ViewRenderer?
+    weak var activePane: ViewRenderer?
+    var scrollOffset = 0
+    var scrollContentHeight = 0
     private var timeline: TimelineState?
     private var canvasDate: Date?
     var placements: [(node: ViewRenderer, bounds: CellRect)] = []
@@ -86,7 +89,7 @@ final class ViewRenderer {
         }
         let size = content.measure(proposal)
         let scope = sheet ?? self
-        let focused = scope.resolveFocus(in: scope.focusableNodes())
+        let focused = scope.focusTarget()
         let viewport =
             centeredInViewport
             ? CellSize(width: proposal.width ?? size.width, height: proposal.height ?? size.height) : size
@@ -94,25 +97,10 @@ final class ViewRenderer {
         let origin = CellRect(
             column: max(0, (viewport.width - size.width) / 2),
             row: max(0, (viewport.height - size.height) / 2), width: size.width, height: size.height)
+        content.revealFocus(focused)
         context.withRegion(origin) { content.draw(in: &$0, focused: focused) }
         caretPosition = context.caret
         return context.grid
-    }
-
-    var sheetBranch: ViewRenderer? {
-        guard case .sheet(_, let isPresented, _) = description else { return nil }
-        return isPresented.wrappedValue ? children.dropFirst().first : children.first
-    }
-
-    func activeSheet() -> ViewRenderer? {
-        if case .sheet(_, let isPresented, _) = description {
-            guard let branch = sheetBranch else { return nil }
-            return branch.activeSheet() ?? (isPresented.wrappedValue ? self : nil)
-        }
-        for child in children.reversed() {
-            if let sheet = child.activeSheet() { return sheet }
-        }
-        return nil
     }
 
     var drawing: (any PrimitiveDrawing)? {
@@ -161,7 +149,8 @@ final class ViewRenderer {
             reconcile(views, at: date)
         case .keyed(let views):
             reconcileKeyed(views, at: date)
-        case .focusable(let content), .keyPress(let content, _), .styled(let content, _, _), .border(let content, _, _):
+        case .focusable(let content), .scroll(let content), .keyPress(let content, _), .styled(let content, _, _),
+            .border(let content, _, _):
             reconcile([content], at: date)
         case .task(let content, let priority, let action):
             updateTask(content, priority: priority, action: action, at: date)
@@ -299,84 +288,4 @@ extension ViewRenderer {
         reconcile([content], at: date)
     }
 
-    func handle(_ key: KeyEvent) -> Bool {
-        if let sheet = activeSheet() {
-            // An ignored key cannot escape the presented scope to the base or application.
-            _ = sheet.handleInScope(key, modal: true)
-            return true
-        }
-        return handleInScope(key, modal: false)
-    }
-
-    private func handleInScope(_ key: KeyEvent, modal: Bool) -> Bool {
-        let targets = focusableNodes()
-        guard let target = resolveFocus(in: targets) else {
-            return route(key, from: modal ? sheetBranch ?? self : self, stoppingAt: modal ? self : nil) == .handled
-        }
-        focusedNode = target
-        if case .textField(let field) = target.description, field.handle(key) == .handled { return true }
-        if route(key, from: target, stoppingAt: modal ? self : nil) == .handled { return true }
-
-        guard let index = targets.firstIndex(where: { $0 === target }) else { return false }
-        let destination: Int
-        switch key {
-        case .arrowDown, .arrowRight: destination = index + 1
-        case .arrowUp, .arrowLeft: destination = index - 1
-        default: return false
-        }
-        guard targets.indices.contains(destination) else { return false }
-        focusedNode = targets[destination]
-        // Redraw cached descriptions, not view bodies or timeline schedules.
-        requestFocusPresentation()
-        return true
-    }
-
-    private func requestFocusPresentation() {
-        if let parent { parent.requestFocusPresentation() } else { onInvalidation?() }
-    }
-
-    func resolveFocus(in targets: [ViewRenderer]) -> ViewRenderer? {
-        if let focusedNode, targets.contains(where: { $0 === focusedNode }) { return focusedNode }
-        focusedNode = targets.first
-        return focusedNode
-    }
-
-    func focusableNodes() -> [ViewRenderer] {
-        if case .sheet = description { return sheetBranch?.focusableNodes() ?? [] }
-        let target: [ViewRenderer]
-        switch description {
-        case .focusable, .textField: target = [self]
-        default: target = []
-        }
-        return target + children.flatMap { $0.focusableNodes() }
-    }
-
-    private func route(
-        _ key: KeyEvent, from target: ViewRenderer, stoppingAt boundary: ViewRenderer? = nil
-    ) -> KeyPressResult {
-        // A handler can wrap a focusable view or be wrapped by it. Follow only
-        // the single-child modifier chain so sibling controls do not receive keys.
-        var child = target
-        while child.children.count == 1 {
-            let descendant = child.children[0]
-            if case .focusable = descendant.description { break }
-            if case .keyPress(_, let action) = descendant.description, action(key) == .handled {
-                return .handled
-            }
-            if case .textField(let field) = descendant.description, field.handle(key) == .handled {
-                return .handled
-            }
-            child = descendant
-        }
-
-        var node: ViewRenderer? = target
-        while let current = node {
-            if case .keyPress(_, let action) = current.description, action(key) == .handled {
-                return .handled
-            }
-            if current === boundary { break }
-            node = current.parent
-        }
-        return .ignored
-    }
 }

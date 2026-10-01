@@ -51,7 +51,7 @@ public struct TextField: View {
             if offset > 0 { caret = offset - 1 }
         case .arrowRight:
             if offset < value.count { caret = offset + 1 }
-        case .arrowUp, .arrowDown, .tab:
+        case .arrowUp, .arrowDown, .tab, .shiftTab, .pageUp, .pageDown:
             break
         default:
             return .ignored

@@ -4,6 +4,9 @@ public enum KeyEvent: Sendable, Equatable {
     case character(Character)
     case enter
     case tab
+    case shiftTab
+    case pageUp
+    case pageDown
     case backspace
     case escape
     case arrowUp

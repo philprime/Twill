@@ -57,6 +57,19 @@ struct InputParserTests {
         #expect(keys == [.arrowUp, .arrowDown, .arrowRight, .arrowLeft])
     }
 
+    @Test("Decodes Shift-Tab and Page keys across transport chunks")
+    func paneKeys() {
+        // -- Arrange --
+        var parser = InputParser()
+
+        // -- Act --
+        let first = parser.parse([0x1B, 0x5B, 0x5A, 0x1B, 0x5B, 0x35])
+        let second = parser.parse([0x7E, 0x1B, 0x5B, 0x36, 0x7E])
+
+        // -- Assert --
+        #expect(first + second == [.shiftTab, .pageUp, .pageDown])
+    }
+
     @Test("A lone Escape waits for its deadline")
     func loneEscape() {
         // -- Arrange --
