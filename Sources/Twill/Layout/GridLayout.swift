@@ -5,17 +5,19 @@ struct GridLayout: PrimitiveLayout {
 
     func sizeThatFits(_ proposal: ProposedCellSize, subviews: [CellSize]) -> CellSize {
         guard !subviews.isEmpty else { return .zero }
-        let widths = columnWidths(in: proposal.width ?? intrinsicWidth(for: subviews), subviews: subviews)
-        let heights = rowHeights(for: subviews)
-        let width = widths.reduce(0, +) + (columns.count - 1) * spacing
+        let width = proposal.width ?? intrinsicWidth(for: subviews, columns: columns)
+        let resolved = columns(in: width)
+        let widths = columnWidths(in: width, subviews: subviews)
+        let heights = rowHeights(for: subviews, columnCount: resolved.count)
+        let contentWidth = widths.reduce(0, +) + (resolved.count - 1) * spacing
         let height = heights.reduce(0, +) + (heights.count - 1) * spacing
-        return proposal.constrain(CellSize(width: width, height: height))
+        return proposal.constrain(CellSize(width: contentWidth, height: height))
     }
 
     func placeSubviews(_ subviews: [CellSize], in size: CellSize) -> [CellRect] {
         guard !subviews.isEmpty else { return [] }
         let widths = columnWidths(in: size.width, subviews: subviews)
-        let heights = rowHeights(for: subviews)
+        let heights = rowHeights(for: subviews, columnCount: widths.count)
         var column = 0
         let offsets = widths.map { width in
             defer { column += width + spacing }
@@ -27,8 +29,8 @@ struct GridLayout: PrimitiveLayout {
             return row
         }
         return subviews.indices.map { index in
-            let columnIndex = index % columns.count
-            let rowIndex = index / columns.count
+            let columnIndex = index % widths.count
+            let rowIndex = index / widths.count
             return CellRect(
                 column: offsets[columnIndex], row: rowOffsets[rowIndex],
                 width: widths[columnIndex], height: heights[rowIndex])
@@ -36,20 +38,22 @@ struct GridLayout: PrimitiveLayout {
     }
 
     func columnWidths(in width: Int, subviews: [CellSize]) -> [Int] {
-        let natural = intrinsicWidths(for: subviews)
-        if width == intrinsicWidth(for: subviews) { return natural }
+        let resolved = columns(in: width)
+        let natural = intrinsicWidths(for: subviews, columns: resolved)
+        if width == intrinsicWidth(for: subviews, columns: resolved) { return natural }
 
-        var widths = columns.map { item in
+        var widths = resolved.map { item in
             switch item.size {
-            case .flexible(let minimum, _): return minimum
+            case .flexible(let minimum, _), .adaptive(let minimum): return minimum
             }
         }
-        let limits = columns.map { item in
+        let limits = resolved.map { item in
             switch item.size {
             case .flexible(_, let maximum): return maximum
+            case .adaptive: return Int.max
             }
         }
-        let gaps = (columns.count - 1) * spacing
+        let gaps = (resolved.count - 1) * spacing
         var remaining = max(0, width - gaps - widths.reduce(0, +))
         while remaining > 0 {
             let eligible = widths.indices.filter { widths[$0] < limits[$0] }
@@ -64,24 +68,31 @@ struct GridLayout: PrimitiveLayout {
         return widths
     }
 
-    private func intrinsicWidth(for subviews: [CellSize]) -> Int {
-        intrinsicWidths(for: subviews).reduce(0, +) + (columns.count - 1) * spacing
+    private func columns(in width: Int) -> [GridItem] {
+        guard columns.count == 1, case .adaptive(let minimum) = columns[0].size else { return columns }
+        let count = max(1, (width + spacing) / (minimum + spacing))
+        return Array(repeating: columns[0], count: count)
     }
 
-    private func intrinsicWidths(for subviews: [CellSize]) -> [Int] {
+    private func intrinsicWidth(for subviews: [CellSize], columns: [GridItem]) -> Int {
+        intrinsicWidths(for: subviews, columns: columns).reduce(0, +) + (columns.count - 1) * spacing
+    }
+
+    private func intrinsicWidths(for subviews: [CellSize], columns: [GridItem]) -> [Int] {
         columns.indices.map { column in
             let natural =
                 stride(from: column, to: subviews.count, by: columns.count)
                 .map { subviews[$0].width }.max() ?? 0
             switch columns[column].size {
             case .flexible(let minimum, let maximum): return min(max(natural, minimum), maximum)
+            case .adaptive(let minimum): return max(natural, minimum)
             }
         }
     }
 
-    private func rowHeights(for subviews: [CellSize]) -> [Int] {
-        stride(from: 0, to: subviews.count, by: columns.count).map { start in
-            subviews[start..<min(start + columns.count, subviews.count)].map(\.height).max() ?? 0
+    private func rowHeights(for subviews: [CellSize], columnCount: Int) -> [Int] {
+        stride(from: 0, to: subviews.count, by: columnCount).map { start in
+            subviews[start..<min(start + columnCount, subviews.count)].map(\.height).max() ?? 0
         }
     }
 }
