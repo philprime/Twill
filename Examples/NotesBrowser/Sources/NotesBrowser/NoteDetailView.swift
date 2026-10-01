@@ -2,30 +2,34 @@ import Twill
 
 struct NoteDetailView: View {
     let note: Note
-    let onShowHelp: @MainActor () -> Void
 
-    @State private var showsSummary = true
+    private var lines: [String] {
+        var result: [String] = []
+        var line = ""
+        for word in note.body.split(separator: " ") {
+            if !line.isEmpty && line.count + word.count + 1 > 52 {
+                result.append(line)
+                line = ""
+            }
+            line += (line.isEmpty ? "" : " ") + word
+        }
+        if !line.isEmpty { result.append(line) }
+        return result
+    }
 
     var body: some View {
-        VStack {
+        VStack(alignment: .leading) {
             Text(note.title)
                 .foregroundStyle(NotesPalette.accent)
-            if showsSummary {
-                Text(note.summary)
+            if lines.isEmpty {
+                Text("No body yet")
+                    .foregroundStyle(NotesPalette.muted)
+            }
+            ForEach(0..<lines.count, id: \.self) { index in
+                Text(lines[index])
                     .foregroundStyle(NotesPalette.foreground)
             }
         }
-        .focusable()
-        .onKeyPress { key in
-            switch key {
-            case .character("s"):
-                showsSummary.toggle()
-            case .character("?"):
-                onShowHelp()
-            default:
-                return .ignored
-            }
-            return .handled
-        }
+        .frame(maxWidth: .infinity, alignment: .topLeading)
     }
 }
