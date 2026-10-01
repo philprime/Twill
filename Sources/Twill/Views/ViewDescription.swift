@@ -16,6 +16,7 @@ enum ViewDescription {
     case group(children: [any View], layout: (any PrimitiveLayout)?)
     case keyed(children: [(id: AnyHashable, view: any View)])
     case focusable(any View)
+    case scroll(any View)
     case styled(any View, foreground: Color?, background: Color?)
     case border(any View, glyphs: Border.Glyphs, color: Color)
     case keyPress(any View, @MainActor (KeyEvent) -> KeyPressResult)

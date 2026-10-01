@@ -14,6 +14,9 @@ struct InputParser {
         static let arrowDown: UInt8 = 0x42
         static let arrowRight: UInt8 = 0x43
         static let arrowLeft: UInt8 = 0x44
+        static let shiftTab: UInt8 = 0x5A
+        static let pageUp: [UInt8] = [0x35, 0x7E]
+        static let pageDown: [UInt8] = [0x36, 0x7E]
 
         static let ascii: ClosedRange<UInt8> = 0x00...0x7F
         static let controls: ClosedRange<UInt8> = 0x00...0x1F
@@ -64,6 +67,11 @@ struct InputParser {
         else { return false }
         if end == Self.sequencePrefixLength, let arrow = Self.arrows[pending[end]] {
             events.append(arrow)
+        } else if pending[1] == Byte.controlSequenceIntroducer {
+            let parameters = Array(pending[Self.sequencePrefixLength...end])
+            if parameters == [Byte.shiftTab] { events.append(.shiftTab) }
+            if parameters == Byte.pageUp { events.append(.pageUp) }
+            if parameters == Byte.pageDown { events.append(.pageDown) }
         }
         // Consume unsupported CSI/SS3 sequences as a unit so their parameter bytes
         // cannot accidentally trigger ordinary application shortcuts.

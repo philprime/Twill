@@ -7,6 +7,15 @@ extension ViewRenderer {
             }
         } else if case .border(_, let glyphs, let color) = description {
             drawBorder(glyphs, color: color, in: &context, focused: focused)
+        } else if case .scroll = description {
+            let viewport = CellRect(column: 0, row: 0, width: measuredSize.width, height: measuredSize.height)
+            context.withRegion(viewport) { viewport in
+                viewport.withRegion(
+                    CellRect(column: 0, row: -scrollOffset, width: measuredSize.width, height: scrollContentHeight)
+                ) { content in
+                    drawChildren(in: &content, focused: focused)
+                }
+            }
         } else if let drawing {
             let active = isInsideFocus(focused)
             context.withFocus(active) { region in
@@ -49,6 +58,41 @@ extension ViewRenderer {
         for placement in placements {
             context.withRegion(placement.bounds) { placement.node.draw(in: &$0, focused: focused) }
         }
+    }
+
+    func revealFocus(_ focused: ViewRenderer?) {
+        if case .scroll = description, let focused, focused !== self {
+            reveal(focused)
+        }
+        for child in children { child.revealFocus(focused) }
+    }
+
+    private func reveal(_ focused: ViewRenderer) {
+        guard let rect = bounds(of: focused, column: 0, row: 0) else { return }
+        if rect.row < scrollOffset {
+            scrollOffset = rect.row
+        } else if rect.row + rect.height > scrollOffset + measuredSize.height {
+            scrollOffset = rect.row + rect.height - measuredSize.height
+        }
+        scrollOffset = min(max(0, scrollOffset), max(0, scrollContentHeight - measuredSize.height))
+    }
+
+    private func bounds(of target: ViewRenderer, column: Int, row: Int) -> CellRect? {
+        for placement in placements {
+            let bounds = placement.bounds
+            let originX = column + bounds.column
+            let originY = row + bounds.row
+            var ancestor: ViewRenderer? = placement.node
+            while let node = ancestor {
+                if node === target {
+                    return CellRect(column: originX, row: originY, width: bounds.width, height: bounds.height)
+                }
+                if node === self { break }
+                ancestor = node.parent
+            }
+            if let found = placement.node.bounds(of: target, column: originX, row: originY) { return found }
+        }
+        return nil
     }
 
     private func isInsideFocus(_ focused: ViewRenderer?) -> Bool {

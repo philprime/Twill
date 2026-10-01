@@ -5,7 +5,7 @@ extension ViewRenderer {
         switch description {
         case .drawing, .canvas, .textField:
             return [self]
-        case .group(_, .some), .styled, .border:
+        case .group(_, .some), .styled, .border, .scroll:
             return children.flatMap(\.layoutItems).isEmpty ? [] : [self]
         case .sheet:
             return sheetBranch?.layoutItems ?? []
@@ -27,6 +27,7 @@ extension ViewRenderer {
 
     private var wantsFillHeight: Bool {
         if case .canvas = description { return true }
+        if case .scroll = description { return true }
         if case .group(_, let frame as FrameLayout) = description {
             if frame.height != nil { return false }
             if case .cells = frame.maxHeight { return false }
@@ -38,6 +39,17 @@ extension ViewRenderer {
     func measure(_ proposal: ProposedCellSize) -> CellSize {
         if let drawing {
             measuredSize = drawing.sizeThatFits(proposal)
+            return measuredSize
+        }
+        if case .scroll = description {
+            let items = children.flatMap(\.layoutItems)
+            let contentSize = items.first?.measure(ProposedCellSize(width: proposal.width)) ?? .zero
+            scrollContentHeight = contentSize.height
+            measuredSize = proposal.constrain(contentSize)
+            scrollOffset = min(scrollOffset, max(0, contentSize.height - measuredSize.height))
+            placements = items.map {
+                ($0, CellRect(column: 0, row: 0, width: contentSize.width, height: contentSize.height))
+            }
             return measuredSize
         }
         if case .border = description {
