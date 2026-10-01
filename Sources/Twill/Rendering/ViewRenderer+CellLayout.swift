@@ -69,6 +69,11 @@ extension ViewRenderer {
             sizes = measureGrid(items, proposal: proposal, layout: grid)
         } else if let frame = layout as? FrameLayout, items.count == 1 {
             sizes = [items[0].measure(frame.childProposal(proposal))]
+        } else if let padding = layout as? PaddingLayout {
+            let inner = padding.childProposal(proposal)
+            sizes =
+                items.count == 1
+                ? [items[0].measure(inner)] : measureHorizontal(items, proposal: inner, spacing: 0)
         } else if items.count == 1 {
             sizes = [items[0].measure(proposal)]
         } else {
