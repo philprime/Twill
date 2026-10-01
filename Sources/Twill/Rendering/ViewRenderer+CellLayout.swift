@@ -16,6 +16,7 @@ extension ViewRenderer {
 
     private var wantsFillWidth: Bool {
         if case .canvas = description { return true }
+        if case .group(_, let layout) = description, layout is GridLayout { return true }
         if case .group(_, let frame as FrameLayout) = description {
             if frame.width != nil { return false }
             if case .cells = frame.maxWidth { return false }
@@ -64,6 +65,8 @@ extension ViewRenderer {
             sizes = measureHorizontal(items, proposal: proposal, spacing: horizontal.spacing)
         } else if let vertical = layout as? VerticalLayout {
             sizes = measureVertical(items, proposal: proposal, spacing: vertical.spacing)
+        } else if let grid = layout as? GridLayout {
+            sizes = measureGrid(items, proposal: proposal, layout: grid)
         } else if let frame = layout as? FrameLayout, items.count == 1 {
             sizes = [items[0].measure(frame.childProposal(proposal))]
         } else if items.count == 1 {
@@ -74,6 +77,17 @@ extension ViewRenderer {
         let size = layout.sizeThatFits(proposal, subviews: sizes)
         placements = zip(items, layout.placeSubviews(sizes, in: size)).map { ($0, $1) }
         return size
+    }
+
+    private func measureGrid(
+        _ items: [ViewRenderer], proposal: ProposedCellSize, layout: GridLayout
+    ) -> [CellSize] {
+        let natural = items.map { $0.measure(.unspecified) }
+        let size = layout.sizeThatFits(proposal, subviews: natural)
+        let widths = layout.columnWidths(in: size.width, subviews: natural)
+        return items.enumerated().map { index, item in
+            item.measure(ProposedCellSize(width: widths[index % widths.count]))
+        }
     }
 
     private func measureHorizontal(_ items: [ViewRenderer], proposal: ProposedCellSize, spacing: Int) -> [CellSize] {
