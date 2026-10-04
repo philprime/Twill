@@ -77,7 +77,7 @@ extension ViewRenderer {
         scrollOffset = min(max(0, scrollOffset), max(0, scrollContentHeight - measuredSize.height))
     }
 
-    private func bounds(of target: ViewRenderer, column: Int, row: Int) -> CellRect? {
+    func bounds(of target: ViewRenderer, column: Int, row: Int) -> CellRect? {
         for placement in placements {
             let bounds = placement.bounds
             let originX = column + bounds.column

@@ -48,6 +48,7 @@ final class ViewRenderer {
     }
 
     func unmount() {
+        if case .scrollReader(_, let proxy) = description { proxy.renderer = nil }
         parent = nil
         onInvalidation = nil
         viewTask?.cancel()
@@ -149,9 +150,21 @@ final class ViewRenderer {
             reconcile(views, at: date)
         case .keyed(let views):
             reconcileKeyed(views, at: date)
+        case .scrollReader(let content, let proxy):
+            if case .scrollReader(_, let previousProxy) = previous { previousProxy.renderer = nil }
+            proxy.renderer = self
+            reconcile([content], at: date)
         case .focusable(let content), .scroll(let content), .keyPress(let content, _), .styled(let content, _, _),
             .border(let content, _, _):
             reconcile([content], at: date)
+        case .task, .sheet, .conditional, .timeline:
+            updateDynamicContent(updated, previous: previous, at: date)
+        }
+        collectDeadlines()
+    }
+
+    private func updateDynamicContent(_ description: ViewDescription, previous: ViewDescription?, at date: Date) {
+        switch description {
         case .task(let content, let priority, let action):
             updateTask(content, priority: priority, action: action, at: date)
         case .sheet(let base, let isPresented, let content):
@@ -161,8 +174,9 @@ final class ViewRenderer {
         case .timeline(let schedule, let content):
             let contextDate = advanceTimeline(schedule, at: date)
             reconcile([content(contextDate)], at: date)
+        default:
+            break
         }
-        collectDeadlines()
     }
 
     private func updateCanvas(interval: TimeInterval?, at date: Date) {
@@ -273,6 +287,14 @@ final class ViewRenderer {
 }
 
 extension ViewRenderer {
+    func keyedNode(for id: AnyHashable) -> ViewRenderer? {
+        if let node = keyedChildren[id] { return node }
+        for child in children {
+            if let node = child.keyedNode(for: id) { return node }
+        }
+        return nil
+    }
+
     private func updateTask(
         _ content: any View, priority: TaskPriority, action: @escaping @MainActor @Sendable () async -> Void,
         at date: Date

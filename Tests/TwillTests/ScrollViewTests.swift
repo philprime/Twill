@@ -121,6 +121,43 @@ struct ScrollViewTests {
         #expect(back.snapshotText == "2\n3")
     }
 
+    @Test("A reader scrolls to keyed rows at the requested viewport anchor")
+    func readerScrollsToKeyedRows() throws {
+        // -- Arrange --
+        let renderer = ViewRenderer.make(
+            ScrollViewReader { reader in
+                ScrollView {
+                    VStack {
+                        ForEach(0..<5, id: \.self) { index in Text("Row \(index)") }
+                    }
+                }
+                .frame(height: 2)
+                .onKeyPress { key in
+                    switch key {
+                    case .character("G"): reader.scrollTo(4, anchor: .bottom)
+                    case .character("g"): reader.scrollTo(0, anchor: .top)
+                    default: return .ignored
+                    }
+                    return .handled
+                }
+            })
+        let first = try #require(renderer.render(.now).grid)
+
+        // -- Act --
+        let jumpedToBottom = renderer.handle(.character("G"))
+        let bottom = try #require(renderer.drawFrame(proposal: .unspecified))
+        let jumpedToTop = renderer.handle(.character("g"))
+        let top = try #require(renderer.drawFrame(proposal: .unspecified))
+
+        // -- Assert --
+        #expect(jumpedToBottom)
+        #expect(jumpedToTop)
+        #expect(first.snapshotText.contains("Row 0"))
+        #expect(bottom.snapshotText.contains("Row 4"))
+        #expect(!bottom.snapshotText.contains("Row 0"))
+        #expect(top.snapshotText.contains("Row 0"))
+    }
+
     @Test("Tab confines arrows to each pane and restores its focus and offset")
     func paneRestoration() throws {
         // -- Arrange --

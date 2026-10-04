@@ -97,7 +97,7 @@ extension ViewRenderer {
         return children.flatMap { $0.scrollPanes() }
     }
 
-    private func requestFocusPresentation() {
+    func requestFocusPresentation() {
         if let parent { parent.requestFocusPresentation() } else { onInvalidation?() }
     }
 
