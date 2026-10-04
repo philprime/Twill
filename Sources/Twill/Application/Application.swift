@@ -1,13 +1,11 @@
 /// Owns the serialized TUI application lifecycle and application-level key policy.
 @MainActor
 public final class Application {
-    private static let interruptKey = KeyEvent.control(0x03)
-
     /// Configure before run(). Changes during a session do not reconfigure presentation.
     public var options: Application.Options
 
     /// May be installed, replaced, or cleared while running. Keyboard input and
-    /// orderly Ctrl-C shutdown remain active even when no handler is installed.
+    /// configured lifecycle shortcuts remain active even when no handler is installed.
     public var onKeyEvent: (@MainActor (KeyEvent) -> Void)?
 
     private let runLoop: RunLoop
@@ -53,8 +51,8 @@ public final class Application {
         runLoop.stop()
     }
 
-    /// Owns the terminal until stopped or cancelled. Ctrl-C requests orderly shutdown
-    /// regardless of whether an application key handler is installed.
+    /// Owns the terminal until stopped or cancelled. Enabled exit keys request orderly
+    /// shutdown regardless of whether an application key handler is installed.
     public func run() async throws {
         guard !isStopping, !Task.isCancelled else {
             stop()
@@ -124,7 +122,7 @@ public final class Application {
 
     private func handle(_ key: KeyEvent) {
         guard !isStopping else { return }
-        if key == Self.interruptKey {
+        if (key == .controlC && options.exitOnControlC) || (key == .controlD && options.exitOnControlD) {
             stop()
         } else if !viewHost.handle(key) {
             onKeyEvent?(key)

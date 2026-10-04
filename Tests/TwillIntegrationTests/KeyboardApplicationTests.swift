@@ -74,6 +74,91 @@ struct KeyboardApplicationTests {
         #expect(restored == original)
     }
 
+    @Test("Ctrl-C and Ctrl-D exit by default", .timeLimit(.minutes(1)), arguments: [UInt8(0x03), 0x04])
+    func defaultExitKey(byte: UInt8) async throws {
+        // -- Arrange --
+        let terminal = try TestTerminal()
+        let original = try terminal.snapshot()
+        let runLoop = DefaultRunLoop()
+        let application = terminal.makeApplication(runLoop: runLoop)
+        var keys: [KeyEvent] = []
+        runLoop.add(
+            Twill.Timer(interval: .milliseconds(1)) {
+                do { try terminal.send([byte, 0x71]) } catch {
+                    Issue.record(error)
+                    application.stop()
+                }
+            })
+        application.onKeyEvent = { key in
+            keys.append(key)
+            if key == .character("q") { application.stop() }
+        }
+
+        // -- Act --
+        try await application.run()
+
+        // -- Assert --
+        #expect(keys.isEmpty)
+        #expect(try terminal.snapshot() == original)
+    }
+
+    @Test("Exit keys can be independently disabled", .timeLimit(.minutes(1)), arguments: [UInt8(0x03), 0x04])
+    func disabledExitKey(byte: UInt8) async throws {
+        // -- Arrange --
+        let terminal = try TestTerminal()
+        let runLoop = DefaultRunLoop()
+        let application = terminal.makeApplication(runLoop: runLoop)
+        if byte == 0x03 {
+            application.options.exitOnControlC = false
+        } else {
+            application.options.exitOnControlD = false
+        }
+        var keys: [KeyEvent] = []
+        runLoop.add(
+            Twill.Timer(interval: .milliseconds(1)) {
+                do { try terminal.send([byte, 0x71]) } catch {
+                    Issue.record(error)
+                    application.stop()
+                }
+            })
+        application.onKeyEvent = { key in
+            keys.append(key)
+            if key == .character("q") { application.stop() }
+        }
+
+        // -- Act --
+        try await application.run()
+
+        // -- Assert --
+        #expect(keys == [.control(byte), .character("q")])
+    }
+
+    @Test("Disabling one exit key leaves the other active", .timeLimit(.minutes(1)), arguments: [UInt8(0x03), 0x04])
+    func independentExitKeys(disabledByte: UInt8) async throws {
+        // -- Arrange --
+        let terminal = try TestTerminal()
+        let runLoop = DefaultRunLoop()
+        let application = terminal.makeApplication(runLoop: runLoop)
+        application.options.exitOnControlC = disabledByte != 0x03
+        application.options.exitOnControlD = disabledByte != 0x04
+        let enabledByte: UInt8 = disabledByte == 0x03 ? 0x04 : 0x03
+        var keys: [KeyEvent] = []
+        runLoop.add(
+            Twill.Timer(interval: .milliseconds(1)) {
+                do { try terminal.send([disabledByte, enabledByte, 0x71]) } catch {
+                    Issue.record(error)
+                    application.stop()
+                }
+            })
+        application.onKeyEvent = { keys.append($0) }
+
+        // -- Act --
+        try await application.run()
+
+        // -- Assert --
+        #expect(keys == [.control(disabledByte)])
+    }
+
     @Test("An idle keyboard application restores terminal state on cancellation", .timeLimit(.minutes(1)))
     func cancellation() async throws {
         // -- Arrange --

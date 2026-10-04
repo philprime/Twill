@@ -21,6 +21,18 @@ struct InputParserTests {
         #expect(!parser.needsEscapeDeadline)
     }
 
+    @Test("Named control keys match terminal input")
+    func namedControlKeys() {
+        // -- Arrange --
+        var parser = InputParser()
+
+        // -- Act --
+        let keys = parser.parse([0x03, 0x04])
+
+        // -- Assert --
+        #expect(keys == [.controlC, .controlD])
+    }
+
     @Test("Chunk boundaries do not change UTF-8 or arrow decoding", arguments: 0...17)
     func splitInput(at offset: Int) {
         // -- Arrange --
