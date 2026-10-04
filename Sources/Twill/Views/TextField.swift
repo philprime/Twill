@@ -13,8 +13,8 @@ public struct TextField: View {
     }
 
     private func handle(_ key: KeyEvent) -> KeyPressResult {
-        switch key {
-        case .enter:
+        switch key.key {
+        case .enter where key.modifiers.isEmpty:
             if isEditing {
                 isEditing = false
             } else {
@@ -22,7 +22,7 @@ public struct TextField: View {
                 isEditing = true
             }
             return .handled
-        case .escape:
+        case .escape where key.modifiers.isEmpty:
             guard isEditing else { return .ignored }
             isEditing = false
             return .handled
@@ -34,8 +34,9 @@ public struct TextField: View {
     private func edit(_ key: KeyEvent) -> KeyPressResult {
         let value = text.wrappedValue
         let offset = min(caret, value.count)
-        switch key {
+        switch key.key {
         case .character(let character):
+            guard key.modifiers.isDisjoint(with: [.control, .alt, .superKey, .hyper, .meta]) else { return .handled }
             var updated = value
             updated.insert(character, at: updated.index(updated.startIndex, offsetBy: offset))
             text.wrappedValue = updated
@@ -48,10 +49,10 @@ public struct TextField: View {
                 caret = offset - 1
             }
         case .arrowLeft:
-            if offset > 0 { caret = offset - 1 }
+            if key.modifiers.isEmpty, offset > 0 { caret = offset - 1 }
         case .arrowRight:
-            if offset < value.count { caret = offset + 1 }
-        case .arrowUp, .arrowDown, .tab, .shiftTab, .pageUp, .pageDown:
+            if key.modifiers.isEmpty, offset < value.count { caret = offset + 1 }
+        case .arrowUp, .arrowDown, .tab, .pageUp, .pageDown, .home, .end, .insert, .delete, .function:
             break
         default:
             return .ignored

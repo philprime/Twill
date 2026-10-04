@@ -82,6 +82,109 @@ struct InputParserTests {
         #expect(first + second == [.shiftTab, .pageUp, .pageDown])
     }
 
+    @Test("Decodes conventional Home and End variants")
+    func navigationKeys() {
+        // -- Arrange --
+        var parser = InputParser()
+
+        // -- Act --
+        let keys = parser.parse([
+            0x1B, 0x5B, 0x48, 0x1B, 0x4F, 0x46,
+            0x1B, 0x5B, 0x31, 0x7E, 0x1B, 0x5B, 0x34, 0x7E,
+        ])
+
+        // -- Assert --
+        #expect(keys == [.home, .end, .home, .end])
+    }
+
+    @Test("Conventional navigation and function keys survive every transport split", arguments: 0...21)
+    func splitNavigation(at offset: Int) {
+        // -- Arrange --
+        var parser = InputParser()
+        let bytes: [UInt8] = [
+            0x1B, 0x5B, 0x32, 0x7E,
+            0x1B, 0x5B, 0x33, 0x7E,
+            0x1B, 0x5B, 0x32, 0x34, 0x7E,
+            0x1B, 0x5B, 0x31, 0x3B, 0x35, 0x48,
+            0x61,
+        ]
+
+        // -- Act --
+        let first = parser.parse(Array(bytes.prefix(offset)))
+        let second = parser.parse(Array(bytes.dropFirst(offset)))
+
+        // -- Assert --
+        #expect(
+            first + second == [
+                .insert, .delete, .function(12),
+                KeyEvent(.home, modifiers: [.control]), .a,
+            ])
+    }
+
+    @Test("Preserves modifier combinations on navigation and function keys")
+    func modifiedKeys() {
+        // -- Arrange --
+        var parser = InputParser()
+
+        // -- Act --
+        let keys = parser.parse([
+            0x1B, 0x5B, 0x31, 0x3B, 0x35, 0x48,
+            0x1B, 0x5B, 0x33, 0x3B, 0x34, 0x7E,
+            0x1B, 0x4F, 0x50,
+        ])
+
+        // -- Assert --
+        #expect(
+            keys == [
+                KeyEvent(.home, modifiers: [.control]),
+                KeyEvent(.delete, modifiers: [.shift, .alt]),
+                .function(1),
+            ])
+    }
+
+    @Test("Rejects invalid modifier parameters rather than invoking an unmodified shortcut")
+    func invalidModifiers() {
+        // -- Arrange --
+        var parser = InputParser()
+
+        // -- Act --
+        let keys = parser.parse([0x1B, 0x5B, 0x31, 0x3B, 0x30, 0x48, 0x61])
+
+        // -- Assert --
+        #expect(keys == [KeyEvent(.unknown([0x1B, 0x5B, 0x31, 0x3B, 0x30, 0x48])), .a])
+    }
+
+    @Test("Oversized escape sequences cannot leak shortcuts or grow the fallback event")
+    func oversizedEscape() {
+        // -- Arrange --
+        var parser = InputParser()
+        let prefix: [UInt8] = [0x1B, 0x5B] + Array(repeating: 0x31, count: 100)
+
+        // -- Act --
+        let first = parser.parse(prefix)
+        let second = parser.parse([0x7E, 0x61])
+
+        // -- Assert --
+        #expect(first.isEmpty)
+        #expect(second == [.a])
+    }
+
+    @Test("Expired oversized sequence cannot swallow later keys")
+    func expiredOversizedEscape() {
+        // -- Arrange --
+        var parser = InputParser()
+        let oversized: [UInt8] = [0x1B, 0x5B] + Array(repeating: 0x31, count: 100)
+        _ = parser.parse(oversized)
+
+        // -- Act --
+        let expired = parser.expireEscape()
+        let recovered = parser.parse([0x61])
+
+        // -- Assert --
+        #expect(expired.isEmpty)
+        #expect(recovered == [.a])
+    }
+
     @Test("A lone Escape waits for its deadline")
     func loneEscape() {
         // -- Arrange --
@@ -129,7 +232,7 @@ struct InputParserTests {
         let recovered = parser.parse([0x62])
 
         // -- Assert --
-        #expect(unsupported == [.a])
+        #expect(unsupported == [KeyEvent(.unknown([0x1B, 0x5B, 0x39, 0x7E])), .a])
         #expect(incomplete.isEmpty)
         #expect(expired.isEmpty)
         #expect(recovered == [.b])

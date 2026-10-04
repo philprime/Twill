@@ -1,21 +1,56 @@
 // swift-format-ignore-file: AlwaysUseLowerCamelCase
 
-/// Basic terminal keys. Modifier protocols and bracketed paste are not decoded yet.
+/// A decoded key and its terminal-reported modifiers.
 /// Text is delivered one Unicode scalar at a time, not as composed grapheme clusters.
-public enum KeyEvent: Sendable, Equatable {
-    case character(Character)
-    case enter
-    case tab
-    case shiftTab
-    case pageUp
-    case pageDown
-    case backspace
-    case escape
-    case arrowUp
-    case arrowDown
-    case arrowLeft
-    case arrowRight
-    case control(UInt8)
+public struct KeyEvent: Sendable, Equatable {
+    public enum Key: Sendable, Equatable {
+        case character(Character)
+        case enter
+        case tab
+        case backspace
+        case escape
+        case arrowUp, arrowDown, arrowLeft, arrowRight
+        case home, end, insert, delete, pageUp, pageDown
+        case function(Int)
+        case control(UInt8)
+        /// A complete, unrecognized CSI or SS3 sequence (including its Escape prefix).
+        case unknown([UInt8])
+    }
+
+    public let key: Key
+    public let modifiers: KeyModifiers
+
+    public init(_ key: Key, modifiers: KeyModifiers = []) {
+        self.key = key
+        self.modifiers = modifiers
+    }
+
+    public static func character(_ character: Character) -> Self { Self(.character(character)) }
+
+    public static func character(_ character: Character, modifiers: KeyModifiers) -> Self {
+        Self(.character(character), modifiers: modifiers)
+    }
+
+    public static func control(_ byte: UInt8) -> Self { Self(.control(byte)) }
+    public static func function(_ number: Int, modifiers: KeyModifiers = []) -> Self {
+        Self(.function(number), modifiers: modifiers)
+    }
+
+    public static let enter = Self(.enter)
+    public static let tab = Self(.tab)
+    public static let shiftTab = Self(.tab, modifiers: [.shift])
+    public static let backspace = Self(.backspace)
+    public static let escape = Self(.escape)
+    public static let arrowUp = Self(.arrowUp)
+    public static let arrowDown = Self(.arrowDown)
+    public static let arrowLeft = Self(.arrowLeft)
+    public static let arrowRight = Self(.arrowRight)
+    public static let home = Self(.home)
+    public static let end = Self(.end)
+    public static let insert = Self(.insert)
+    public static let delete = Self(.delete)
+    public static let pageUp = Self(.pageUp)
+    public static let pageDown = Self(.pageDown)
 
     /// Ctrl-C, usually used to request orderly shutdown.
     public static let controlC = Self.control(0x03)
