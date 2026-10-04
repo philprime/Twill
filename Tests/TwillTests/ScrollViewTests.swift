@@ -62,6 +62,34 @@ struct ScrollViewTests {
         #expect(!renderer.handle(.enter))
     }
 
+    @Test("A bordered grid scrolls and does not highlight its entire content")
+    func borderedGrid() throws {
+        // -- Arrange --
+        let renderer = ViewRenderer.make(
+            VStack {
+                Text("Header")
+                ScrollView {
+                    LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 3)) {
+                        ForEach(0..<30, id: \.self) { index in Text("Item\(index)") }
+                    }
+                }
+                .border(.single, color: Color.white)
+            })
+        let proposal = ProposedCellSize(width: 48, height: 6)
+        let initial = try #require(renderer.render(.now, proposal: proposal).grid)
+
+        // -- Act --
+        let moved = renderer.handle(.pageDown)
+        let scrolled = try #require(renderer.drawFrame(proposal: proposal))
+
+        // -- Assert --
+        #expect(moved)
+        #expect(initial.snapshotText.contains("Item0"))
+        #expect(scrolled.snapshotText.contains("Item6"))
+        let highlighted = initial.isFocused(column: 1, row: 2)
+        #expect(!highlighted)
+    }
+
     @Test("Page keys move a viewer by a viewport and stop at content edges")
     func pageScroll() throws {
         // -- Arrange --

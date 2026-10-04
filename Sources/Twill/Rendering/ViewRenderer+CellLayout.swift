@@ -46,7 +46,9 @@ extension ViewRenderer {
             let contentSize = items.first?.measure(ProposedCellSize(width: proposal.width)) ?? .zero
             scrollContentHeight = contentSize.height
             measuredSize = proposal.constrain(contentSize)
-            scrollOffset = min(scrollOffset, max(0, contentSize.height - measuredSize.height))
+            if proposal.height != nil {
+                scrollOffset = min(scrollOffset, max(0, contentSize.height - measuredSize.height))
+            }
             placements = items.map {
                 ($0, CellRect(column: 0, row: 0, width: contentSize.width, height: contentSize.height))
             }

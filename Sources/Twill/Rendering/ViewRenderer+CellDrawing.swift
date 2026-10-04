@@ -99,6 +99,8 @@ extension ViewRenderer {
         guard let focused else { return false }
         var node: ViewRenderer? = self
         while let current = node {
+            // Focusing a scroll pane enables navigation without highlighting all its content.
+            if case .scroll = current.description { return false }
             if current === focused { return true }
             // Nested focusable controls retain their own appearance and identity.
             if case .focusable = current.description { return false }
