@@ -27,7 +27,7 @@ struct FocusApplicationTests {
         var applicationKeys: [KeyEvent] = []
         application.onKeyEvent = { [weak application] key in
             applicationKeys.append(key)
-            if key == .character("q") { application?.stop() }
+            if key == .q { application?.stop() }
         }
         runLoop.add(
             Twill.Timer(interval: .milliseconds(1)) {
@@ -51,7 +51,7 @@ struct FocusApplicationTests {
         // -- Assert --
         #expect(selected == ["Groceries", "Weekend", "Groceries", "Weekend", "Weekend"])
         #expect(activated == ["Weekend"])
-        #expect(applicationKeys == [.character("q")])
+        #expect(applicationKeys == [.q])
         #expect(output.contains(Data("Detail: Groceries".utf8)))
         #expect(try terminal.snapshot() == original)
     }
@@ -90,7 +90,7 @@ struct FocusApplicationTests {
             var applicationKeys: [KeyEvent] = []
             application.onKeyEvent = { [weak application] key in
                 applicationKeys.append(key)
-                if key == .character("q") { application?.stop() }
+                if key == .q { application?.stop() }
             }
             runLoop.add(
                 Twill.Timer(interval: .milliseconds(1)) {
@@ -108,7 +108,7 @@ struct FocusApplicationTests {
 
             // -- Assert --
             #expect(activated == ["One", "Two"])
-            #expect(applicationKeys == [.character("q")])
+            #expect(applicationKeys == [.q])
             #expect(data.starts(with: Data("\u{1B}[?25l\r\u{1B}[2K\u{1B}[7mOne\u{1B}[27m Two".utf8)))
             #expect(try terminal.snapshot() == original)
         }

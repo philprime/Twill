@@ -21,7 +21,7 @@ struct NoteListView: View {
                                     selectedNoteID = note.id
                                     return .handled
                                 }
-                                if key == .character("d") {
+                                if key == .d {
                                     onDelete(note.id)
                                     return .handled
                                 }

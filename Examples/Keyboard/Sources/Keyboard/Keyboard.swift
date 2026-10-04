@@ -9,7 +9,7 @@ struct Keyboard {
 
         application.onKeyEvent = { [weak application] key in
             print(String(describing: key))
-            if key == .character("q") {
+            if key == .q {
                 application?.stop()
             }
         }

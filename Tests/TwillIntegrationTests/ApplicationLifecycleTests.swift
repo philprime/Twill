@@ -59,7 +59,7 @@ struct ApplicationLifecycleTests {
         try await application.run()
 
         // -- Assert --
-        #expect(keys == [.character("a")])
+        #expect(keys == [.a])
     }
 
     @Test("A timer can stop the application while keyboard input is idle", .timeLimit(.minutes(1)))

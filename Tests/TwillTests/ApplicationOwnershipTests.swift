@@ -35,7 +35,7 @@ struct ApplicationOwnershipTests {
         try await task.value
 
         // -- Assert --
-        #expect(focusedKeys == [.character("a")])
+        #expect(focusedKeys == [.a])
         #expect(applicationKeys.isEmpty)
     }
 

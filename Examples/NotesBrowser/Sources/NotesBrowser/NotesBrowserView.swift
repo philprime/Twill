@@ -61,13 +61,13 @@ struct NotesBrowserView: View {
         .onKeyPress { key in
             // An editing field consumes printable keys before they reach these shortcuts.
             switch key {
-            case .character("?"):
+            case .questionMark:
                 isHelpPresented = true
-            case .character("n"):
+            case .n:
                 draftTitle = ""
                 draftBody = ""
                 isCreatePresented = true
-            case .character("e"):
+            case .e:
                 guard let selectedNote else { return .ignored }
                 editingNoteID = selectedNote.id
                 draftTitle = selectedNote.title

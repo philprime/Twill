@@ -15,7 +15,7 @@ struct TextFieldTests {
         // -- Act --
         _ = renderer.handle(.enter)
         _ = renderer.render(.now)
-        _ = renderer.handle(.character("a"))
+        _ = renderer.handle(.a)
         _ = renderer.render(.now)
         _ = renderer.handle(.character("界"))
         _ = renderer.render(.now)
@@ -48,12 +48,12 @@ struct TextFieldTests {
         let initial = try #require(renderer.render(.now).grid)
 
         // -- Act --
-        _ = renderer.handle(.character("?"))
+        _ = renderer.handle(.questionMark)
         _ = renderer.handle(.enter)
         _ = renderer.render(.now)
         _ = renderer.handle(.arrowLeft)
         _ = renderer.render(.now)
-        let inserted = renderer.handle(.character("?"))
+        let inserted = renderer.handle(.questionMark)
         let editing = try #require(renderer.render(.now).grid)
         let endedEditing = renderer.handle(.escape)
         _ = renderer.render(.now)
@@ -95,7 +95,7 @@ private struct SearchFixture: View {
         TextField("Search", text: $text)
             .onKeyPress { key in
                 switch key {
-                case .character("?"): onShortcut("question:\(text)")
+                case .questionMark: onShortcut("question:\(text)")
                 case .escape: onShortcut("escape:\(text)")
                 default: return .ignored
                 }

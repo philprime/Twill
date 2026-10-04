@@ -33,7 +33,7 @@ struct KeyboardApplicationTests {
             MainActor.assertIsolated()
             do { running = try terminal.snapshot() } catch { Issue.record(error) }
             keys.append(key)
-            if key == .character("q") { application?.stop() }
+            if key == .q { application?.stop() }
         }
 
         // -- Act --
@@ -43,7 +43,7 @@ struct KeyboardApplicationTests {
         let active = try #require(running)
         #expect(active.local & tcflag_t(ICANON | ECHO | ISIG) == 0)
         #expect(active.descriptorFlags & O_NONBLOCK != 0)
-        #expect(keys == [.character("a"), .arrowUp, .character("é"), .character("q")])
+        #expect(keys == [.a, .arrowUp, .character("é"), .q])
         let restored = try terminal.snapshot()
         #expect(restored == original)
     }
@@ -69,7 +69,7 @@ struct KeyboardApplicationTests {
         try await application.run()
 
         // -- Assert --
-        #expect(keys == [.character("a")])
+        #expect(keys == [.a])
         let restored = try terminal.snapshot()
         #expect(restored == original)
     }
@@ -91,7 +91,7 @@ struct KeyboardApplicationTests {
             })
         application.onKeyEvent = { key in
             keys.append(key)
-            if key == .character("q") { application.stop() }
+            if key == .q { application.stop() }
         }
 
         // -- Act --
@@ -123,14 +123,14 @@ struct KeyboardApplicationTests {
             })
         application.onKeyEvent = { key in
             keys.append(key)
-            if key == .character("q") { application.stop() }
+            if key == .q { application.stop() }
         }
 
         // -- Act --
         try await application.run()
 
         // -- Assert --
-        #expect(keys == [.control(byte), .character("q")])
+        #expect(keys == [.control(byte), .q])
     }
 
     @Test("Disabling one exit key leaves the other active", .timeLimit(.minutes(1)), arguments: [UInt8(0x03), 0x04])
@@ -258,8 +258,8 @@ struct KeyboardApplicationTests {
         try await application.run()
 
         // -- Assert --
-        #expect(firstHandler == [.character("a")])
-        #expect(secondHandler == [.character("b")])
+        #expect(firstHandler == [.a])
+        #expect(secondHandler == [.b])
     }
 
     @Test("Clearing the handler suppresses later keys but keeps Ctrl-C shutdown", .timeLimit(.minutes(1)))
@@ -285,7 +285,7 @@ struct KeyboardApplicationTests {
         try await task.value
 
         // -- Assert --
-        #expect(keys == [.character("a")])
+        #expect(keys == [.a])
         let restored = try terminal.snapshot()
         #expect(restored == original)
     }

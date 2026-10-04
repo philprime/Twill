@@ -15,7 +15,7 @@ struct InputParserTests {
         // -- Assert --
         #expect(
             keys == [
-                .character("a"), .character(" "), .enter, .enter, .tab,
+                .a, .space, .enter, .enter, .tab,
                 .backspace, .backspace, .control(0), .control(3),
             ])
         #expect(!parser.needsEscapeDeadline)
@@ -50,7 +50,7 @@ struct InputParserTests {
         #expect(
             first + second == [
                 .character("é"), .character("界"), .character("😀"),
-                .arrowUp, .arrowLeft, .character("b"), .character("c"),
+                .arrowUp, .arrowLeft, .b, .c,
             ])
     }
 
@@ -129,10 +129,10 @@ struct InputParserTests {
         let recovered = parser.parse([0x62])
 
         // -- Assert --
-        #expect(unsupported == [.character("a")])
+        #expect(unsupported == [.a])
         #expect(incomplete.isEmpty)
         #expect(expired.isEmpty)
-        #expect(recovered == [.character("b")])
+        #expect(recovered == [.b])
     }
 
     @Test("Escape followed by an ordinary key preserves both")
@@ -144,7 +144,7 @@ struct InputParserTests {
         let keys = parser.parse([0x1B, 0x61])
 
         // -- Assert --
-        #expect(keys == [.escape, .character("a")])
+        #expect(keys == [.escape, .a])
     }
 
     @Test("Invalid UTF-8 cannot hold a following key indefinitely")
@@ -156,7 +156,7 @@ struct InputParserTests {
         let keys = parser.parse([0xFF, 0x80, 0xF0, 0x61])
 
         // -- Assert --
-        #expect(keys == [.character("a")])
+        #expect(keys == [.a])
     }
 
     @Test("Escape expiry does not discard partial UTF-8")

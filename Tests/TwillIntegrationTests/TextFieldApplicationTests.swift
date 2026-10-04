@@ -147,7 +147,7 @@ private struct FieldInputFixture: View {
     var body: some View {
         TextField("Search", text: $text)
             .onKeyPress { key in
-                guard key == .character("q") else { return .ignored }
+                guard key == .q else { return .ignored }
                 onCommit(text)
                 return .handled
             }

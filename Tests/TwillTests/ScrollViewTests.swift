@@ -134,8 +134,8 @@ struct ScrollViewTests {
                 .frame(height: 2)
                 .onKeyPress { key in
                     switch key {
-                    case .character("G"): reader.scrollTo(4, anchor: .bottom)
-                    case .character("g"): reader.scrollTo(0, anchor: .top)
+                    case .G: reader.scrollTo(4, anchor: .bottom)
+                    case .g: reader.scrollTo(0, anchor: .top)
                     default: return .ignored
                     }
                     return .handled
@@ -144,9 +144,9 @@ struct ScrollViewTests {
         let first = try #require(renderer.render(.now).grid)
 
         // -- Act --
-        let jumpedToBottom = renderer.handle(.character("G"))
+        let jumpedToBottom = renderer.handle(.G)
         let bottom = try #require(renderer.drawFrame(proposal: .unspecified))
-        let jumpedToTop = renderer.handle(.character("g"))
+        let jumpedToTop = renderer.handle(.g)
         let top = try #require(renderer.drawFrame(proposal: .unspecified))
 
         // -- Assert --

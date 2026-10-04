@@ -48,7 +48,7 @@ struct SheetApplicationTests {
 
         // -- Assert --
         #expect(baseKeys.isEmpty)
-        #expect(sheetKeys == [.character("x")])
+        #expect(sheetKeys == [.x])
         #expect(applicationKeys.isEmpty)
         #expect(data.starts(with: Data("\u{1B}[?25l\r\u{1B}[2K\u{1B}[7mBase\u{1B}[27m".utf8)))
         #expect(data.suffix(Data("\n\u{1B}[?25h".utf8).count) == Data("\n\u{1B}[?25h".utf8))
@@ -64,7 +64,7 @@ private struct ModalInputFixture: View {
 
     var body: some View {
         Text("Base").focusable().onKeyPress { key in
-            if key == .character("o") {
+            if key == .o {
                 presented = true
                 return .handled
             }

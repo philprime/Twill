@@ -31,7 +31,7 @@ struct KeyboardEventSourceTests {
         try await keyboard.run()
 
         // -- Assert --
-        #expect(received == [.character("a"), .arrowUp, .character("é"), .control(3), .character("b")])
+        #expect(received == [.a, .arrowUp, .character("é"), .control(3), .b])
     }
 
     @Test("A superseded Escape timer cannot flush a newer sequence", .timeLimit(.minutes(1)))
@@ -62,8 +62,8 @@ struct KeyboardEventSourceTests {
         try await task.value
 
         // -- Assert --
-        #expect(beforeCurrentDeadline == [.character("a"), .arrowUp, .character("b")])
-        #expect(received == [.character("a"), .arrowUp, .character("b"), .escape])
+        #expect(beforeCurrentDeadline == [.a, .arrowUp, .b])
+        #expect(received == [.a, .arrowUp, .b, .escape])
         if case .milliseconds(let timeout) = currentDeadline.interval {
             #expect(timeout >= 45)
         } else {
@@ -90,7 +90,7 @@ struct KeyboardEventSourceTests {
         try await keyboard.run()
 
         // -- Assert --
-        #expect(received == [KeyEvent](repeating: .character("a"), count: 5000))
+        #expect(received == [KeyEvent](repeating: .a, count: 5000))
         #expect(fcntl(descriptor, F_GETFL) == flags)
     }
 
@@ -152,7 +152,7 @@ struct KeyboardEventSourceTests {
         // -- Assert --
         #expect(runningFlags & O_NONBLOCK != 0)
         #expect(fcntl(descriptor, F_GETFL) == originalFlags)
-        #expect(keys == [.character("a")])
+        #expect(keys == [.a])
         #expect(unread == 1)
     }
 

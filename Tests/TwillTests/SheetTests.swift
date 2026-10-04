@@ -39,8 +39,8 @@ struct SheetTests {
 
         // -- Act --
         _ = host.handle(.arrowRight)
-        _ = host.handle(.character("o"))
-        let trapped = host.handle(.character("x"))
+        _ = host.handle(.o)
+        let trapped = host.handle(.x)
         _ = host.handle(.escape)
         let restored = host.handle(.enter)
         host.stop()
@@ -48,7 +48,7 @@ struct SheetTests {
         // -- Assert --
         #expect(trapped)
         #expect(restored)
-        #expect(sheetKeys == [.character("x"), .escape])
+        #expect(sheetKeys == [.x, .escape])
         #expect(baseEvents == ["B"])
     }
 
@@ -60,9 +60,9 @@ struct SheetTests {
         _ = renderer.render(.now)
 
         // -- Act --
-        _ = renderer.handle(.character("o"))
+        _ = renderer.handle(.o)
         let sheet = try #require(renderer.render(.now).grid)
-        let trapped = renderer.handle(.character("x"))
+        let trapped = renderer.handle(.x)
         _ = renderer.handle(.escape)
         let base = try #require(renderer.render(.now).grid)
 
@@ -82,9 +82,9 @@ struct SheetTests {
         _ = renderer.render(.now)
 
         // -- Act --
-        _ = renderer.handle(.character("o"))
+        _ = renderer.handle(.o)
         let outer = try #require(renderer.render(.now).grid)
-        _ = renderer.handle(.character("n"))
+        _ = renderer.handle(.n)
         let inner = try #require(renderer.render(.now).grid)
         _ = renderer.handle(.escape)
         let restoredOuter = try #require(renderer.render(.now).grid)
@@ -139,7 +139,7 @@ struct SheetTests {
         let source = try #require(runLoop.sources.first)
 
         // -- Act --
-        _ = host.handle(.character("o"))
+        _ = host.handle(.o)
         source.action()
         let writesBeforeDeadline = output.writes.count
         now = start.addingTimeInterval(1)
@@ -166,7 +166,7 @@ struct SheetTests {
 
         // -- Act --
         _ = renderer.handle(.arrowRight)
-        _ = renderer.handle(.character("o"))
+        _ = renderer.handle(.o)
         let sheet = try #require(renderer.render(start).grid)
         let stillPresented = try #require(renderer.render(start.addingTimeInterval(1)).grid)
         _ = renderer.handle(.escape)
@@ -193,9 +193,9 @@ struct SheetTests {
         // -- Act --
         _ = renderer.handle(.enter)
         _ = renderer.handle(.arrowRight)
-        _ = renderer.handle(.character("o"))
+        _ = renderer.handle(.o)
         let sheet = try #require(renderer.render(.now).grid)
-        let ignoredKeyTrapped = renderer.handle(.character("x"))
+        let ignoredKeyTrapped = renderer.handle(.x)
         _ = renderer.handle(.escape)
         let restored = try #require(renderer.render(.now).grid)
         _ = renderer.handle(.enter)
@@ -209,7 +209,7 @@ struct SheetTests {
         #expect(restored.snapshotText == "A B")
         #expect(restored.isFocused(column: 2, row: 0))
         #expect(baseEvents == ["A", "B"])
-        #expect(sheetKeys == [.character("x"), .escape])
+        #expect(sheetKeys == [.x, .escape])
     }
 }
 
@@ -220,13 +220,13 @@ private struct NestedSheetFixture: View {
 
     var body: some View {
         Text("Base").focusable().onKeyPress { key in
-            guard key == .character("o") else { return .ignored }
+            guard key == .o else { return .ignored }
             outerPresented = true
             return .handled
         }
         .sheet(isPresented: $outerPresented) {
             Text("Outer").focusable().onKeyPress { key in
-                if key == .character("n") {
+                if key == .n {
                     innerPresented = true
                     return .handled
                 }
@@ -263,7 +263,7 @@ private struct ChangingBaseSheetFixture: View {
             }
         }
         .onKeyPress { key in
-            guard key == .character("o") else { return .ignored }
+            guard key == .o else { return .ignored }
             presented = true
             return .handled
         }
@@ -285,12 +285,12 @@ private struct HelpSheetFixture: View {
     var body: some View {
         Text("Base").focusable()
             .onKeyPress { key in
-                guard key == .character("o") else { return .ignored }
+                guard key == .o else { return .ignored }
                 presented = true
                 return .handled
             }
             .onKeyPress { key in
-                guard key == .character("x") else { return .ignored }
+                guard key == .x else { return .ignored }
                 onLeak()
                 return .handled
             }
@@ -318,7 +318,7 @@ private struct SheetFixture: View {
                 return .handled
             }
             Text("B").focusable().onKeyPress { key in
-                if key == .character("o") {
+                if key == .o {
                     presented = true
                     return .handled
                 }
@@ -328,7 +328,7 @@ private struct SheetFixture: View {
             }
         }
         .onKeyPress { key in
-            guard key == .character("x") else { return .ignored }
+            guard key == .x else { return .ignored }
             onBase("parent")
             return .handled
         }
