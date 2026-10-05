@@ -6,7 +6,9 @@ public final class TerminalProgress {
         case indeterminate
     }
 
-    /// The explicit request. Scoped activity remains visible even when this is hidden.
+    /// The explicit request, hidden by default. Scoped activity remains visible even when
+    /// this is hidden. Requests before `Application.run()` are retained without output,
+    /// and requests after application shutdown begins do not emit output.
     public var state: State = .hidden {
         didSet { update() }
     }

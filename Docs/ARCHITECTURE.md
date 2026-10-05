@@ -76,6 +76,16 @@ Resize keeps only the newest unread dimensions and redraws cached content withou
 
 The host owns physical cursor placement. Inline presentation reserves only its frame, clears removed rows, and restores the shell cursor below it. Fullscreen presentation owns the alternate-screen lifecycle. Focus and editing state determine caret visibility without exposing terminal escape sequences to views.
 
+### Terminal-native progress
+
+A terminal session has one native progress indicator, shared across the application. It is separate from rendered content and occupies no layout cells. Its appearance and animation belong to the terminal emulator. Unsupported terminals may ignore progress requests.
+
+Progress is opt-in and hidden by default. An explicit request keeps it active until withdrawn. Scoped activity keeps it active until the operation exits, including throwing or cooperatively cancelling. Overlapping operations contribute independently: finishing one cannot hide another's activity, and withdrawing an explicit request cannot hide active scopes. Reporting activity does not transfer ownership of the operation or cancel it.
+
+Requests made before the session starts are retained without output. After shutdown begins, requests produce no further output. While active, progress may be refreshed to accommodate terminal expiry. Hidden progress schedules no refresh work, and the terminal handles animation without application-driven frames.
+
+Progress output follows the same serialized execution and failure handling as other terminal presentation. Orderly shutdown cancels refresh work, joins owned tasks, then clears any progress the application activated. A partially failed output still requires best-effort clearing. Inherited indicator state cannot be reliably queried or restored, and multiple applications sharing a terminal can interfere with each other's requests.
+
 ## Shutdown and failures
 
 Stop requests, keyboard EOF, cancellation, and runtime failures end the session. Shutdown deactivates run-loop work, cancels producers, joins their queue barriers and child tasks, releases mounted content, and only then restores borrowed terminal resources.
