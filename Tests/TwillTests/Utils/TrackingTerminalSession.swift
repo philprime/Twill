@@ -11,5 +11,6 @@ final class TrackingTerminalSession: TerminalSession {
 
     func start() throws { isActive = true }
     func beginPresentation(mode: Application.Options.UIOptions.Mode) throws {}
+    func setProgress(active: Bool) throws {}
     func restore() { isActive = false }
 }
