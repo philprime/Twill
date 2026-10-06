@@ -89,9 +89,9 @@ struct KeyboardApplicationTests {
                     application.stop()
                 }
             })
-        application.onKeyEvent = { key in
+        application.onKeyEvent = { [weak application] key in
             keys.append(key)
-            if key == .q { application.stop() }
+            if key == .q { application?.stop() }
         }
 
         // -- Act --
@@ -121,9 +121,9 @@ struct KeyboardApplicationTests {
                     application.stop()
                 }
             })
-        application.onKeyEvent = { key in
+        application.onKeyEvent = { [weak application] key in
             keys.append(key)
-            if key == .q { application.stop() }
+            if key == .q { application?.stop() }
         }
 
         // -- Act --

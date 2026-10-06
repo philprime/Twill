@@ -7,6 +7,7 @@ enum TerminalCell: Equatable {
 /// A value snapshot. Wide glyphs own both their leading and continuation cells.
 struct CellGrid: Equatable {
     let size: CellSize
+    var images: [ImagePlacement] = []
     private var cells: [TerminalCell]
     private var focusedCells: [Bool]
     private var foregrounds: [Color?]
@@ -41,6 +42,7 @@ struct CellGrid: Equatable {
     }
 
     mutating func fillBackground(_ color: Color, column: Int, row: Int) {
+        hideImages(column: column, row: row, width: 1)
         backgrounds[row * size.width + column] = color
     }
 
@@ -48,6 +50,7 @@ struct CellGrid: Equatable {
         _ character: Character, width: Int, column: Int, row: Int, focused: Bool = false,
         foreground: Color? = nil, background: Color? = nil
     ) {
+        hideImages(column: column, row: row, width: width)
         for column in column..<(column + width) { eraseGlyph(column: column, row: row) }
         let index = row * size.width + column
         cells[index] = character == " " ? .blank : .glyph(character, width: width)
@@ -59,6 +62,15 @@ struct CellGrid: Equatable {
             focusedCells[index + 1] = focused
             foregrounds[index + 1] = foreground
             backgrounds[index + 1] = background
+        }
+    }
+
+    private mutating func hideImages(column: Int, row: Int, width: Int) {
+        guard !images.isEmpty else { return }
+        let cell = CellRect(column: column, row: row, width: width, height: 1)
+        images.removeAll {
+            let overlap = $0.bounds.intersection(cell)
+            return overlap.width > 0 && overlap.height > 0
         }
     }
 
