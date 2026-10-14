@@ -18,21 +18,9 @@ struct NoteEditorView: View {
             Text("Body")
             TextField("Body", text: $noteText)
                 .border(.single, color: NotesPalette.border)
-            Text(saveLabel)
-                .focusable()
-                .onKeyPress { key in
-                    guard key == .enter else { return .ignored }
-                    onSave()
-                    return .handled
-                }
+            Button(saveLabel, action: onSave)
                 .foregroundStyle(NotesPalette.accent)
-            Text("Cancel")
-                .focusable()
-                .onKeyPress { key in
-                    guard key == .enter else { return .ignored }
-                    onCancel()
-                    return .handled
-                }
+            Button("Cancel", action: onCancel)
             Text("Enter: edit/choose  •  Esc: cancel")
                 .foregroundStyle(NotesPalette.muted)
         }
