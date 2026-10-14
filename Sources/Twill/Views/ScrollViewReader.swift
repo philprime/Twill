@@ -39,6 +39,8 @@ public final class ScrollViewProxy {
                     case .bottom: bounds.row + bounds.height - node.measuredSize.height
                     }
                 let offset = min(max(0, requested), max(0, node.scrollContentHeight - node.measuredSize.height))
+                // Explicit scrolling must survive redraws without moving keyboard focus.
+                node.scrollFollowsFocus = false
                 guard offset != node.scrollOffset else { return }
                 node.scrollOffset = offset
                 node.requestFocusPresentation()

@@ -23,7 +23,7 @@ extension ViewRenderer {
         if let pane, key == .tab || key == .shiftTab {
             return switchPane(key, from: pane, in: panes)
         }
-        if let pane, target === pane {
+        if let pane, target === pane || key == .pageDown || key == .pageUp {
             return scrollViewer(key, pane: pane)
         }
         return moveFocus(key, from: target, in: targets, pane: pane)
@@ -50,6 +50,7 @@ extension ViewRenderer {
         let offset = min(
             max(0, pane.scrollOffset + distance), max(0, pane.scrollContentHeight - pane.measuredSize.height))
         guard offset != pane.scrollOffset else { return false }
+        pane.scrollFollowsFocus = false
         pane.scrollOffset = offset
         requestFocusPresentation()
         return true
@@ -68,6 +69,7 @@ extension ViewRenderer {
         guard targets.indices.contains(destination) else { return false }
         if let pane {
             pane.focusedNode = targets[destination]
+            pane.scrollFollowsFocus = true
             pane.revealFocus(targets[destination])
         } else {
             focusedNode = targets[destination]
@@ -104,6 +106,7 @@ extension ViewRenderer {
     func resolveFocus(in targets: [ViewRenderer]) -> ViewRenderer? {
         if let focusedNode, targets.contains(where: { $0 === focusedNode }) { return focusedNode }
         focusedNode = targets.first
+        scrollFollowsFocus = true
         return focusedNode
     }
 

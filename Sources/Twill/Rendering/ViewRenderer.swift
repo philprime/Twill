@@ -28,6 +28,7 @@ final class ViewRenderer {
     weak var focusedNode: ViewRenderer?
     weak var activePane: ViewRenderer?
     var scrollOffset = 0
+    var scrollFollowsFocus = true
     var scrollContentHeight = 0
     private var timeline: TimelineState?
     private var canvasDate: Date?
@@ -89,8 +90,7 @@ final class ViewRenderer {
             return nil
         }
         let size = content.measure(proposal)
-        let scope = sheet ?? self
-        let focused = scope.focusTarget()
+        let focused = focusTarget()
         let viewport =
             centeredInViewport
             ? CellSize(width: proposal.width ?? size.width, height: proposal.height ?? size.height) : size
