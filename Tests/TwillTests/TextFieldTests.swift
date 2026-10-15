@@ -5,101 +5,77 @@ import Testing
 @Suite("Text field editing")
 @MainActor
 struct TextFieldTests {
-    @Test("Editing keys stay in the field until Enter restores arrow navigation")
-    func editingNavigation() throws {
+    @Test("A focused field accepts text immediately and consumes caret keys before shortcuts")
+    func immediateEditing() throws {
         // -- Arrange --
-        var activations = 0
-        let renderer = ViewRenderer.make(NavigationFixture(onActivate: { activations += 1 }))
-        let initial = try #require(renderer.render(.now).grid)
+        var text = "ab"
+        var shortcuts = 0
+        let renderer = ViewRenderer.make(
+            TextField("Search", text: Binding(get: { text }, set: { text = $0 }))
+                .onKeyPress { _ in
+                    shortcuts += 1
+                    return .handled
+                })
+        _ = renderer.render(.now)
 
         // -- Act --
-        _ = renderer.handle(.enter)
-        _ = renderer.render(.now)
-        _ = renderer.handle(.a)
-        _ = renderer.render(.now)
-        _ = renderer.handle(.character("界"))
+        let inserted = renderer.handle(.questionMark)
         _ = renderer.render(.now)
         _ = renderer.handle(.arrowLeft)
         _ = renderer.render(.now)
         _ = renderer.handle(.backspace)
-        let editing = try #require(renderer.render(.now).grid)
-        let tabConsumed = renderer.handle(.tab)
-        let downConsumed = renderer.handle(.arrowDown)
-        _ = renderer.render(.now)
-        _ = renderer.handle(.enter)
-        _ = renderer.render(.now)
-        _ = renderer.handle(.arrowRight)
-        _ = renderer.handle(.enter)
+        let frame = try #require(renderer.render(.now).grid)
 
         // -- Assert --
-        #expect(initial.snapshotText == "Name Next")
-        #expect(editing.snapshotText == "界 Next")
-        #expect(editing.isFocused(column: 0, row: 0))
-        #expect(tabConsumed)
-        #expect(downConsumed)
-        #expect(activations == 1)
+        #expect(inserted)
+        #expect(text == "a?")
+        #expect(frame.snapshotText == "a?")
+        #expect(shortcuts == 0)
     }
 
-    @Test("Navigation shortcuts give way to bound editing until Escape")
-    func editingModes() throws {
+    @Test("Submit observes the current value and leaves the field editable")
+    func submitsWithoutMovingFocus() {
         // -- Arrange --
-        var shortcuts: [String] = []
-        let renderer = ViewRenderer.make(SearchFixture(onShortcut: { shortcuts.append($0) }))
-        let initial = try #require(renderer.render(.now).grid)
+        var text = ""
+        var submissions: [String] = []
+        let renderer = ViewRenderer.make(
+            TextField("Search", text: Binding(get: { text }, set: { text = $0 }))
+                .onSubmit { submissions.append(text) })
+        _ = renderer.render(.now)
 
         // -- Act --
-        _ = renderer.handle(.questionMark)
-        _ = renderer.handle(.enter)
+        _ = renderer.handle(.a)
         _ = renderer.render(.now)
-        _ = renderer.handle(.arrowLeft)
+        let submitted = renderer.handle(.enter)
         _ = renderer.render(.now)
-        let inserted = renderer.handle(.questionMark)
-        let editing = try #require(renderer.render(.now).grid)
-        let endedEditing = renderer.handle(.escape)
-        _ = renderer.render(.now)
-        _ = renderer.handle(.escape)
+        _ = renderer.handle(.b)
 
         // -- Assert --
-        #expect(initial.snapshotText == "ab")
-        #expect(initial.isFocused(column: 0, row: 0))
-        #expect(inserted)
-        #expect(editing.snapshotText == "a?b")
-        #expect(endedEditing)
-        #expect(shortcuts == ["question:ab", "escape:a?b"])
+        #expect(submitted)
+        #expect(submissions == ["a"])
+        #expect(text == "ab")
     }
-}
 
-@MainActor
-private struct NavigationFixture: View {
-    @State private var text = ""
-    let onActivate: @MainActor () -> Void
+    @Test("Escape propagates to the enclosing handler without reverting text")
+    func escapePropagation() {
+        // -- Arrange --
+        var text = "ab"
+        var escapes = 0
+        let renderer = ViewRenderer.make(
+            TextField("Search", text: Binding(get: { text }, set: { text = $0 }))
+                .onKeyPress { key in
+                    guard key == .escape else { return .ignored }
+                    escapes += 1
+                    return .handled
+                })
+        _ = renderer.render(.now)
 
-    var body: some View {
-        HStack(spacing: 1) {
-            TextField("Name", text: $text)
-            Text("Next").focusable().onKeyPress { key in
-                guard key == .enter else { return .ignored }
-                onActivate()
-                return .handled
-            }
-        }
-    }
-}
+        // -- Act --
+        let handled = renderer.handle(.escape)
 
-@MainActor
-private struct SearchFixture: View {
-    @State private var text = "ab"
-    let onShortcut: @MainActor (String) -> Void
-
-    var body: some View {
-        TextField("Search", text: $text)
-            .onKeyPress { key in
-                switch key {
-                case .questionMark: onShortcut("question:\(text)")
-                case .escape: onShortcut("escape:\(text)")
-                default: return .ignored
-                }
-                return .handled
-            }
+        // -- Assert --
+        #expect(handled)
+        #expect(escapes == 1)
+        #expect(text == "ab")
     }
 }

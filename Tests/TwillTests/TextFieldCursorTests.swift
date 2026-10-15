@@ -16,7 +16,6 @@ struct TextFieldCursorTests {
         let source = try #require(runLoop.sources.first)
 
         // -- Act --
-        _ = host.handle(.enter)
         source.action()
         let shown = try #require(output.writes.last)
         host.stop()
@@ -34,7 +33,6 @@ struct TextFieldCursorTests {
         let host = ViewHost(rootView: MultilineCursorFixture(), runLoop: runLoop, output: output)
         try host.start(size: TerminalSize(columns: 3, rows: 2))
         let source = try #require(runLoop.sources.first)
-        _ = host.handle(.enter)
         source.action()
 
         // -- Act --
@@ -73,7 +71,6 @@ struct TextFieldCursorTests {
         let source = try #require(runLoop.sources.first)
 
         // -- Act --
-        _ = host.handle(.enter)
         source.action()
         let writesBeforeTick = output.writes.count
         now = start.addingTimeInterval(1)
@@ -86,7 +83,7 @@ struct TextFieldCursorTests {
         #expect(writesAfterTick == writesBeforeTick)
     }
 
-    @Test("Editing positions the cursor in display cells and Escape hides it")
+    @Test("Focus shows the caret in display cells and moving focus hides it")
     func editingCaret() throws {
         // -- Arrange --
         let output = RecordingTerminalOutput()
@@ -97,9 +94,6 @@ struct TextFieldCursorTests {
         let initial = try #require(output.writes.last)
 
         // -- Act --
-        _ = host.handle(.enter)
-        source.action()
-        let shown = try #require(output.writes.last)
         _ = host.handle(.arrowLeft)
         source.action()
         let moved = try #require(output.writes.last)
@@ -109,8 +103,7 @@ struct TextFieldCursorTests {
         host.stop()
 
         // -- Assert --
-        #expect(!initial.contains("\u{1B}[?25h"))
-        #expect(shown.contains("\r\u{1B}[5C\u{1B}[?25h"))
+        #expect(initial.contains("\r\u{1B}[5C\u{1B}[?25h"))
         #expect(moved.contains("\r\u{1B}[3C\u{1B}[?25h"))
         #expect(hidden.contains("\u{1B}[?25l"))
         #expect(output.writes.last == "\n")
@@ -131,12 +124,24 @@ private struct MultilineCursorFixture: View {
 
 @MainActor
 private struct CursorFixture: View {
+    private enum Focus: Hashable {
+        case field
+        case next
+    }
+
     @State private var text = "A界"
+    @FocusState private var focus: Focus? = .field
 
     var body: some View {
         HStack(spacing: 1) {
             Text("L")
-            TextField("Name", text: $text)
+            TextField("Name", text: $text).focused($focus, equals: .field)
+            Text("Next").focusable().focused($focus, equals: .next)
+        }
+        .onKeyPress { key in
+            guard key == .escape else { return .ignored }
+            focus = .next
+            return .handled
         }
     }
 }

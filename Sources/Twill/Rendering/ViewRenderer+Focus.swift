@@ -12,12 +12,17 @@ extension ViewRenderer {
 
     private func handleInScope(_ key: KeyEvent, modal: Bool) -> Bool {
         let panes = scrollPanes()
-        let pane = panes.isEmpty ? nil : resolvePane(in: panes)
-        let targets = pane?.focusableNodes() ?? focusableNodes()
-        guard let target = pane?.resolveFocus(in: targets) ?? resolveFocus(in: targets) else {
-            return route(key, from: modal ? sheetBranch ?? self : self, stoppingAt: modal ? self : nil) == .handled
+        guard let target = focusTarget() else {
+            return route(
+                key, from: modal ? sheetBranch ?? self : self, stoppingAt: modal ? self : nil,
+                includeControls: false) == .handled
         }
-        if case .textField(let field) = target.description, field.handle(key) == .handled { return true }
+        let pane = panes.first { $0.contains(target) }
+        let targets = pane?.focusableNodes() ?? focusableNodes()
+        if case .textField(let field) = target.description {
+            if field.handle(key) == .handled { return true }
+            if key == .enter, submit(from: target, stoppingAt: modal ? self : nil) { return true }
+        }
         if route(key, from: target, stoppingAt: modal ? self : nil) == .handled { return true }
 
         if let pane, key == .tab || key == .shiftTab {
@@ -34,6 +39,7 @@ extension ViewRenderer {
         let next = index + (key == .tab ? 1 : -1)
         guard panes.indices.contains(next) else { return false }
         activePane = panes[next]
+        presentFocus(panes[next].resolveFocus(in: panes[next].focusableNodes()))
         requestFocusPresentation()
         return true
     }
@@ -74,6 +80,7 @@ extension ViewRenderer {
         } else {
             focusedNode = targets[destination]
         }
+        presentFocus(targets[destination])
         // Redraw cached descriptions, not view bodies or timeline schedules.
         requestFocusPresentation()
         return true
@@ -81,10 +88,114 @@ extension ViewRenderer {
 
     func focusTarget() -> ViewRenderer? {
         let panes = scrollPanes()
-        if let pane = resolvePane(in: panes) {
-            return pane.resolveFocus(in: pane.focusableNodes())
+        let target: ViewRenderer?
+        if let requested = requestedFocus(excluding: presentedFocus) ?? requestedFocus() {
+            clearedFocusBinding = nil
+            let targets = requested.focusableNodes()
+            if let pane = panes.first(where: { requested.contains($0) || $0.contains(requested) }) {
+                activePane = pane
+                let remembered = pane.focusedNode
+                target =
+                    remembered.flatMap { candidate in targets.contains { $0 === candidate } ? candidate : nil }
+                    ?? targets.first
+                pane.focusedNode = target
+                if presentedFocus !== target { pane.scrollFollowsFocus = true }
+            } else {
+                target =
+                    focusedNode.flatMap { candidate in targets.contains { $0 === candidate } ? candidate : nil }
+                    ?? targets.first
+                focusedNode = target
+            }
+        } else if let cleared = clearedBinding(from: presentedFocus) ?? clearedFocusBinding {
+            clearedFocusBinding = cleared
+            target = nil
+        } else if let remembered = rememberedFocus(outside: panes) {
+            target = remembered
+        } else if let pane = resolvePane(in: panes) {
+            target = pane.resolveFocus(in: pane.focusableNodes())
+        } else {
+            target = resolveFocus(in: focusableNodes())
         }
-        return resolveFocus(in: focusableNodes())
+        presentFocus(target)
+        return target
+    }
+
+    func restoreFocusAfterSheetDismissal() {
+        // Modal bindings may share storage with the base screen. Their writes are
+        // not explicit requests to clear the enclosing screen's remembered focus.
+        var current: ViewRenderer? = self
+        while let node = current {
+            node.presentedFocus = nil
+            node.clearedFocusBinding = nil
+            current = node.parent
+        }
+    }
+
+    private func requestedFocus(excluding currentTarget: ViewRenderer? = nil) -> ViewRenderer? {
+        if case .sheet = description { return sheetBranch?.requestedFocus(excluding: currentTarget) }
+        // Bindings on the current focus path report existing focus. A different
+        // activated binding is a new request, even when it follows them in tree order.
+        if case .focusBinding(_, let binding) = description, binding.isFocused() {
+            if currentTarget.map({ !contains($0) }) ?? true { return self }
+        }
+        return children.lazy.compactMap { $0.requestedFocus(excluding: currentTarget) }.first
+    }
+
+    private func clearedBinding(from target: ViewRenderer?) -> ViewRenderer? {
+        var current = target
+        while let node = current, node !== self {
+            if case .focusBinding(_, let binding) = node.description, !binding.isFocused() { return node }
+            current = node.parent
+        }
+        if case .focusBinding(_, let binding) = description, !binding.isFocused(), target != nil { return self }
+        return nil
+    }
+
+    private func contains(_ node: ViewRenderer) -> Bool {
+        var current: ViewRenderer? = node
+        while let candidate = current {
+            if candidate === self { return true }
+            current = candidate.parent
+        }
+        return false
+    }
+
+    private func presentFocus(_ target: ViewRenderer?) {
+        guard presentedFocus !== target else { return }
+        if case .textField(let field) = presentedFocus?.description { field.blur() }
+        presentedFocus = target
+        // Shared ancestor and descendant bindings must settle once per focus transition,
+        // not rewrite each other's values on every presentation.
+        updateFocusBindings(target)
+    }
+
+    private func updateFocusBindings(_ target: ViewRenderer?) {
+        if case .sheet = description {
+            sheetBranch?.updateFocusBindings(target)
+            return
+        }
+        if case .focusBinding(_, let binding) = description {
+            binding.setFocused(target.map { contains($0) } ?? false)
+        }
+        for child in children { child.updateFocusBindings(target) }
+    }
+
+    private func submit(from target: ViewRenderer, stoppingAt boundary: ViewRenderer?) -> Bool {
+        var current: ViewRenderer? = target
+        while let node = current {
+            if case .submit(_, let action) = node.description {
+                action()
+                return true
+            }
+            if node === boundary { break }
+            current = node.parent
+        }
+        return false
+    }
+
+    private func rememberedFocus(outside panes: [ViewRenderer]) -> ViewRenderer? {
+        guard let focusedNode, focusableNodes().contains(where: { $0 === focusedNode }) else { return nil }
+        return panes.contains(where: { $0.contains(focusedNode) }) ? nil : focusedNode
     }
 
     private func resolvePane(in panes: [ViewRenderer]) -> ViewRenderer? {
@@ -121,7 +232,8 @@ extension ViewRenderer {
     }
 
     private func route(
-        _ key: KeyEvent, from target: ViewRenderer, stoppingAt boundary: ViewRenderer? = nil
+        _ key: KeyEvent, from target: ViewRenderer, stoppingAt boundary: ViewRenderer? = nil,
+        includeControls: Bool = true
     ) -> KeyPressResult {
         // A handler can wrap a focusable view or be wrapped by it. Follow only
         // the single-child modifier chain so sibling controls do not receive keys.
@@ -132,7 +244,7 @@ extension ViewRenderer {
             if case .keyPress(_, let action) = descendant.description, action(key) == .handled {
                 return .handled
             }
-            if case .textField(let field) = descendant.description, field.handle(key) == .handled {
+            if includeControls, case .textField(let field) = descendant.description, field.handle(key) == .handled {
                 return .handled
             }
             child = descendant

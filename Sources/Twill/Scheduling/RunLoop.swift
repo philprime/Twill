@@ -228,7 +228,7 @@ public final class DefaultRunLoop {
     public func run() async {
         defer { stop() }
         for await event in eventStream {
-            guard !Task.isCancelled else { break }
+            if Task.isCancelled { stop() }
             // Discard buffered registrations without dispatching so a stopped loop
             // releases timer callbacks and any owners they captured.
             guard !isStopped else { continue }

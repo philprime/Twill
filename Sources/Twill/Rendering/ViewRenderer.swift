@@ -27,6 +27,8 @@ final class ViewRenderer {
     private var keyedChildren: [AnyHashable: ViewRenderer] = [:]
     weak var focusedNode: ViewRenderer?
     weak var activePane: ViewRenderer?
+    weak var presentedFocus: ViewRenderer?
+    weak var clearedFocusBinding: ViewRenderer?
     var scrollOffset = 0
     var scrollFollowsFocus = true
     var scrollContentHeight = 0
@@ -104,16 +106,6 @@ final class ViewRenderer {
         return context.grid
     }
 
-    var drawing: (any PrimitiveDrawing)? {
-        switch description {
-        case .drawing(let drawing): return drawing
-        case .canvas(_, let render):
-            return Canvas.Drawing(size: measuredSize, date: canvasDate ?? .now, render: render)
-        case .textField(let field): return field.drawing
-        default: return nil
-        }
-    }
-
     private static func describe<Content: View>(_ view: Content) -> ViewDescription {
         if let primitive = view as? any PrimitiveView { return primitive.makeDescription() }
         return .body(view.body)
@@ -154,7 +146,8 @@ final class ViewRenderer {
             if case .scrollReader(_, let previousProxy) = previous { previousProxy.renderer = nil }
             proxy.renderer = self
             reconcile([content], at: date)
-        case .focusable(let content), .scroll(let content), .keyPress(let content, _), .styled(let content, _, _),
+        case .focusable(let content), .focusBinding(let content, _), .submit(let content, _),
+            .scroll(let content), .keyPress(let content, _), .styled(let content, _, _),
             .border(let content, _, _):
             reconcile([content], at: date)
         case .task, .sheet, .conditional, .timeline:
@@ -168,7 +161,9 @@ final class ViewRenderer {
         case .task(let content, let priority, let action):
             updateTask(content, priority: priority, action: action, at: date)
         case .sheet(let base, let isPresented, let content):
+            let dismissing = !isPresented.wrappedValue && children.count > 1
             reconcile(isPresented.wrappedValue ? [base, content()] : [base], at: date)
+            if dismissing { restoreFocusAfterSheetDismissal() }
         case .conditional(let first, let content):
             updateConditional(first: first, content: content, previous: previous, at: date)
         case .timeline(let schedule, let content):
@@ -287,6 +282,16 @@ final class ViewRenderer {
 }
 
 extension ViewRenderer {
+    var drawing: (any PrimitiveDrawing)? {
+        switch description {
+        case .drawing(let drawing): return drawing
+        case .canvas(_, let render):
+            return Canvas.Drawing(size: measuredSize, date: canvasDate ?? .now, render: render)
+        case .textField(let field): return field.drawing
+        default: return nil
+        }
+    }
+
     func keyedNode(for id: AnyHashable) -> ViewRenderer? {
         if let node = keyedChildren[id] { return node }
         for child in children {
