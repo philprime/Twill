@@ -16,13 +16,13 @@ A `.sheet` establishes a modal focus scope. Its content replaces the active inli
 
 ## Text-field input
 
-A focused text field accepts input immediately. It consumes text and caret keys before screen or application shortcuts. Losing focus hides its caret; regaining focus places the insertion point at the end of the current text. Editing does not require a separate public state or activation key.
+A focused text field accepts input immediately. It consumes text and caret keys before screen or application shortcuts. Losing focus hides its caret; regaining focus places the insertion point at the end of the current text. Editing does not require a separate public state or activation key. Tab and Shift-Tab are not editing keys: they route through enclosing handlers and switch panes when present, preserving each pane's remembered focus and scroll position. At pane boundaries focus does not wrap. Outside panes these keys have no default focus behavior.
 
 Enter invokes the nearest enclosing `.onSubmit` action. Submission retains the text and does not implicitly move focus; the action can request another target. Escape routes to enclosing handlers, allowing the screen to choose whether to move focus, dismiss a sheet, or navigate back. Cancelling or reverting text is a separate action.
 
 | Key             | Focused interactive row                         | Focused text field                           |
 | --------------- | ----------------------------------------------- | -------------------------------------------- |
-| Tab / Shift-Tab | Switch panes when present                       | Remain in the field                          |
+| Tab / Shift-Tab | Switch panes when present                       | Switch panes when present                    |
 | Arrow keys      | Move focus within active pane unless handled    | Edit or move caret as supported by the field |
 | Enter           | Activate focused row if its handler consumes it | Invoke the nearest submit action             |
 | Escape          | Route to enclosing handlers                     | Route to enclosing handlers                  |

@@ -58,6 +58,65 @@ struct TextFieldApplicationTests {
         #expect(try terminal.snapshot() == original)
     }
 
+    @Test("Tab and Shift-Tab switch panes while editing through a real terminal", .timeLimit(.minutes(1)))
+    func textFieldPaneTraversal() async throws {
+        // -- Arrange --
+        let terminal = try TestTerminal()
+        try terminal.configure { $0.c_iflag |= tcflag_t(IXOFF | IXANY) }
+        let original = try terminal.snapshot()
+        let pipe = Pipe()
+        let runLoop = DefaultRunLoop()
+        var text = ""
+        var activations = 0
+        var submissions: [String] = []
+        var fallbackKeys: [KeyEvent] = []
+        let application = Application(
+            rootView: HStack {
+                GroupBox("Search") {
+                    ScrollView {
+                        TextField("Search", text: Binding(get: { text }, set: { text = $0 }))
+                            .onSubmit { submissions.append(text) }
+                    }.frame(height: 1)
+                }
+                GroupBox("Notes") {
+                    ScrollView {
+                        Button("Note") { activations += 1 }
+                    }.frame(height: 1)
+                }
+            },
+            runLoop: runLoop,
+            terminalSession: DefaultTerminalSession(
+                fileDescriptor: .custom(terminal.fileDescriptor),
+                output: DefaultTerminalOutput(fileDescriptor: .custom(pipe.fileHandleForWriting.fileDescriptor))
+            )
+        )
+        application.options.ui.mode = .inline
+        application.onKeyEvent = { fallbackKeys.append($0) }
+        runLoop.add(
+            Twill.Timer(interval: .milliseconds(1)) {
+                do {
+                    // Type, leave the field, activate the note, return, type, submit, and quit.
+                    try terminal.send([0x61, 0x09, 0x0D, 0x1B, 0x5B, 0x5A, 0x62, 0x0D, 0x03])
+                } catch {
+                    Issue.record(error)
+                    application.stop()
+                }
+            })
+
+        // -- Act --
+        try await application.run()
+        try pipe.fileHandleForWriting.close()
+        _ = try pipe.fileHandleForReading.readToEnd()
+        try pipe.fileHandleForReading.close()
+
+        // -- Assert --
+        #expect(activations == 1)
+        #expect(submissions == ["ab"])
+        #expect(text == "ab")
+        #expect(fallbackKeys.isEmpty)
+        #expect(try terminal.snapshot() == original)
+    }
+
     @Test(
         "An editing caret restores the terminal after shutdown or cancellation", .timeLimit(.minutes(1)),
         arguments: [false, true])
