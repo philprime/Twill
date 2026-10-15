@@ -10,6 +10,12 @@ final class TerminalPresenter {
     private var hasRendered = false
     private var lastFrame: CellGrid?
     private var lastCaret: CellPosition?
+    private let imageIDBase = UInt32.random(in: 1...(UInt32.max / 2))
+    private var ownedImageCount = 0
+
+    private func deleteImages() -> String {
+        (0..<ownedImageCount).map { KittyImageEncoder.delete(id: imageIDBase + UInt32($0)) }.joined()
+    }
 
     init(
         output: TerminalOutput, mode: Application.Options.UIOptions.Mode = .inline,
@@ -24,19 +30,31 @@ final class TerminalPresenter {
         let cells = InlineFrameEncoder.encode(
             snapshot.grid, previous: lastFrame, invalidate: invalidate, fullscreen: mode == .fullscreen
         )
-        var buffer = ""
-        if mode == .fullscreen, !cells.isEmpty, !hasRendered || invalidate {
+        let images = snapshot.grid?.images ?? []
+        let redrawImages = invalidate || images != (lastFrame?.images ?? []) || !cells.isEmpty
+        let imageChanges = redrawImages && (!images.isEmpty || ownedImageCount > 0)
+        let hasUpdates = !cells.isEmpty || imageChanges
+        var buffer = imageChanges ? deleteImages() : ""
+        if mode == .fullscreen, hasUpdates, !hasRendered || invalidate {
             buffer += "\u{1B}[2J"
         }
-        if mode == .fullscreen, !cells.isEmpty {
+        if mode == .fullscreen, hasUpdates {
             buffer += "\u{1B}[H"
-        } else if lastCaret != nil, !cells.isEmpty || snapshot.caret != lastCaret {
+        } else if lastCaret != nil, hasUpdates || snapshot.caret != lastCaret {
             buffer += returnToFrame()
         }
         buffer += cells
-        if let caret = snapshot.caret, !cells.isEmpty || caret != lastCaret {
+        if imageChanges {
+            for (index, image) in images.enumerated() {
+                buffer += KittyImageEncoder.display(image, id: imageIDBase + UInt32(index))
+            }
+            // A write may fail after transmitting a prefix. Retain every attempted
+            // ID for cleanup even though the successful frame baseline stays unchanged.
+            ownedImageCount = max(ownedImageCount, images.count)
+        }
+        if let caret = snapshot.caret, hasUpdates || caret != lastCaret {
             buffer += showCaret(at: caret)
-        } else if mode == .fullscreen, !cells.isEmpty {
+        } else if mode == .fullscreen, hasUpdates {
             // Fullscreen redraws return the hardware cursor home. Hide it after
             // drawing instead of relying on the session's earlier hide command.
             buffer += Self.hideCursor
@@ -47,11 +65,14 @@ final class TerminalPresenter {
             hasRendered = true
         }
         // Failed writes must never advance the physical baseline.
+        if imageChanges { ownedImageCount = images.count }
         lastFrame = snapshot.grid
         lastCaret = snapshot.caret
     }
 
     func stop() {
+        if ownedImageCount > 0 { try? output.write(deleteImages()) }
+        ownedImageCount = 0
         if hasRendered, mode == .inline {
             // Multi-row writes leave the hidden cursor at the frame's top-left.
             // Finish below the frame before restoring the borrowed shell cursor.
