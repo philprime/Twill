@@ -109,6 +109,8 @@ extension ViewRenderer {
         } else if let cleared = clearedBinding(from: presentedFocus) ?? clearedFocusBinding {
             clearedFocusBinding = cleared
             target = nil
+        } else if let remembered = rememberedFocus(outside: panes) {
+            target = remembered
         } else if let pane = resolvePane(in: panes) {
             target = pane.resolveFocus(in: pane.focusableNodes())
         } else {
@@ -116,6 +118,17 @@ extension ViewRenderer {
         }
         presentFocus(target)
         return target
+    }
+
+    func restoreFocusAfterSheetDismissal() {
+        // Modal bindings may share storage with the base screen. Their writes are
+        // not explicit requests to clear the enclosing screen's remembered focus.
+        var current: ViewRenderer? = self
+        while let node = current {
+            node.presentedFocus = nil
+            node.clearedFocusBinding = nil
+            current = node.parent
+        }
     }
 
     private func requestedFocus(excluding currentTarget: ViewRenderer? = nil) -> ViewRenderer? {
@@ -178,6 +191,11 @@ extension ViewRenderer {
             current = node.parent
         }
         return false
+    }
+
+    private func rememberedFocus(outside panes: [ViewRenderer]) -> ViewRenderer? {
+        guard let focusedNode, focusableNodes().contains(where: { $0 === focusedNode }) else { return nil }
+        return panes.contains(where: { $0.contains(focusedNode) }) ? nil : focusedNode
     }
 
     private func resolvePane(in panes: [ViewRenderer]) -> ViewRenderer? {

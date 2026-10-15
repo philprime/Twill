@@ -61,6 +61,31 @@ struct FocusStateTests {
         #expect(text == "Name")
     }
 
+    @Test("Traversal outside a pane retains focus on an unbound control")
+    func retainsUnboundFocusOutsidePane() throws {
+        // -- Arrange --
+        var firstFocused = true
+        let binding = FocusState<Bool>.Binding(get: { firstFocused }, set: { firstFocused = $0 })
+        let renderer = ViewRenderer.make(
+            VStack {
+                Text("First").focusable().focused(binding)
+                Text("Second").focusable()
+                ScrollView { Text("Pane").focusable() }
+            })
+        _ = renderer.render(.now)
+
+        // -- Act --
+        _ = renderer.handle(.arrowDown)
+        let frame = try #require(renderer.render(.now).grid)
+        let unchanged = try #require(renderer.render(.now).grid)
+
+        // -- Assert --
+        #expect(!firstFocused)
+        #expect(frame.isFocused(column: 0, row: 1))
+        #expect(!frame.isFocused(column: 0, row: 2))
+        #expect(unchanged == frame)
+    }
+
     @Test("A newly activated Boolean binding takes focus from the current control", arguments: [false, true])
     func transfersIndependentBooleanFocus(toSecond: Bool) throws {
         // -- Arrange --

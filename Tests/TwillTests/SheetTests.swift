@@ -181,6 +181,28 @@ struct SheetTests {
         #expect(activated == ["First"])
     }
 
+    @Test("Dismissing a sheet restores base focus when both scopes share focus state")
+    func sharedFocusRestoration() throws {
+        // -- Arrange --
+        let renderer = ViewRenderer.make(SharedFocusSheetFixture())
+        _ = renderer.render(.now)
+
+        // -- Act --
+        _ = renderer.handle(.o)
+        let sheet = try #require(renderer.render(.now).grid)
+        _ = renderer.handle(.escape)
+        let base = try #require(renderer.render(.now).grid)
+        let unchanged = try #require(renderer.render(.now).grid)
+
+        // -- Assert --
+        #expect(sheet.snapshotText == "FiSheetase")
+        #expect(sheet.isFocused(column: 2, row: 0))
+        #expect(base.snapshotText == "First Base")
+        #expect(base.isFocused(column: 6, row: 0))
+        #expect(!base.isFocused(column: 0, row: 0))
+        #expect(unchanged == base)
+    }
+
     @Test("A sheet traps keys and restores the previously focused control")
     func focusRestoration() throws {
         // -- Arrange --
@@ -210,6 +232,32 @@ struct SheetTests {
         #expect(restored.isFocused(column: 2, row: 0))
         #expect(baseEvents == ["A", "B"])
         #expect(sheetKeys == [.x, .escape])
+    }
+}
+
+@MainActor
+private struct SharedFocusSheetFixture: View {
+    @State private var presented = false
+    @FocusState private var focus: Int? = 1
+
+    var body: some View {
+        HStack(spacing: 1) {
+            Text("First").focusable()
+            Text("Base").focusable().focused($focus, equals: 1)
+        }
+        .onKeyPress { key in
+            guard key == .o else { return .ignored }
+            presented = true
+            return .handled
+        }
+        .sheet(isPresented: $presented) {
+            Text("Sheet").focusable().focused($focus, equals: 2)
+                .onKeyPress { key in
+                    guard key == .escape else { return .ignored }
+                    presented = false
+                    return .handled
+                }
+        }
     }
 }
 
