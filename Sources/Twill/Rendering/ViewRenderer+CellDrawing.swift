@@ -5,8 +5,8 @@ extension ViewRenderer {
             context.withStyle(foreground: foreground, background: background, size: measuredSize) { region in
                 drawChildren(in: &region, focused: focused)
             }
-        } else if case .border(_, let glyphs, let color) = description {
-            drawBorder(glyphs, color: color, in: &context, focused: focused)
+        } else if case .border(_, let glyphs, let color, let title) = description {
+            drawBorder(glyphs, color: color, title: title, in: &context, focused: focused)
         } else if case .scroll = description {
             let viewport = CellRect(column: 0, row: 0, width: measuredSize.width, height: measuredSize.height)
             context.withRegion(viewport) { viewport in
@@ -30,7 +30,8 @@ extension ViewRenderer {
     }
 
     private func drawBorder(
-        _ glyphs: Border.Glyphs, color: Color, in context: inout DrawingContext, focused: ViewRenderer?
+        _ glyphs: Border.Glyphs, color: Color?, title: TextDrawing?, in context: inout DrawingContext,
+        focused: ViewRenderer?
     ) {
         let width = measuredSize.width
         let height = measuredSize.height
@@ -43,6 +44,12 @@ extension ViewRenderer {
             for column in 1..<(width - 1) {
                 region.draw(glyphs.top, width: 1, column: column, row: 0)
                 region.draw(glyphs.bottom, width: 1, column: column, row: height - 1)
+            }
+            // Clip within the top edge so a long or wide title cannot overwrite a corner.
+            if let title, width > 3 {
+                region.withRegion(CellRect(column: 2, row: 0, width: width - 3, height: 1)) {
+                    title.draw(in: &$0)
+                }
             }
             for row in 1..<(height - 1) {
                 region.draw(glyphs.left, width: 1, column: 0, row: row)
