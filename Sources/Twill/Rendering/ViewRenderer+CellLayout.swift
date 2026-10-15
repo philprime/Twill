@@ -54,12 +54,13 @@ extension ViewRenderer {
             }
             return measuredSize
         }
-        if case .border = description {
+        if case .border(_, _, _, let title) = description {
             let inner = ProposedCellSize(
                 width: proposal.width.map { max(0, $0 - 2) },
                 height: proposal.height.map { max(0, $0 - 2) })
             let size = measureChildren(inner)
-            measuredSize = proposal.constrain(CellSize(width: size.width + 2, height: size.height + 2))
+            let titleWidth = title.map { $0.sizeThatFits(.unspecified).width + 3 } ?? 0
+            measuredSize = proposal.constrain(CellSize(width: max(size.width + 2, titleWidth), height: size.height + 2))
             return measuredSize
         }
         measuredSize = measureChildren(proposal)

@@ -9,6 +9,15 @@ struct BorderGallery: View {
     var body: some View {
         VStack(spacing: 1) {
             Text("Borders")
+            GroupBox("Options") {
+                VStack(alignment: .leading) {
+                    Text("--verbose    Show detailed output")
+                    Text("--help       Show this message and exit")
+                }
+                .padding(.horizontal)
+                .foregroundStyle(Color.white)
+            }
+            .foregroundStyle(Color.brightBlack)
             HStack(spacing: 2) {
                 Text("single").frame(width: 16).border(.single, color: Color.white)
                 Text("double").frame(width: 16).border(.double, color: Color.white)

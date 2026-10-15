@@ -148,7 +148,7 @@ final class ViewRenderer {
             reconcile([content], at: date)
         case .focusable(let content), .focusBinding(let content, _), .submit(let content, _),
             .scroll(let content), .keyPress(let content, _), .styled(let content, _, _),
-            .border(let content, _, _):
+            .border(let content, _, _, _):
             reconcile([content], at: date)
         case .task, .sheet, .conditional, .timeline:
             updateDynamicContent(updated, previous: previous, at: date)

@@ -30,26 +30,34 @@ struct NotesBrowserView: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .foregroundStyle(NotesPalette.background)
                 .backgroundStyle(NotesPalette.accent)
-            ScrollView {
-                TextField("Search titles and bodies", text: $query)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-            }
-            .frame(height: 1)
-            .foregroundStyle(NotesPalette.foreground)
-            .border(.single, color: NotesPalette.border)
-            HStack(spacing: 2) {
+            GroupBox("Search") {
                 ScrollView {
-                    NoteListView(notes: matchingNotes, selectedNoteID: $selectedNoteID, onDelete: deleteNote)
+                    TextField("Search titles and bodies", text: $query)
+                        .frame(maxWidth: .infinity, alignment: .leading)
                 }
-                .frame(width: 26)
-                .frame(maxHeight: .infinity, alignment: .top)
-                .border(.single, color: NotesPalette.border)
-                if let selectedNote {
+                .frame(height: 1)
+                .foregroundStyle(NotesPalette.foreground)
+            }
+            .foregroundStyle(NotesPalette.border)
+            HStack(spacing: 2) {
+                GroupBox("Notes") {
                     ScrollView {
-                        NoteDetailView(note: selectedNote)
+                        NoteListView(notes: matchingNotes, selectedNoteID: $selectedNoteID, onDelete: deleteNote)
                     }
-                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-                    .border(.single, color: NotesPalette.border)
+                    .frame(width: 26)
+                    .frame(maxHeight: .infinity, alignment: .top)
+                    .foregroundStyle(NotesPalette.foreground)
+                }
+                .foregroundStyle(NotesPalette.border)
+                if let selectedNote {
+                    GroupBox("Preview") {
+                        ScrollView {
+                            NoteDetailView(note: selectedNote)
+                        }
+                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+                        .foregroundStyle(NotesPalette.foreground)
+                    }
+                    .foregroundStyle(NotesPalette.border)
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
