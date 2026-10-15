@@ -32,7 +32,7 @@ public struct TextField: View {
             if key.modifiers.isEmpty, offset > 0 { caret = offset - 1 }
         case .arrowRight:
             if key.modifiers.isEmpty, offset < value.count { caret = offset + 1 }
-        case .arrowUp, .arrowDown, .tab, .pageUp, .pageDown, .home, .end, .insert, .delete, .function:
+        case .arrowUp, .arrowDown, .pageUp, .pageDown, .home, .end, .insert, .delete, .function:
             break
         default:
             return .ignored

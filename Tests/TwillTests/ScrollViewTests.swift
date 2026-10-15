@@ -178,27 +178,83 @@ struct ScrollViewTests {
         #expect(frame.isFocused(column: 0, row: 0))
     }
 
-    @Test("Editing a text field keeps arrows and Tab in the field")
-    func editingStaysInPane() {
+    @Test("Tab leaves a search field and reverse traversal restores pane focus and scrolling")
+    func textFieldPaneTraversal() throws {
         // -- Arrange --
-        let text = Binding<String>(get: { "Hi" }, set: { _ in })
+        var text = "ab"
+        var activated: [String] = []
         let renderer = ViewRenderer.make(
-            HStack {
-                ScrollView { TextField("Name", text: text) }.frame(height: 1)
-                ScrollView { Text("Other").focusable() }.frame(height: 1)
-            })
+            PaneTraversalFixture(
+                text: Binding(get: { text }, set: { text = $0 }), onActivate: { activated.append($0) }))
         _ = renderer.render(.now)
 
         // -- Act --
+        _ = renderer.handle(.arrowLeft)
+        _ = renderer.render(.now)
+        _ = renderer.handle(.x)
+        _ = renderer.render(.now)
+        let leftSearch = renderer.handle(.tab)
+        let listFrame = try #require(renderer.render(.now).grid)
+        let listCaret = renderer.caretPosition
+        _ = renderer.handle(.arrowDown)
+        _ = renderer.render(.now)
+        let enteredPreview = renderer.handle(.tab)
+        _ = renderer.handle(.arrowDown)
+        let previewFrame = try #require(renderer.render(.now).grid)
+        let returnedToList = renderer.handle(.shiftTab)
+        let restoredList = try #require(renderer.render(.now).grid)
         _ = renderer.handle(.enter)
-        let tab = renderer.handle(.tab)
-        let arrow = renderer.handle(.arrowRight)
-        renderer.refreshContent(at: .now)
-        let frame = renderer.drawFrame(proposal: .unspecified)
+        let returnedToSearch = renderer.handle(.shiftTab)
+        _ = renderer.render(.now)
+        let searchCaret = renderer.caretPosition
+        _ = renderer.handle(.c)
+        _ = renderer.render(.now)
+        _ = renderer.handle(.tab)
+        _ = renderer.handle(.tab)
+        let restoredPreview = try #require(renderer.render(.now).grid)
 
         // -- Assert --
-        #expect(tab && arrow)
-        #expect(frame?.isFocused(column: 0, row: 0) == true)
-        #expect(renderer.caretPosition != nil)
+        #expect(leftSearch && enteredPreview && returnedToList && returnedToSearch)
+        #expect(listFrame.isFocused(column: 14, row: 1))
+        #expect(listCaret == nil)
+        #expect(previewFrame.snapshotText.contains("Second"))
+        #expect(restoredList.isFocused(column: 14, row: 1))
+        #expect(restoredList.snapshotText.contains("Two"))
+        #expect(activated == ["Two"])
+        #expect(searchCaret != nil)
+        #expect(text == "axbc")
+        #expect(restoredPreview.snapshotText.contains("Second"))
+    }
+}
+
+@MainActor
+private struct PaneTraversalFixture: View {
+    let text: Binding<String>
+    let onActivate: @MainActor (String) -> Void
+
+    var body: some View {
+        HStack(spacing: 1) {
+            GroupBox("Search") {
+                ScrollView {
+                    TextField("Search", text: text)
+                }.frame(width: 8, height: 1)
+            }
+            GroupBox("Notes") {
+                ScrollView {
+                    VStack {
+                        Button("One") { onActivate("One") }
+                        Button("Two") { onActivate("Two") }
+                    }
+                }.frame(width: 6, height: 1)
+            }
+            GroupBox("Preview") {
+                ScrollView {
+                    VStack {
+                        Text("First")
+                        Text("Second")
+                    }
+                }.frame(width: 8, height: 1)
+            }
+        }
     }
 }
