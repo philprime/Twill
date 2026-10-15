@@ -61,6 +61,23 @@ struct FocusStateTests {
         #expect(text == "Name")
     }
 
+    @Test("Nested bindings sharing focus state settle without invalidating unchanged frames")
+    func nestedBindingsSettle() throws {
+        // -- Arrange --
+        let renderer = ViewRenderer.make(NestedFocusFixture())
+        _ = renderer.render(.now)
+        var invalidations = 0
+        renderer.onInvalidation = { invalidations += 1 }
+
+        // -- Act --
+        let frame = try #require(renderer.render(.now).grid)
+        _ = renderer.render(.now)
+
+        // -- Assert --
+        #expect(frame.isFocused(column: 0, row: 0))
+        #expect(invalidations == 0)
+    }
+
     @Test("Automatic traversal updates bound focus without pinning it to the requested item")
     func traversalUpdatesBinding() {
         // -- Arrange --
@@ -80,6 +97,18 @@ struct FocusStateTests {
 
         // -- Assert --
         #expect(selection == 2)
+    }
+}
+
+@MainActor
+private struct NestedFocusFixture: View {
+    @FocusState private var focus: Int? = 1
+
+    var body: some View {
+        VStack {
+            Text("Child").focusable().focused($focus, equals: 2)
+        }
+        .focused($focus, equals: 1)
     }
 }
 

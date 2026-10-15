@@ -105,6 +105,29 @@ struct RunLoopTests {
         #expect(pending == nil)
     }
 
+    @Test("An already cancelled run releases all queued registrations", .timeLimit(.minutes(1)))
+    func cancelledRunReleasesPendingRegistrations() async {
+        // -- Arrange --
+        let runLoop = DefaultRunLoop()
+        weak var pending: Twill.Timer?
+        do {
+            let timer = Twill.Timer(interval: .seconds(1)) {}
+            pending = timer
+            runLoop.add(timer)
+            runLoop.add(timer)
+        }
+
+        // -- Act --
+        let task = Task {
+            withUnsafeCurrentTask { $0?.cancel() }
+            await runLoop.run()
+        }
+        await task.value
+
+        // -- Assert --
+        #expect(pending == nil)
+    }
+
     @Test("Cancellation suppresses pending and repeating timers", .timeLimit(.minutes(1)), arguments: [false, true])
     func cancelsTimer(beforeActivation: Bool) async {
         // -- Arrange --

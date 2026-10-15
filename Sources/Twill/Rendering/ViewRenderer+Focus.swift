@@ -144,10 +144,11 @@ extension ViewRenderer {
     }
 
     private func presentFocus(_ target: ViewRenderer?) {
-        if presentedFocus !== target {
-            if case .textField(let field) = presentedFocus?.description { field.blur() }
-            presentedFocus = target
-        }
+        guard presentedFocus !== target else { return }
+        if case .textField(let field) = presentedFocus?.description { field.blur() }
+        presentedFocus = target
+        // Shared ancestor and descendant bindings must settle once per focus transition,
+        // not rewrite each other's values on every presentation.
         updateFocusBindings(target)
     }
 
