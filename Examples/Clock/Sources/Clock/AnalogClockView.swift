@@ -9,14 +9,21 @@ struct AnalogClockView: View {
     }
 
     private func drawClock(in context: Canvas.Context, size: Canvas.Size) {
-        guard size.width >= 10, size.height >= 7 else { return }
+        let time = ClockTime(context.date)
+        guard size.width >= 10, size.height >= 7 else {
+            let originX = max(0, (size.width - time.label.count) / 2)
+            for (offset, character) in time.label.enumerated() {
+                context.draw(character, column: originX + offset, row: size.height / 2, foreground: ClockPalette.hours)
+            }
+            return
+        }
 
         let centerX = Double(size.width - 1) / 2
         let centerY = Double(size.height - 1) / 2
         // Terminal columns are typically about half as wide as rows are tall.
         let radius = min(Double(size.width - 4) / 4, Double(size.height - 3) / 2)
-        let face = Color(red: 160, green: 170, blue: 185)
-        let ticks = Color(red: 245, green: 205, blue: 105)
+        let face = ClockPalette.muted
+        let ticks = ClockPalette.hours
 
         let samples = max(48, Int(radius * 24))
         for step in 0..<samples {
@@ -32,19 +39,15 @@ struct AnalogClockView: View {
                 row: Int((centerY - radius * cos(angle)).rounded()), foreground: ticks)
         }
 
-        let parts = Calendar.current.dateComponents([.hour, .minute, .second, .nanosecond], from: context.date)
-        let seconds = Double(parts.second ?? 0) + Double(parts.nanosecond ?? 0) / 1_000_000_000
-        let minutes = Double(parts.minute ?? 0) + seconds / 60
-        let hours = Double((parts.hour ?? 0) % 12) + minutes / 60
-
         let center = (column: centerX, row: centerY)
         drawHand(
-            hours / 12, length: radius * 0.5, cell: Canvas.Cell("█", foreground: ticks), center: center, in: context)
+            time.hourTurn, length: radius * 0.5, cell: Canvas.Cell("█", foreground: ticks), center: center, in: context)
         drawHand(
-            minutes / 60, length: radius * 0.75, cell: Canvas.Cell("●", foreground: ticks), center: center, in: context)
+            time.minuteTurn, length: radius * 0.75,
+            cell: Canvas.Cell("●", foreground: ClockPalette.minutes), center: center, in: context)
         drawHand(
-            seconds / 60, length: radius * 0.9,
-            cell: Canvas.Cell("•", foreground: Color(red: 235, green: 95, blue: 85)), center: center, in: context)
+            time.secondTurn, length: radius * 0.9,
+            cell: Canvas.Cell("•", foreground: ClockPalette.seconds), center: center, in: context)
         context.draw("◉", column: Int(centerX.rounded()), row: Int(centerY.rounded()), foreground: ticks)
     }
 
