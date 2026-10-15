@@ -89,7 +89,7 @@ extension ViewRenderer {
     func focusTarget() -> ViewRenderer? {
         let panes = scrollPanes()
         let target: ViewRenderer?
-        if let requested = requestedFocus() {
+        if let requested = requestedFocus(excluding: presentedFocus) ?? requestedFocus() {
             clearedFocusBinding = nil
             let targets = requested.focusableNodes()
             if let pane = panes.first(where: { requested.contains($0) || $0.contains(requested) }) {
@@ -118,10 +118,14 @@ extension ViewRenderer {
         return target
     }
 
-    private func requestedFocus() -> ViewRenderer? {
-        if case .sheet = description { return sheetBranch?.requestedFocus() }
-        if case .focusBinding(_, let binding) = description, binding.isFocused() { return self }
-        return children.lazy.compactMap { $0.requestedFocus() }.first
+    private func requestedFocus(excluding currentTarget: ViewRenderer? = nil) -> ViewRenderer? {
+        if case .sheet = description { return sheetBranch?.requestedFocus(excluding: currentTarget) }
+        // Bindings on the current focus path report existing focus. A different
+        // activated binding is a new request, even when it follows them in tree order.
+        if case .focusBinding(_, let binding) = description, binding.isFocused() {
+            if currentTarget.map({ !contains($0) }) ?? true { return self }
+        }
+        return children.lazy.compactMap { $0.requestedFocus(excluding: currentTarget) }.first
     }
 
     private func clearedBinding(from target: ViewRenderer?) -> ViewRenderer? {

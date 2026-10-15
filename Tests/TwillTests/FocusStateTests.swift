@@ -61,6 +61,32 @@ struct FocusStateTests {
         #expect(text == "Name")
     }
 
+    @Test("A newly activated Boolean binding takes focus from the current control", arguments: [false, true])
+    func transfersIndependentBooleanFocus(toSecond: Bool) throws {
+        // -- Arrange --
+        var first = toSecond
+        var second = !toSecond
+        let firstBinding = FocusState<Bool>.Binding(get: { first }, set: { first = $0 })
+        let secondBinding = FocusState<Bool>.Binding(get: { second }, set: { second = $0 })
+        let renderer = ViewRenderer.make(
+            VStack {
+                Text("First").focusable().focused(firstBinding)
+                Text("Second").focusable().focused(secondBinding)
+            })
+        _ = renderer.render(.now)
+
+        // -- Act --
+        if toSecond { second = true } else { first = true }
+        let frame = try #require(renderer.render(.now).grid)
+        let unchanged = try #require(renderer.render(.now).grid)
+
+        // -- Assert --
+        #expect(first == !toSecond)
+        #expect(second == toSecond)
+        #expect(frame.isFocused(column: 0, row: toSecond ? 1 : 0))
+        #expect(unchanged == frame)
+    }
+
     @Test("Nested bindings sharing focus state settle without invalidating unchanged frames")
     func nestedBindingsSettle() throws {
         // -- Arrange --
