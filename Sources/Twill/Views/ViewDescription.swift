@@ -16,6 +16,8 @@ enum ViewDescription {
     case group(children: [any View], layout: (any PrimitiveLayout)?)
     case keyed(children: [(id: AnyHashable, view: any View)])
     case focusable(any View)
+    case focusBinding(any View, FocusBindingDescription)
+    case submit(any View, @MainActor () -> Void)
     case scroll(any View)
     case scrollReader(any View, ScrollViewProxy)
     case styled(any View, foreground: Color?, background: Color?)

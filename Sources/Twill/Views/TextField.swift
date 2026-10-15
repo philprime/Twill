@@ -1,9 +1,8 @@
-/// A focusable field whose text belongs to the binding owner and whose editing
-/// mode and insertion point belong to its mounted identity.
+/// A field that accepts text whenever focused. The binding owns its value;
+/// the mounted control retains its insertion point.
 public struct TextField: View {
     public typealias Body = Never
-    @State private var isEditing = false
-    @State private var caret = 0
+    @State private var caret: Int?
     private let prompt: String
     private let text: Binding<String>
 
@@ -13,27 +12,8 @@ public struct TextField: View {
     }
 
     private func handle(_ key: KeyEvent) -> KeyPressResult {
-        switch key.key {
-        case .enter where key.modifiers.isEmpty:
-            if isEditing {
-                isEditing = false
-            } else {
-                caret = text.wrappedValue.count
-                isEditing = true
-            }
-            return .handled
-        case .escape where key.modifiers.isEmpty:
-            guard isEditing else { return .ignored }
-            isEditing = false
-            return .handled
-        default:
-            return isEditing ? edit(key) : .ignored
-        }
-    }
-
-    private func edit(_ key: KeyEvent) -> KeyPressResult {
         let value = text.wrappedValue
-        let offset = min(caret, value.count)
+        let offset = min(caret ?? value.count, value.count)
         switch key.key {
         case .character(let character):
             guard key.modifiers.isDisjoint(with: [.control, .alt, .superKey, .hyper, .meta]) else { return .handled }
@@ -65,16 +45,19 @@ struct TextFieldDescription {
     let drawing: TextDrawing
     let caretColumn: Int?
     let handle: @MainActor (KeyEvent) -> KeyPressResult
+    let blur: @MainActor () -> Void
 }
 
 extension TextField: PrimitiveView {
     func makeDescription() -> ViewDescription {
         let value = text.wrappedValue
-        let displayed = value.isEmpty ? (isEditing ? " " : prompt) : value
+        let displayed = value.isEmpty ? prompt : value
         // Caret positions use rendered cell widths, not character indices.
-        let prefix = String(value.prefix(min(caret, value.count)))
-        let caretColumn = isEditing ? TextDrawing(prefix).sizeThatFits(.unspecified).width : nil
+        let prefix = String(value.prefix(min(caret ?? value.count, value.count)))
+        let caretColumn = TextDrawing(prefix).sizeThatFits(.unspecified).width
         return .textField(
-            TextFieldDescription(drawing: TextDrawing(displayed), caretColumn: caretColumn, handle: { handle($0) }))
+            TextFieldDescription(
+                drawing: TextDrawing(displayed), caretColumn: caretColumn, handle: { handle($0) },
+                blur: { if caret != nil { caret = nil } }))
     }
 }

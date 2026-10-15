@@ -38,7 +38,7 @@ struct TextFieldApplicationTests {
         }
         runLoop.add(
             Twill.Timer(interval: .milliseconds(1)) {
-                do { try terminal.send([0x0D, 0x61, 0x1B, 0x5B, 0x44, 0x62, 0x0D, 0x71, 0x03]) } catch {
+                do { try terminal.send([0x61, 0x1B, 0x5B, 0x44, 0x62, 0x0D, 0x03]) } catch {
                     Issue.record(error)
                     application.stop()
                 }
@@ -146,10 +146,6 @@ private struct FieldInputFixture: View {
 
     var body: some View {
         TextField("Search", text: $text)
-            .onKeyPress { key in
-                guard key == .q else { return .ignored }
-                onCommit(text)
-                return .handled
-            }
+            .onSubmit { onCommit(text) }
     }
 }

@@ -33,7 +33,7 @@ struct FocusApplicationTests {
             Twill.Timer(interval: .milliseconds(1)) {
                 do {
                     try terminal.send([
-                        0x1B, 0x5B, 0x42, 0x1B, 0x5B, 0x42,
+                        0x0D, 0x1B, 0x5B, 0x42,
                         0x1B, 0x5B, 0x41, 0x1B, 0x5B, 0x42, 0x0D, 0x71,
                     ])
                 } catch {
@@ -129,22 +129,23 @@ private struct NoteSelectionFixture: View {
     ]
     @State private var selected = "Groceries"
     @State private var query = ""
+    @FocusState private var focus: String? = "search"
     let onSelect: @MainActor (String) -> Void
     let onActivate: @MainActor (String) -> Void
 
     var body: some View {
         VStack {
             TextField("Search", text: $query)
-                .onKeyPress { key in
-                    if key == .arrowDown || key == .arrowRight {
-                        selected = items[0].title
-                        onSelect(selected)
-                    }
-                    return .ignored
+                .focused($focus, equals: "search")
+                .onSubmit {
+                    selected = items[0].title
+                    onSelect(selected)
+                    focus = items[0].id
                 }
             ForEach(items) { item in
                 Text(item.title)
                     .focusable()
+                    .focused($focus, equals: item.id)
                     .onKeyPress { key in
                         if key == .enter {
                             selected = item.title

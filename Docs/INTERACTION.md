@@ -12,29 +12,31 @@ The first focusable control on a newly mounted screen receives initial focus. It
 
 Conditional navigation activates only the mounted screen. Opening a new screen focuses its first control; returning to a screen restores its prior control when still mounted, otherwise its first control.
 
-A `.sheet` establishes a modal focus scope. Its content replaces the active inline frame while the underlying view remains mounted and retains its timeline deadlines. Presentation remembers the underlying focus and activates the sheet's first control. While presented, keys cannot reach the underlying screen, even when a handler returns `.ignored`. Dismissal restores the remembered control if it remains mounted, otherwise focus falls back to the active screen's first control. Explicit `@FocusState` and `.focused(...)` are for programmatic focus changes when automatic focus behavior is insufficient.
+A `.sheet` establishes a modal focus scope. Its content replaces the active inline frame while the underlying view remains mounted and retains its timeline deadlines. Presentation remembers the underlying focus and activates the sheet's first control. While presented, keys cannot reach the underlying screen, even when a handler returns `.ignored`. Dismissal restores the remembered control if it remains mounted, otherwise focus falls back to the active screen's first control. Explicit `@FocusState` and `.focused(...)` are for programmatic focus changes when automatic focus behavior is insufficient. A Boolean binding identifies a single focus target; an optional hashable value identifies one of several targets with `.focused(_:equals:)`. Bindings follow automatic focus traversal. Focusing a container restores its remembered focusable descendant when available, otherwise its first descendant. Programmatic focus can reach controls outside the active scroll pane. Setting a binding to `false` or `nil` removes focus until another target is requested.
 
-## Text-field modes
+## Text-field input
 
-A focused text field starts in **navigation mode**. Enter activates **editing mode**. Editing consumes text and caret keys before screen or application shortcuts. Enter or Escape ends editing, retains the current text, and keeps focus on the field. Escape does not also dismiss a sheet or navigate back. Cancelling or reverting text is a separate action.
+A focused text field accepts input immediately. It consumes text and caret keys before screen or application shortcuts. Losing focus hides its caret; regaining focus places the insertion point at the end of the current text. Editing does not require a separate public state or activation key.
 
-| Key             | Focused interactive row                         | Focused text field, navigation mode | Text field, editing mode                     |
-| --------------- | ----------------------------------------------- | ----------------------------------- | -------------------------------------------- |
-| Tab / Shift-Tab | Switch panes when present                       | Switch panes when present           | Remain in the field                          |
-| Arrow keys      | Move focus within active pane unless handled    | Move focus within active pane       | Edit or move caret as supported by the field |
-| Enter           | Activate focused row if its handler consumes it | Begin editing                       | End editing, retaining text                  |
-| Escape          | Route to enclosing handlers                     | Route to enclosing handlers         | End editing; consume the key                 |
-| Page Up/Down    | Route to enclosing handlers                     | Route to enclosing handlers         | Remain in the field                          |
-| Printable keys  | Route to enclosing handlers                     | Route to enclosing handlers         | Insert text; do not invoke shortcuts         |
+Enter invokes the nearest enclosing `.onSubmit` action. Submission retains the text and does not implicitly move focus; the action can request another target. Escape routes to enclosing handlers, allowing the screen to choose whether to move focus, dismiss a sheet, or navigate back. Cancelling or reverting text is a separate action.
+
+| Key             | Focused interactive row                         | Focused text field                           |
+| --------------- | ----------------------------------------------- | -------------------------------------------- |
+| Tab / Shift-Tab | Switch panes when present                       | Remain in the field                          |
+| Arrow keys      | Move focus within active pane unless handled    | Edit or move caret as supported by the field |
+| Enter           | Activate focused row if its handler consumes it | Invoke the nearest submit action             |
+| Escape          | Route to enclosing handlers                     | Route to enclosing handlers                  |
+| Page Up/Down    | Route to enclosing handlers                     | Remain in the field                          |
+| Printable keys  | Route to enclosing handlers                     | Insert text; do not invoke shortcuts         |
 
 Ctrl-C remains an application-owned orderly shutdown exception in every mode.
 
 ## Key routing
 
-The application handles reserved lifecycle keys first. Other keys are routed within the topmost modal scope, or the active screen when no modal is present. An editing control consumes its editing keys. Otherwise the focused control receives the key first, followed by enclosing view handlers when a handler returns `.ignored`, then application-level handlers if still unhandled. `.handled` stops propagation. Returning `.ignored` never crosses a modal boundary.
+The application handles reserved lifecycle keys first. Other keys are routed within the topmost modal scope, or the active screen when no modal is present. A focused text field consumes its editing keys. Otherwise the focused control receives the key first, followed by enclosing view handlers when a handler returns `.ignored`, then application-level handlers if still unhandled. `.handled` stops propagation. Returning `.ignored` never crosses a modal boundary.
 
-`.onKeyPress` is scoped to its view. A parent can provide screen-level shortcuts for keys ignored by its focused descendants. A text field in editing mode consumes printable characters and navigation keys, including characters that would otherwise trigger shortcuts. Application-level shortcuts are not a substitute for focus-scoped interaction.
+`.onKeyPress` is scoped to its view. A parent can provide screen-level shortcuts for keys ignored by its focused descendants. A focused text field consumes printable characters and navigation keys, including characters that would otherwise trigger shortcuts. Application-level shortcuts are not a substitute for focus-scoped interaction.
 
-The terminal host alone positions and shows the hardware cursor at the editing caret. It hides the cursor outside editing mode and restores inherited terminal settings and cursor visibility during shutdown. Views supply a caret position relative to their laid-out bounds; they do not emit terminal escape sequences. Presentation uses terminal cells, so the caret's column is measured in display cells rather than string indices.
+The terminal host alone positions and shows the hardware cursor at the editing caret. It hides the cursor when no text field is focused and restores inherited terminal settings and cursor visibility during shutdown. Views supply a caret position relative to their laid-out bounds; they do not emit terminal escape sequences. Presentation uses terminal cells, so the caret's column is measured in display cells rather than string indices.
 
 The runtime remains event-driven: input, state writes, and modal transitions request coalesced presentation without polling. Unrelated timeline deadlines remain unchanged by those updates.
