@@ -12,6 +12,7 @@
         var output: TerminalOutput { get }
         func start() throws
         func beginPresentation(mode: Application.Options.UIOptions.Mode) throws
+        func setProgress(active: Bool) throws
         func restore()
     }
 
@@ -43,12 +44,15 @@ public final class DefaultTerminalSession {
     private static let leaveAlternateScreen = "\u{1B}[?1049l"
     private static let hideCursor = "\u{1B}[?25l"
     private static let showCursor = "\u{1B}[?25h"
+    private static let activeProgress = "\u{1B}]9;4;3\u{7}"
+    private static let clearProgress = "\u{1B}]9;4;0\u{7}"
 
     public let fileDescriptor: FileDescriptor
     public let output: TerminalOutput
     private var original: termios?
     private var needsCursorRestore = false
     private var needsScreenRestore = false
+    private var needsProgressClear = false
 
     public init(fileDescriptor: FileDescriptor = .standardInput, output: TerminalOutput = DefaultTerminalOutput()) {
         self.fileDescriptor = fileDescriptor
@@ -100,7 +104,23 @@ public final class DefaultTerminalSession {
         original = saved
     }
 
+    /// Repeated active writes keep terminal-native progress alive. Cleanup is claimed
+    /// before writing because a failed write may already have reached the emulator.
+    public func setProgress(active: Bool) throws {
+        if active {
+            needsProgressClear = true
+            try output.write(Self.activeProgress)
+        } else if needsProgressClear {
+            try output.write(Self.clearProgress)
+            needsProgressClear = false
+        }
+    }
+
     public func restore() {
+        if needsProgressClear {
+            try? output.write(Self.clearProgress)
+            needsProgressClear = false
+        }
         if needsScreenRestore {
             try? output.write(Self.leaveAlternateScreen)
             needsScreenRestore = false

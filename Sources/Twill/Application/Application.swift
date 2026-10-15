@@ -4,6 +4,9 @@ public final class Application {
     /// Configure before run(). Changes during a session do not reconfigure presentation.
     public var options: Application.Options
 
+    /// The terminal-native indicator shared by all activity in this application.
+    public let terminalProgress: TerminalProgress
+
     /// May be installed, replaced, or cleared while running. Keyboard input and
     /// configured lifecycle shortcuts remain active even when no handler is installed.
     public var onKeyEvent: (@MainActor (KeyEvent) -> Void)?
@@ -29,6 +32,7 @@ public final class Application {
         self.options = Application.Options()
         self.runLoop = runLoop
         self.terminalSession = terminalSession
+        terminalProgress = TerminalProgress(runLoop: runLoop, terminalSession: terminalSession)
         self.keyboardEventSource =
             keyboardEventSource
             ?? DefaultKeyboardEventSource(
@@ -40,10 +44,12 @@ public final class Application {
             rootView: rootView, runLoop: runLoop, output: terminalSession.output,
             preparePresentation: { mode in try terminalSession.beginPresentation(mode: mode) }
         )
+        terminalProgress.onError = { [weak self] error in self?.fail(error) }
     }
 
     public func stop() {
         isStopping = true
+        terminalProgress.stop()
         keyboardEventSource.stop()
         runLoop.remove(viewportSource)
         terminalViewport.cancel()
@@ -62,6 +68,8 @@ public final class Application {
         keyboardEventSource.onKeyEvent = { [weak self] key in self?.handle(key) }
         viewHost.onError = { [weak self] error in self?.presentationFailed(error) }
         do {
+            terminalProgress.start()
+            if let runtimeError { throw runtimeError }
             let viewportRegistration = runLoop.add(viewportSource)
             let size = try terminalViewport.start(signaling: viewportRegistration)
             try viewHost.start(size: size, mode: options.ui.mode)
