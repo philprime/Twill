@@ -1,33 +1,24 @@
 import Foundation
 
-/// A mounted node. Parents match children by structural position and concrete type,
-/// retaining current inputs, cached content, and timeline state.
+/// Coordinates one mounted node. Content, child identity, and logical scheduling have
+/// separate owners, while presentation and interaction operate on the cached tree.
 @MainActor
 final class ViewRenderer {
     var onInvalidation: (() -> Void)?
     var caretPosition: CellPosition?
 
-    private struct TimelineState {
-        let schedule: PeriodicTimelineSchedule
-        let date: Date
-        let deadline: Date
-    }
-
     private let viewType: ObjectIdentifier
     private let taskRegistry: MountedTaskRegistry
     private var viewTask: Task<Void, Never>?
     weak var parent: ViewRenderer?
-    private var initialView: (any View)?
-    private var mountedView: (any View)?
-    private var stateLocations: [String: any StateLocation] = [:]
-    private var isDirty = false
-    private var hasDirtyDescendant = false
+    var content: MountedContent
+    var childStorage = MountedChildren()
+    var schedule = MountedSchedule()
     var description: ViewDescription?
-    var children: [ViewRenderer] = []
-    // Structural discovery is aggregated while updating, not during layout or key routing.
-    // Store descendants only: caching [self] on a Tab would retain the node forever.
-    private(set) var descendantTabNodes: [ViewRenderer] = []
-    private var keyedChildren: [AnyHashable: ViewRenderer] = [:]
+    var children: [ViewRenderer] { childStorage.nodes }
+    var descendantTabNodes: [ViewRenderer] { childStorage.tabDestinations }
+    var nextUpdate: Date? { schedule.nextUpdate }
+
     weak var focusedNode: ViewRenderer?
     weak var activePane: ViewRenderer?
     weak var presentedFocus: ViewRenderer?
@@ -39,17 +30,14 @@ final class ViewRenderer {
     var scrollOffset = 0
     var scrollFollowsFocus = true
     var scrollContentHeight = 0
-    private var timeline: TimelineState?
-    private var canvasDate: Date?
     var placements: [(node: ViewRenderer, bounds: CellRect)] = []
     var tableColumnWidths: [Int] = []
     var measuredSize = CellSize.zero
-    private var nextUpdate: Date?
 
     private init(_ view: any View, taskRegistry: MountedTaskRegistry) {
         viewType = ObjectIdentifier(type(of: view))
         self.taskRegistry = taskRegistry
-        initialView = view
+        content = MountedContent(view)
     }
 
     static func make<Content: View>(
@@ -62,19 +50,39 @@ final class ViewRenderer {
         if case .scrollReader(_, let proxy) = description { proxy.renderer = nil }
         parent = nil
         onInvalidation = nil
+        // Cancellation belongs to the node, but joining belongs to the host's registry.
+        // A removed node must not discard the only handle to unfinished cleanup work.
         viewTask?.cancel()
         viewTask = nil
-        for child in children { child.unmount() }
-        children = []
-        descendantTabNodes = []
-        keyedChildren = [:]
+        childStorage.unmount()
     }
 
-    private func removeChildren() {
-        for child in children { child.unmount() }
-        children = []
-        descendantTabNodes = []
-        keyedChildren = [:]
+    func matches(_ view: any View) -> Bool {
+        viewType == ObjectIdentifier(type(of: view))
+    }
+
+    func makeChild(_ view: any View) -> ViewRenderer {
+        Self.make(view, taskRegistry: taskRegistry)
+    }
+
+    func reconcile(_ views: [any View], at date: Date) {
+        childStorage = childStorage.reconciling(views, parent: self, at: date)
+    }
+
+    func reconcileKeyed(_ views: [(id: AnyHashable, view: any View)], at date: Date) {
+        childStorage = childStorage.reconcilingKeyed(views, parent: self, at: date)
+    }
+
+    func removeChildren() {
+        childStorage.unmount()
+    }
+
+    func keyedNode(for id: AnyHashable) -> ViewRenderer? {
+        if let node = childStorage.keyedNode(for: id) { return node }
+        for child in children {
+            if let node = child.keyedNode(for: id) { return node }
+        }
+        return nil
     }
 
     func render(
@@ -85,179 +93,39 @@ final class ViewRenderer {
     }
 
     func refreshContent(at date: Date) {
-        if let initialView {
+        if let initialView = content.initialView {
             update(initialView, at: date)
         } else {
             refresh(at: date)
         }
     }
 
-    /// Layout and drawing never evaluate bodies or advance timeline deadlines.
-    func drawFrame(proposal: ProposedCellSize, centeredInViewport: Bool = false) -> CellGrid? {
-        let sheet = activeSheet()
-        let content = sheet?.sheetBranch ?? self
-        if let sheet { return drawOverlay(sheet: sheet, proposal: proposal) }
-        guard !content.layoutItems.isEmpty else {
-            caretPosition = nil
-            return nil
-        }
-        let size = content.measure(proposal)
-        let focused = focusTarget()
-        let viewport =
-            centeredInViewport
-            ? CellSize(width: proposal.width ?? size.width, height: proposal.height ?? size.height) : size
-        var context = DrawingContext(size: viewport)
-        let origin = CellRect(
-            column: max(0, (viewport.width - size.width) / 2),
-            row: max(0, (viewport.height - size.height) / 2), width: size.width, height: size.height)
-        content.revealFocus(focused)
-        context.withRegion(origin) { content.draw(in: &$0, focused: focused) }
-        caretPosition = context.caret
-        return context.grid
-    }
-
-    private static func describe<Content: View>(_ view: Content) -> ViewDescription {
-        if let primitive = view as? any PrimitiveView { return primitive.makeDescription() }
-        return .body(view.body)
-    }
-
-    private func bindState(from view: any View) {
-        // Fresh view values carry fresh property-wrapper handles. Bind them to this
-        // node's locations before evaluating body, so parent updates retain state.
-        for property in Mirror(reflecting: view).children {
-            guard let name = property.label, let state = property.value as? any MountedStateProperty else { continue }
-            let location = stateLocations[name] ?? state.location
-            state.bind(to: location)
-            location.onChange = { [weak self] in self?.markDirty() }
-            stateLocations[name] = location
-        }
-    }
-
-    private func update(_ view: any View, at date: Date) {
-        initialView = nil
-        bindState(from: view)
-        mountedView = view
-        let previous = description
-        let updated = Self.describe(view)
-        description = updated
-        switch updated {
-        case .empty, .drawing, .textField, .textEditor:
-            removeChildren()
-        case .canvas(let interval, _):
-            removeChildren()
-            updateCanvas(interval: interval, at: date)
-        case .body(let body), .button(let body, _, _):
-            reconcile([body], at: date)
-        case .dialog(let actions, _, let kind):
-            updateDialog(actions, kind: kind, at: date)
-        case .group(let views, _):
-            reconcile(views, at: date)
-        case .keyed(let views):
-            reconcileKeyed(views, at: date)
-        case .scrollReader(let content, let proxy):
-            if case .scrollReader(_, let previousProxy) = previous { previousProxy.renderer = nil }
-            proxy.renderer = self
-            reconcile([content], at: date)
-        case .tab(let content, _, _), .focusable(let content), .focusBinding(let content, _), .submit(let content, _),
-            .scroll(let content), .listSelection(let content, _, _), .listRow(let content, _),
-            .keyPress(let content, _), .styled(let content, _, _),
-            .border(let content, _, _, _):
-            reconcile([content], at: date)
-        case .task, .tabs, .sheet, .conditional, .timeline, .disclosure:
-            updateDynamicContent(updated, previous: previous, at: date)
-        }
-        updateTabState()
-        collectDeadlines()
-    }
-
-    private func updateCanvas(interval: TimeInterval?, at date: Date) {
-        guard let interval else {
-            timeline = nil
-            canvasDate = date
-            return
-        }
-        let start = timeline?.schedule.interval == interval ? timeline!.schedule.start : date
-        canvasDate = advanceTimeline(.periodic(from: start, by: interval), at: date)
-    }
-
-    private func advanceTimeline(_ schedule: PeriodicTimelineSchedule, at date: Date) -> Date {
-        if let timeline, timeline.schedule == schedule, date < timeline.deadline {
-            return timeline.date
-        }
-        timeline = TimelineState(schedule: schedule, date: date, deadline: schedule.nextUpdate(after: date))
-        return date
-    }
-
-    private func reconcile(_ views: [any View], at date: Date) {
-        let previous = children
-        children = views.enumerated().map { index, view in
-            let node: ViewRenderer
-            if index < previous.count, previous[index].viewType == ObjectIdentifier(type(of: view)) {
-                node = previous[index]
-            } else {
-                if index < previous.count { previous[index].unmount() }
-                node = Self.make(view, taskRegistry: taskRegistry)
-            }
-            // Parent updates may change child inputs even before the child's own deadline.
-            node.parent = self
-            node.update(view, at: date)
-            return node
-        }
-        for child in previous.dropFirst(views.count) { child.unmount() }
-        // Removed nodes have no independent timers. Releasing them also removes their
-        // deadlines from the aggregate that drives the host's single wake-up timer.
-    }
-
-    private func reconcileKeyed(_ views: [(id: AnyHashable, view: any View)], at date: Date) {
-        let previous = keyedChildren
-        var retained: [AnyHashable: ViewRenderer] = [:]
-        children = views.map { id, view in
-            let node: ViewRenderer
-            if let existing = previous[id], existing.viewType == ObjectIdentifier(type(of: view)) {
-                node = existing
-            } else {
-                previous[id]?.unmount()
-                node = Self.make(view, taskRegistry: taskRegistry)
-            }
-            node.parent = self
-            node.update(view, at: date)
-            retained[id] = node
-            return node
-        }
-        for (id, child) in previous where retained[id] == nil { child.unmount() }
-        keyedChildren = retained
-    }
-
-    private func markDirty() {
-        isDirty = true
+    func markDirty() {
+        content.markDirty()
         if let parent { parent.markDescendantDirty() } else { onInvalidation?() }
     }
 
     private func markDescendantDirty() {
         // Wake ancestors without re-evaluating their bodies or shifting an
         // unrelated timeline's phase.
-        hasDirtyDescendant = true
+        content.markDescendantDirty()
         if let parent { parent.markDescendantDirty() } else { onInvalidation?() }
     }
 
     private func refresh(at date: Date) {
-        if isDirty, let mountedView {
-            isDirty = false
-            hasDirtyDescendant = false
+        if let mountedView = content.consumeDirtyView() {
             update(mountedView, at: date)
             return
         }
-        guard hasDirtyDescendant || nextUpdate.map({ date >= $0 }) == true else { return }
-        hasDirtyDescendant = false
-        let timelineIsDue = timeline.map { date >= $0.deadline } ?? false
-        if timelineIsDue {
+        guard content.hasDirtyDescendant || nextUpdate.map({ date >= $0 }) == true else { return }
+        content.consumeDescendantInvalidation()
+        if schedule.isDue(at: date) {
             switch description {
-            case .timeline(let schedule, let content):
-                let contextDate = advanceTimeline(schedule, at: date)
-                reconcile([content(contextDate)], at: date)
+            case .timeline(let timelineSchedule, let body):
+                let contextDate = schedule.advance(timelineSchedule, at: date)
+                reconcile([body(contextDate)], at: date)
             case .canvas(let interval?, _):
-                let start = timeline!.schedule.start
-                canvasDate = advanceTimeline(.periodic(from: start, by: interval), at: date)
+                schedule.advanceCanvas(interval: interval, at: date)
             default:
                 break
             }
@@ -265,106 +133,17 @@ final class ViewRenderer {
             for child in children { child.refresh(at: date) }
         }
         if case .dialog(_, _, let kind) = description { updateDialogFallback(kind: kind, at: date) }
+        // Children must settle before selection/focus restoration and deadline aggregation.
+        // Those operations may inspect a descendant's freshly reconciled identity.
         updateTabState()
-        collectDeadlines()
+        schedule.collectDeadlines(children.lazy.map(\.nextUpdate))
     }
 
-    private func updateTabState() {
-        descendantTabNodes = children.flatMap(\.tabNodes)
-        updateActiveTab()
-    }
-
-    private func collectDeadlines() {
-        nextUpdate = timeline?.deadline
-        for child in children {
-            if let deadline = child.nextUpdate {
-                nextUpdate = min(nextUpdate ?? deadline, deadline)
-            }
-        }
-    }
-}
-
-extension ViewRenderer {
-    private func updateDynamicContent(_ description: ViewDescription, previous: ViewDescription?, at date: Date) {
-        switch description {
-        case .tabs(let content, _):
-            reconcile([content], at: date)
-        case .task(let content, let priority, let action):
-            updateTask(content, priority: priority, action: action, at: date)
-        case .disclosure(let header, let content):
-            if content == nil { restoreFocusBeforeDisclosureCollapse() }
-            reconcile(content.map { [header, $0] } ?? [header], at: date)
-        case .sheet(let base, let isPresented, let content):
-            let dismissing = !isPresented.wrappedValue && children.count > 1
-            reconcile(isPresented.wrappedValue ? [base, content()] : [base], at: date)
-            if dismissing { restoreFocusAfterSheetDismissal() }
-        case .conditional(let first, let content):
-            updateConditional(first: first, content: content, previous: previous, at: date)
-        case .timeline(let schedule, let content):
-            let contextDate = advanceTimeline(schedule, at: date)
-            reconcile([content(contextDate)], at: date)
-        default:
-            break
-        }
-    }
-
-    private func updateDialog(_ actions: any View, kind: DialogKind, at date: Date) {
-        // Mount the supplied actions first so roles in conditional and custom views
-        // are resolved without evaluating their bodies a second time.
-        let previousFallback = children.dropFirst().first
-        children = Array(children.prefix(1))
-        reconcile([actions], at: date)
-        if let previousFallback { children.append(previousFallback) }
-        updateDialogFallback(kind: kind, at: date)
-    }
-
-    private func updateDialogFallback(kind: DialogKind, at date: Date) {
-        let buttons = children.first?.dialogButtons() ?? []
-        let needsFallback = kind == .confirmation ? !buttons.contains { $0.buttonRole == .cancel } : buttons.isEmpty
-        guard needsFallback else {
-            if children.count > 1 { children.removeLast().unmount() }
-            return
-        }
-        // Keep a mounted fallback stable across both parent and descendant updates.
-        guard children.count == 1 else { return }
-        let fallback = Button(kind == .confirmation ? "Cancel" : "OK", role: kind == .confirmation ? .cancel : nil) {}
-        let node = Self.make(fallback, taskRegistry: taskRegistry)
-        node.parent = self
-        node.update(fallback, at: date)
-        children.append(node)
-    }
-
-    var drawing: (any PrimitiveDrawing)? {
-        switch description {
-        case .drawing(let drawing): return drawing
-        case .canvas(_, let render):
-            return Canvas.Drawing(size: measuredSize, date: canvasDate ?? .now, render: render)
-        case .textField(let field): return field.drawing
-        default: return nil
-        }
-    }
-
-    func keyedNode(for id: AnyHashable) -> ViewRenderer? {
-        if let node = keyedChildren[id] { return node }
-        for child in children {
-            if let node = child.keyedNode(for: id) { return node }
-        }
-        return nil
-    }
-
-    private func updateTask(
+    func updateTask(
         _ content: any View, priority: TaskPriority, action: @escaping @MainActor @Sendable () async -> Void,
         at date: Date
     ) {
         reconcile([content], at: date)
         if viewTask == nil { viewTask = taskRegistry.start(priority: priority, action: action) }
     }
-
-    private func updateConditional(first: Bool, content: any View, previous: ViewDescription?, at date: Date) {
-        if case .conditional(let wasFirst, _) = previous, first != wasFirst {
-            removeChildren()
-        }
-        reconcile([content], at: date)
-    }
-
 }

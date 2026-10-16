@@ -45,7 +45,14 @@ extension ViewRenderer {
         return selectedTab.resolveFocus(in: targets) ?? candidate
     }
 
-    func updateActiveTab() {
+    func updateTabState() {
+        // Selection restoration walks the updated tree. Discover structure first,
+        // then apply selection without caching which destination is currently active.
+        childStorage.collectTabDestinations()
+        updateActiveTab()
+    }
+
+    private func updateActiveTab() {
         guard case .tabs(_, let selection) = description else { return }
         let tabs = tabs
         let previous = activeTab
