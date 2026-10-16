@@ -9,8 +9,9 @@ struct ProgressGallery: View {
         GroupBox("Progress") {
             VStack(alignment: .leading, spacing: 1) {
                 ProgressView("Files \(completed)/\(total)", value: Double(completed), total: Double(total))
+                Stepper("Completed files", value: $completed, in: 0...total)
+                Text("Left/Right: adjust  •  Up/Down: move focus")
                 HStack(spacing: 2) {
-                    Button("Advance") { completed = min(completed + 1, total) }
                     Button("Reset") { completed = 0 }
                     Button(isLoading ? "Stop spinner" : "Start spinner") { isLoading.toggle() }
                 }
