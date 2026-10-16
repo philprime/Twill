@@ -15,7 +15,12 @@ struct ProgressGallery: View {
                     Button(isLoading ? "Stop spinner" : "Start spinner") { isLoading.toggle() }
                 }
                 if isLoading {
-                    ProgressView("Waiting for work")
+                    HStack(spacing: 3) {
+                        ProgressView("Dots")
+                        ProgressView("Arc", spinnerStyle: .arc)
+                        ProgressView("Line", spinnerStyle: .line)
+                        ProgressView("Custom", spinnerStyle: .custom(.init(["○", "◔", "◑", "◕", "●"])))
+                    }
                 } else {
                     Text("Idle")
                 }

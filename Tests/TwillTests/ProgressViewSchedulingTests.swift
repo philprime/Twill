@@ -19,13 +19,13 @@ struct ProgressViewSchedulingTests {
         let delayed = renderer.render(start.addingTimeInterval(0.35))
 
         // -- Assert --
-        #expect(first.grid?.snapshotText == "|")
+        #expect(first.grid?.snapshotText == "⠋")
         #expect(first.grid?.size == CellSize(width: 1, height: 1))
         #expect(first.nextUpdate == start.addingTimeInterval(0.1))
-        #expect(early.grid?.snapshotText == "|")
+        #expect(early.grid?.snapshotText == "⠋")
         #expect(early.nextUpdate == first.nextUpdate)
-        #expect(next.grid?.snapshotText == "/")
-        #expect(delayed.grid?.snapshotText == "\\")
+        #expect(next.grid?.snapshotText == "⠙")
+        #expect(delayed.grid?.snapshotText == "⠸")
         #expect(delayed.nextUpdate == start.addingTimeInterval(0.4))
     }
 
@@ -43,9 +43,9 @@ struct ProgressViewSchedulingTests {
         let nilFrame = nilValue.render(start)
 
         // -- Assert --
-        #expect(titleFrame.grid?.snapshotText == "| Loading")
-        #expect(customFrame.grid?.snapshotText == "| Files")
-        #expect(nilFrame.grid?.snapshotText == "| Waiting")
+        #expect(titleFrame.grid?.snapshotText == "⠋ Loading")
+        #expect(customFrame.grid?.snapshotText == "⠋ Files")
+        #expect(nilFrame.grid?.snapshotText == "⠋ Waiting")
         #expect(nilFrame.nextUpdate == start.addingTimeInterval(0.1))
     }
 
@@ -64,8 +64,8 @@ struct ProgressViewSchedulingTests {
         let due = renderer.render(start.addingTimeInterval(0.1))
 
         // -- Assert --
-        #expect(parent.grid?.snapshotText == "| Next")
-        #expect(due.grid?.snapshotText == "/ Next")
+        #expect(parent.grid?.snapshotText == "⠋ Next")
+        #expect(due.grid?.snapshotText == "⠙ Next")
     }
 
     @Test("Switching to determinate progress removes animation deadlines")
@@ -118,7 +118,7 @@ struct ProgressViewSchedulingTests {
         let output = RecordingTerminalOutput()
         let root = HStack {
             ProgressView()
-            TimelineView(.periodic(from: start, by: 1)) { _ -> Text in
+            TimelineView(.periodic(from: start, by: 60)) { _ -> Text in
                 siblingEvaluations += 1
                 return Text("Slow")
             }
@@ -127,10 +127,10 @@ struct ProgressViewSchedulingTests {
         try host.start()
 
         // -- Act --
-        now = start.addingTimeInterval(0.4)
+        now = start.addingTimeInterval(1)
         try #require(runLoop.timers.last).action()
         let writesAfterFullCycle = output.writes.count
-        now = start.addingTimeInterval(0.5)
+        now = start.addingTimeInterval(1.1)
         try #require(runLoop.timers.last).action()
         let writesAfterChange = output.writes.count
         host.stop()

@@ -5,10 +5,14 @@
 public struct ProgressView<Label: View>: View {
     private let fraction: Double?
     private let label: Label
+    private let spinnerStyle: SpinnerStyle
 
     /// `total` must be positive and finite when `value` is non-nil.
     /// A NaN value is treated as zero progress.
-    public init(value: Double? = nil, total: Double = 1, @ViewBuilder label: () -> Label) {
+    public init(
+        value: Double? = nil, total: Double = 1, spinnerStyle: SpinnerStyle = .dots,
+        @ViewBuilder label: () -> Label
+    ) {
         if let value {
             precondition(total.isFinite && total > 0, "Progress total must be positive and finite")
             fraction = value.isNaN ? 0 : min(max(value / total, 0), 1)
@@ -16,6 +20,7 @@ public struct ProgressView<Label: View>: View {
             fraction = nil
         }
         self.label = label()
+        self.spinnerStyle = spinnerStyle
     }
 
     @ViewBuilder public var body: some View {
@@ -26,7 +31,7 @@ public struct ProgressView<Label: View>: View {
             }
         } else {
             HStack {
-                ProgressSpinner()
+                ProgressSpinner(style: spinnerStyle)
                 label
             }
         }
@@ -34,14 +39,14 @@ public struct ProgressView<Label: View>: View {
 }
 
 extension ProgressView where Label == EmptyView {
-    public init(value: Double? = nil, total: Double = 1) {
-        self.init(value: value, total: total) { return EmptyView() }
+    public init(value: Double? = nil, total: Double = 1, spinnerStyle: SpinnerStyle = .dots) {
+        self.init(value: value, total: total, spinnerStyle: spinnerStyle) { return EmptyView() }
     }
 }
 
 extension ProgressView where Label == Text {
-    public init(_ title: String, value: Double? = nil, total: Double = 1) {
-        self.init(value: value, total: total) { return Text(title) }
+    public init(_ title: String, value: Double? = nil, total: Double = 1, spinnerStyle: SpinnerStyle = .dots) {
+        self.init(value: value, total: total, spinnerStyle: spinnerStyle) { return Text(title) }
     }
 }
 
