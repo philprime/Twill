@@ -19,14 +19,7 @@ extension ViewRenderer {
         }
         let pane = panes.first { $0.contains(target) }
         let targets = pane?.focusableNodes() ?? focusableNodes()
-        if case .textField(let field) = target.description {
-            if field.handle(key) == .handled { return true }
-            if key == .enter, submit(from: target, stoppingAt: modal ? self : nil) { return true }
-        }
-        if case .listSelection(_, _, let handle) = target.description {
-            if handle(key) == .handled { return true }
-            if key == .enter, submit(from: target, stoppingAt: modal ? self : nil) { return true }
-        }
+        if handleControl(key, at: target, stoppingAt: modal ? self : nil) { return true }
         if route(key, from: target, stoppingAt: modal ? self : nil) == .handled { return true }
 
         if let pane, key == .tab || key == .shiftTab {
@@ -36,6 +29,21 @@ extension ViewRenderer {
             return scrollViewer(key, pane: pane)
         }
         return moveFocus(key, from: target, in: targets, pane: pane)
+    }
+
+    private func handleControl(_ key: KeyEvent, at target: ViewRenderer, stoppingAt boundary: ViewRenderer?) -> Bool {
+        switch target.description {
+        case .textField(let field):
+            if field.handle(key) == .handled { return true }
+            return key == .enter && submit(from: target, stoppingAt: boundary)
+        case .textEditor(let editor):
+            return editor.handle(key, target.measuredSize.height) == .handled
+        case .listSelection(_, _, let handle):
+            if handle(key) == .handled { return true }
+            return key == .enter && submit(from: target, stoppingAt: boundary)
+        default:
+            return false
+        }
     }
 
     private func switchPane(_ key: KeyEvent, from pane: ViewRenderer, in panes: [ViewRenderer]) -> Bool {
@@ -211,6 +219,7 @@ extension ViewRenderer {
     private func scrollPanes() -> [ViewRenderer] {
         if case .sheet = description { return sheetBranch?.scrollPanes() ?? [] }
         if case .scroll = description { return [self] }
+        if case .textEditor = description { return [self] }
         return children.flatMap { $0.scrollPanes() }
     }
 
@@ -230,7 +239,7 @@ extension ViewRenderer {
         let descendants = children.flatMap { $0.focusableNodes() }
         switch description {
         case .listSelection: return [self]
-        case .focusable, .textField: return [self] + descendants
+        case .focusable, .textField, .textEditor: return [self] + descendants
         case .scroll where descendants.isEmpty: return [self]
         default: return descendants
         }
@@ -254,6 +263,9 @@ extension ViewRenderer {
             }
             if includeControls, case .textField(let field) = descendant.description, field.handle(key) == .handled {
                 return .handled
+            }
+            if includeControls, case .textEditor(let editor) = descendant.description {
+                if editor.handle(key, descendant.measuredSize.height) == .handled { return .handled }
             }
             child = descendant
         }
