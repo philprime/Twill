@@ -115,9 +115,19 @@ jobs:
           draft: false
           prerelease: ${{ steps.metadata.outputs.is_prerelease == 'true' }}
 
+  publish-documentation:
+    name: Publish latest release documentation
+    needs: release
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    uses: ./.github/workflows/documentation.yml
+
   release-required-check:
     name: Release - Required Check
-    needs: [release]
+    needs: [release, publish-documentation]
     if: always()
     runs-on: ubuntu-latest
     steps:
