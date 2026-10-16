@@ -5,10 +5,16 @@ public struct TextField: View {
     @State private var caret: Int?
     private let prompt: String
     private let text: Binding<String>
+    private let isSecure: Bool
 
     public init(_ prompt: String, text: Binding<String>) {
+        self.init(prompt, text: text, isSecure: false)
+    }
+
+    init(_ prompt: String, text: Binding<String>, isSecure: Bool) {
         self.prompt = prompt
         self.text = text
+        self.isSecure = isSecure
     }
 
     private func handle(_ key: KeyEvent) -> KeyPressResult {
@@ -51,9 +57,12 @@ struct TextFieldDescription {
 extension TextField: PrimitiveView {
     func makeDescription() -> ViewDescription {
         let value = text.wrappedValue
-        let displayed = value.isEmpty ? prompt : value
+        // Mask before constructing drawing data so frames and drawing diagnostics
+        // never contain the bound secret. Caret widths must use that same mask.
+        let renderedValue = isSecure ? String(repeating: "•", count: value.count) : value
+        let displayed = value.isEmpty ? prompt : renderedValue
         // Caret positions use rendered cell widths, not character indices.
-        let prefix = String(value.prefix(min(caret ?? value.count, value.count)))
+        let prefix = String(renderedValue.prefix(min(caret ?? value.count, value.count)))
         let caretColumn = TextDrawing(prefix).sizeThatFits(.unspecified).width
         return .textField(
             TextFieldDescription(
