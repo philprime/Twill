@@ -15,6 +15,8 @@ public struct OutlineGroup<Data: RandomAccessCollection, ID: Hashable, RowConten
     private let expandedIDs: Binding<Set<ID>>
     private let rowContent: @MainActor (Data.Element) -> RowContent
 
+    /// Creates a hierarchy with explicit stable identities, child collections, and bound selection and expansion.
+    /// IDs must be unique throughout the hierarchy; nil children mark a leaf.
     public init(
         _ data: Data, id: KeyPath<Data.Element, ID>, children: KeyPath<Data.Element, Data?>,
         selection: Binding<ID?>, expandedIDs: Binding<Set<ID>>,
@@ -28,6 +30,7 @@ public struct OutlineGroup<Data: RandomAccessCollection, ID: Hashable, RowConten
         self.rowContent = rowContent
     }
 
+    /// The visible hierarchy flattened into indented selectable rows with expansion-key handling.
     public var body: some View {
         let rows = visibleRows
         return List(rows, id: \.id, selection: selection) { row in
@@ -87,6 +90,7 @@ public struct OutlineGroup<Data: RandomAccessCollection, ID: Hashable, RowConten
 }
 
 extension OutlineGroup where Data.Element: Identifiable, ID == Data.Element.ID {
+    /// Creates a hierarchy using each element's `id`, with externally owned selection and expansion state.
     public init(
         _ data: Data, children: KeyPath<Data.Element, Data?>,
         selection: Binding<ID?>, expandedIDs: Binding<Set<ID>>,

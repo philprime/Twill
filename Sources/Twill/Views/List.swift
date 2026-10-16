@@ -5,6 +5,7 @@
 /// when another pane is active. Row content describes presentation, not
 /// independently focusable controls.
 public struct List<Data: RandomAccessCollection, ID: Hashable, RowContent: View>: View {
+    /// Primitive content rendered directly by the runtime rather than through a composed body.
     public typealias Body = Never
     private let data: Data
     private let id: KeyPath<Data.Element, ID>
@@ -48,6 +49,7 @@ public struct List<Data: RandomAccessCollection, ID: Hashable, RowContent: View>
 }
 
 extension List where Data.Element: Identifiable, ID == Data.Element.ID {
+    /// Creates a selectable list using each element's stable, unique `id` as its row identity.
     public init(
         _ data: Data, selection: Binding<ID?>,
         @ViewBuilder rowContent: @escaping @MainActor (Data.Element) -> RowContent

@@ -23,6 +23,7 @@ public struct ProgressView<Label: View>: View {
         self.spinnerStyle = spinnerStyle
     }
 
+    /// The label with a determinate bar or an independently animated spinner.
     @ViewBuilder public var body: some View {
         if let fraction {
             VStack(alignment: .leading, spacing: 0) {
@@ -39,12 +40,14 @@ public struct ProgressView<Label: View>: View {
 }
 
 extension ProgressView where Label == EmptyView {
+    /// Creates unlabeled progress. A nil value selects a spinner; otherwise total must be positive and finite.
     public init(value: Double? = nil, total: Double = 1, spinnerStyle: SpinnerStyle = .dots) {
         self.init(value: value, total: total, spinnerStyle: spinnerStyle) { return EmptyView() }
     }
 }
 
 extension ProgressView where Label == Text {
+    /// Creates text-labeled progress. A nil value selects a spinner; otherwise total must be positive and finite.
     public init(_ title: String, value: Double? = nil, total: Double = 1, spinnerStyle: SpinnerStyle = .dots) {
         self.init(value: value, total: total, spinnerStyle: spinnerStyle) { return Text(title) }
     }

@@ -1,5 +1,6 @@
 /// A view that starts an asynchronous action when it enters the mounted hierarchy.
 public struct TaskView<Content: View>: View {
+    /// Primitive content rendered directly by the runtime rather than through a composed body.
     public typealias Body = Never
     private let content: Content
     private let priority: TaskPriority

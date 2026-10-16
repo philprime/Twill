@@ -1,5 +1,6 @@
 /// Describes a column's size in terminal cells.
 public struct GridItem: Equatable, Sendable {
+    /// The strategy used to allocate a grid column’s width.
     public enum Size: Equatable, Sendable {
         /// Shares available width with other flexible columns within the given bounds.
         case flexible(minimum: Int = 1, maximum: Int = .max)
@@ -7,8 +8,10 @@ public struct GridItem: Equatable, Sendable {
         case adaptive(minimum: Int)
     }
 
+    /// The column sizing strategy.
     public let size: Size
 
+    /// Creates a column description, requiring positive minimum widths and ordered flexible bounds.
     public init(_ size: Size) {
         switch size {
         case .flexible(let minimum, let maximum):

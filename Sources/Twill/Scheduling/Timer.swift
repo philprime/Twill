@@ -9,6 +9,8 @@ public final class Timer {
     let deadline: DispatchTime?
     var isCancelled = false
 
+    /// Creates a logical timer whose first deadline is measured when the run loop processes registration.
+    /// Repeating timers preserve their deadline phase and skip missed periods.
     public init(
         interval: DispatchTimeInterval,
         repeats: Bool = false,

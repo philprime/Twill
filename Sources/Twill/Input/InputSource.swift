@@ -10,23 +10,33 @@ import Synchronization
 #endif
 
 #if TESTING
+    /// A replaceable reader of uninterpreted bytes from a borrowed input descriptor.
     @MainActor
     public protocol InputSource: AnyObject, Sendable {
+        /// The lossless byte stream used by stream-based delivery.
         var events: AsyncThrowingStream<[UInt8], Error> { get }
+        /// Starts delivering input through the asynchronous byte stream.
         func start()
+        /// Starts queued event delivery and signals the registration when events become available.
         func start(signaling registration: RunLoopSourceRegistration)
+        /// Consumes up to the requested number of pending input events.
         func takeEvents(limit: Int) -> [InputSourceEvent]
+        /// Requests cancellation without waiting for descriptor cleanup.
         func cancel()
+        /// Cancels input, joins in-flight reads, and restores inherited descriptor flags.
         func stop() async
     }
 
     extension InputSource {
+        /// Starts stream-based delivery when a source does not implement signaled delivery.
         public func start(signaling registration: RunLoopSourceRegistration) { start() }
+        /// Returns no queued events by default for sources that only support stream delivery.
         public func takeEvents(limit: Int) -> [InputSourceEvent] { [] }
     }
 
     extension DefaultInputSource: InputSource {}
 #else
+    /// The concrete reader of bytes from a borrowed input descriptor.
     public typealias InputSource = DefaultInputSource
 #endif
 
@@ -74,6 +84,7 @@ public final class DefaultInputSource {
 
     private nonisolated static let readBufferSize = 4096
 
+    /// The unbounded byte stream populated when stream-based delivery is started.
     public let events: AsyncThrowingStream<[UInt8], Error>
     private let continuation: AsyncThrowingStream<[UInt8], Error>.Continuation
     private let fileDescriptor: FileDescriptor
@@ -89,15 +100,18 @@ public final class DefaultInputSource {
         (events, continuation) = AsyncThrowingStream.makeStream(bufferingPolicy: .unbounded)
     }
 
+    /// Starts asynchronous byte-stream delivery using nonblocking reads.
     public func start() {
         start(delivery: .stream(continuation))
     }
 
+    /// Starts queued event delivery, signaling readiness after storing each event.
     public func start(signaling registration: RunLoopSourceRegistration) {
         self.registration = registration
         start(delivery: .source(pendingEvents, registration))
     }
 
+    /// Consumes at most the given number of queued events and signals again if more remain.
     public func takeEvents(limit: Int) -> [InputSourceEvent] {
         let batch = pendingEvents.take(limit: limit)
         if batch.hasMore { registration?.signal() }
@@ -171,6 +185,7 @@ public final class DefaultInputSource {
         continuation.finish()
     }
 
+    /// Cancels input, awaits in-flight reads, and restores saved descriptor flags before returning.
     public func stop() async {
         cancel()
         await withCheckedContinuation { completion in

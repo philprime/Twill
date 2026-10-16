@@ -3,6 +3,7 @@ included:
   - Sources
   - Tests
   - Examples
+  - Tools
 
 excluded:
   - .build
@@ -10,6 +11,16 @@ excluded:
   - .agents
   - .pi
   - dist
+
+opt_in_rules:
+  - missing_docs
+
+missing_docs:
+  error: [open, public]
+  excludes_extensions: false
+  excludes_inherited_types: false
+  excludes_trivial_init: false
+  evaluate_effective_access_control_level: true
 
 disabled_rules:
   - trailing_comma

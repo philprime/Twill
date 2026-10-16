@@ -6,9 +6,13 @@
 
 /// A borrowed POSIX descriptor. Wrapping it does not transfer ownership or close it.
 public enum FileDescriptor: Sendable, Equatable {
+    /// The process standard input descriptor.
     case standardInput
+    /// The process standard output descriptor.
     case standardOutput
+    /// The process standard error descriptor.
     case standardError
+    /// A caller-supplied POSIX descriptor, borrowed without taking ownership.
     case custom(Int32)
 
     /// POSIX uses signed descriptors. Keep conversion at the system-call boundary.

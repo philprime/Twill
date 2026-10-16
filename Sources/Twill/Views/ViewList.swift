@@ -1,5 +1,6 @@
 /// Builder-produced content that forwards its children without adding layout of its own.
 public struct ViewList<each Content: View>: View {
+    /// Primitive content rendered directly by the runtime rather than through a composed body.
     public typealias Body = Never
     let children: (repeat each Content)
 }

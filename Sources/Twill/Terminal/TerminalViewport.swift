@@ -9,16 +9,22 @@ import Synchronization
 #endif
 
 #if TESTING
+    /// A replaceable observer of a terminal’s character-cell dimensions.
     @MainActor
     public protocol TerminalViewport: AnyObject, Sendable {
+        /// Starts resize observation and signals unread results, returning the initial size if available.
         func start(signaling registration: RunLoopSourceRegistration) throws -> TerminalSize?
+        /// Consumes the newest unread size, or throws the observation error.
         func consume() throws -> TerminalSize?
+        /// Requests cancellation and discards pending viewport results.
         func cancel()
+        /// Cancels observation and waits for in-flight descriptor access to finish.
         func stop() async
     }
 
     extension DefaultTerminalViewport: TerminalViewport {}
 #else
+    /// The concrete observer of terminal viewport dimensions.
     public typealias TerminalViewport = DefaultTerminalViewport
 #endif
 
@@ -62,10 +68,12 @@ public final class DefaultTerminalViewport {
     private let pendingResult = PendingViewportResult()
     private var source: DispatchSourceSignal?
 
+    /// Creates an observer that borrows the supplied output descriptor.
     public init(fileDescriptor: FileDescriptor = .standardOutput) {
         self.fileDescriptor = fileDescriptor
     }
 
+    /// Reads current dimensions, returning nil for nonterminals or unavailable dimensions.
     public func size() throws -> TerminalSize? {
         try Self.readSize(fileDescriptor.rawValue)
     }
@@ -110,6 +118,7 @@ public final class DefaultTerminalViewport {
         return try result.get()
     }
 
+    /// Requests cancellation and discards unread results without waiting for descriptor access to finish.
     public func cancel() {
         pendingResult.cancel()
         source?.cancel()

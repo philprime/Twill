@@ -1,5 +1,6 @@
 /// A builder branch occupies a stable structural position even when it has no content.
 public struct ConditionalContent<First: View, Second: View>: View {
+    /// Primitive content rendered directly by the runtime rather than through a composed body.
     public typealias Body = Never
 
     enum Storage {

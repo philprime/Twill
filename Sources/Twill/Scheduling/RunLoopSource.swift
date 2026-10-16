@@ -8,6 +8,7 @@
 public final class RunLoopSource {
     let action: @MainActor () -> Void
 
+    /// Creates a source whose action runs on the UI actor when registered readiness is delivered.
     public init(action: @escaping @MainActor () -> Void) {
         self.action = action
     }

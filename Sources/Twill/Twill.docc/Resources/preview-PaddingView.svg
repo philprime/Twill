@@ -1,0 +1,35 @@
+<!-- dprint-ignore-file -->
+<svg xmlns="http://www.w3.org/2000/svg" width="112" height="92" viewBox="0 0 112 92" role="img" aria-labelledby="title">
+<title id="title">PaddingView</title>
+<rect width="100%" height="100%" rx="8" fill="#161b22"/>
+<rect x="16" y="16" width="10" height="20" fill="#161b22"/>
+<rect x="26" y="16" width="10" height="20" fill="#161b22"/>
+<rect x="36" y="16" width="10" height="20" fill="#161b22"/>
+<rect x="46" y="16" width="10" height="20" fill="#161b22"/>
+<rect x="56" y="16" width="10" height="20" fill="#161b22"/>
+<rect x="66" y="16" width="10" height="20" fill="#161b22"/>
+<rect x="76" y="16" width="10" height="20" fill="#161b22"/>
+<rect x="86" y="16" width="10" height="20" fill="#161b22"/>
+<rect x="16" y="36" width="10" height="20" fill="#161b22"/>
+<rect x="26" y="36" width="10" height="20" fill="#161b22"/>
+<rect x="36" y="36" width="10" height="20" fill="#161b22"/>
+<rect x="46" y="36" width="10" height="20" fill="#161b22"/>
+<rect x="56" y="36" width="10" height="20" fill="#161b22"/>
+<rect x="66" y="36" width="10" height="20" fill="#161b22"/>
+<rect x="76" y="36" width="10" height="20" fill="#161b22"/>
+<rect x="86" y="36" width="10" height="20" fill="#161b22"/>
+<rect x="16" y="56" width="10" height="20" fill="#161b22"/>
+<rect x="26" y="56" width="10" height="20" fill="#161b22"/>
+<rect x="36" y="56" width="10" height="20" fill="#161b22"/>
+<rect x="46" y="56" width="10" height="20" fill="#161b22"/>
+<rect x="56" y="56" width="10" height="20" fill="#161b22"/>
+<rect x="66" y="56" width="10" height="20" fill="#161b22"/>
+<rect x="76" y="56" width="10" height="20" fill="#161b22"/>
+<rect x="86" y="56" width="10" height="20" fill="#161b22"/>
+<text x="26" y="51" fill="#e6edf3" font-family="'SFMono-Regular',Consolas,'Liberation Mono',monospace" font-size="16" textLength="10" lengthAdjust="spacingAndGlyphs">P</text>
+<text x="36" y="51" fill="#e6edf3" font-family="'SFMono-Regular',Consolas,'Liberation Mono',monospace" font-size="16" textLength="10" lengthAdjust="spacingAndGlyphs">a</text>
+<text x="46" y="51" fill="#e6edf3" font-family="'SFMono-Regular',Consolas,'Liberation Mono',monospace" font-size="16" textLength="10" lengthAdjust="spacingAndGlyphs">d</text>
+<text x="56" y="51" fill="#e6edf3" font-family="'SFMono-Regular',Consolas,'Liberation Mono',monospace" font-size="16" textLength="10" lengthAdjust="spacingAndGlyphs">d</text>
+<text x="66" y="51" fill="#e6edf3" font-family="'SFMono-Regular',Consolas,'Liberation Mono',monospace" font-size="16" textLength="10" lengthAdjust="spacingAndGlyphs">e</text>
+<text x="76" y="51" fill="#e6edf3" font-family="'SFMono-Regular',Consolas,'Liberation Mono',monospace" font-size="16" textLength="10" lengthAdjust="spacingAndGlyphs">d</text>
+</svg>

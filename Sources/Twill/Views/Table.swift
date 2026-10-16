@@ -5,6 +5,7 @@ import Foundation
 /// Up from the first row reaches the headers. Left/Right navigate headers,
 /// Enter or Space changes sort order, and Down returns to the selected row.
 public struct Table<Data: RandomAccessCollection, each Content: View>: View where Data.Element: Identifiable {
+    /// Primitive content rendered directly by the runtime rather than through a composed body.
     public typealias Body = Never
     @FocusState private var focus: TableFocus?
     private let data: Data
@@ -12,6 +13,8 @@ public struct Table<Data: RandomAccessCollection, each Content: View>: View wher
     private let sortOrder: Binding<[KeyPathComparator<Data.Element>]>?
     private let columns: TableColumns<Data.Element, repeat each Content>
 
+    /// Creates a table with bound row selection and typed columns.
+    /// Supplying sort order enables sortable headers; the caller must apply the comparators to the data.
     public init(
         _ data: Data, selection: Binding<Data.Element.ID?>,
         sortOrder: Binding<[KeyPathComparator<Data.Element>]>? = nil,

@@ -1,21 +1,29 @@
 extension Application {
+    /// Presentation and lifecycle shortcut settings for an application.
     public struct Options {
+        /// Settings that control terminal presentation.
         public struct UIOptions {
             /// Controls how an application occupies the terminal while it is running.
             public enum Mode: Sendable {
+                /// Uses the alternate screen for the application and restores the previous screen on exit.
                 case fullscreen
+                /// Presents within the current terminal screen without entering the alternate screen.
                 case inline
             }
 
+            /// How the application occupies the terminal.
             public var mode: Mode
 
+            /// Creates presentation settings, using fullscreen mode by default.
             public init(mode: Mode = .fullscreen) {
                 self.mode = mode
             }
         }
 
-        // swiftlint:disable:next identifier_name
+        // swiftlint:disable identifier_name
+        /// The terminal presentation settings applied when the application runs.
         public var ui: UIOptions
+        // swiftlint:enable identifier_name
 
         /// Whether Ctrl-C requests orderly shutdown instead of reaching key handlers.
         public var exitOnControlC: Bool
@@ -23,6 +31,7 @@ extension Application {
         /// Whether Ctrl-D requests orderly shutdown instead of reaching key handlers.
         public var exitOnControlD: Bool
 
+        /// Creates application settings with presentation and orderly-shutdown shortcut policies.
         public init(ui uiOptions: UIOptions = .init(), exitOnControlC: Bool = true, exitOnControlD: Bool = true) {
             self.ui = uiOptions
             self.exitOnControlC = exitOnControlC

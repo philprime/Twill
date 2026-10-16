@@ -35,10 +35,12 @@ public struct State<Value> {
 
     private let handle: Handle
 
+    /// Creates state with an initial value used when its owning view is first mounted.
     public init(wrappedValue: Value) {
         handle = Handle(wrappedValue)
     }
 
+    /// The mounted value; writing it invalidates the owning view’s presentation.
     public var wrappedValue: Value {
         get { handle.location.value }
         nonmutating set {
@@ -47,6 +49,7 @@ public struct State<Value> {
         }
     }
 
+    /// A binding that follows the owning view’s retained mounted state location.
     public var projectedValue: Binding<Value> {
         // The binding writes through this handle, which follows the owner's
         // mounted location when parent descriptions are rebuilt.

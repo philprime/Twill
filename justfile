@@ -28,10 +28,15 @@ build *args:
 docs hosting-base-path="" *args:
     #!/usr/bin/env bash
     set -euo pipefail
+    just docs-previews
     swift package --scratch-path .build/documentation-build dump-symbol-graph --minimum-access-level public --emit-extension-block-symbols
-    xcrun docc convert --additional-symbol-graph-dir .build/documentation-build/out/symbolgraph --fallback-display-name Twill --fallback-bundle-identifier Twill --fallback-default-module-kind Library --warnings-as-errors --transform-for-static-hosting --hosting-base-path "$1" --output-path .build/documentation "${@:2}"
+    xcrun docc convert Sources/Twill/Twill.docc --additional-symbol-graph-dir .build/documentation-build/out/symbolgraph --fallback-display-name Twill --fallback-bundle-identifier Twill --fallback-default-module-kind Library --warnings-as-errors --transform-for-static-hosting --hosting-base-path "$1" --output-path .build/documentation "${@:2}"
     # DocC keeps module pages under /documentation; the site root is only an entry point.
     printf '%s\n' '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta http-equiv="refresh" content="0; url=./documentation/twill/"><title>Twill Documentation</title></head><body><a href="./documentation/twill/">Twill Documentation</a></body></html>' > .build/documentation/index.html
+
+# Regenerate the DocC gallery and SVG previews using deterministic framework-rendered fixtures.
+docs-previews:
+    just _swift batch run --package-path Tools/DocGenerator --scratch-path .build/tools/DocGenerator --disable-index-store --explicit-target-dependency-import-check warn -Xswiftc -warnings-as-errors -Xswiftc -enable-testing DocGenerator "{{root}}"
 
 # Enable injectable collaborators in the library and unit tests, in either configuration.
 # Supports --linux, --container, and SwiftPM arguments such as --filter SomeSuite.
@@ -59,7 +64,7 @@ example name *args:
 format:
     #!/usr/bin/env bash
     set -euo pipefail
-    paths=(Sources Tests Package.swift)
+    paths=(Sources Tests Tools Package.swift)
     if [[ -d Examples ]]; then paths+=(Examples); fi
     swift format format --configuration .swift-format.json --in-place --recursive --parallel "${paths[@]}"
     dprint fmt
@@ -68,7 +73,7 @@ format:
 format-check:
     #!/usr/bin/env bash
     set -euo pipefail
-    paths=(Sources Tests Package.swift)
+    paths=(Sources Tests Tools Package.swift)
     if [[ -d Examples ]]; then paths+=(Examples); fi
     swift format lint --configuration .swift-format.json --recursive --parallel --strict "${paths[@]}"
     dprint check

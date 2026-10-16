@@ -1,5 +1,6 @@
 /// Associates a focus binding with a control or its focusable descendants.
 public struct FocusedView<Content: View>: View {
+    /// Primitive content rendered directly by the runtime rather than through a composed body.
     public typealias Body = Never
     private let content: Content
     private let binding: FocusBindingDescription
@@ -11,6 +12,7 @@ public struct FocusedView<Content: View>: View {
 }
 
 extension View {
+    /// Synchronizes focus for this content with a Boolean focus binding.
     public func focused(_ binding: FocusState<Bool>.Binding) -> FocusedView<Self> {
         FocusedView(
             content: self,
@@ -19,6 +21,7 @@ extension View {
                 setFocused: { if binding.wrappedValue != $0 { binding.wrappedValue = $0 } }))
     }
 
+    /// Associates this content with a focus value. Gaining focus writes that value; losing it clears a matching value.
     public func focused<Value: Hashable>(
         _ binding: FocusState<Value?>.Binding, equals value: Value
     ) -> FocusedView<Self> {

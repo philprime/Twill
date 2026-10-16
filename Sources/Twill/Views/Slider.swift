@@ -33,6 +33,7 @@ public struct Slider<Value: BinaryFloatingPoint, Label: View>: View where Value.
             ? bounds.lowerBound : min(max(value.wrappedValue, bounds.lowerBound), bounds.upperBound)
     }
 
+    /// The label, current value, and clamped track with keyboard adjustment handling.
     public var body: some View {
         let span = bounds.upperBound - bounds.lowerBound
         let fraction = span > 0 ? Double((boundedValue - bounds.lowerBound) / span) : 0
@@ -63,12 +64,14 @@ public struct Slider<Value: BinaryFloatingPoint, Label: View>: View where Value.
 }
 
 extension Slider where Label == EmptyView {
+    /// Creates an unlabeled slider with finite bounds and an optional positive, finite step.
     public init(value: Binding<Value>, in bounds: ClosedRange<Value> = 0...1, step: Value.Stride? = nil) {
         self.init(value: value, in: bounds, step: step) { return EmptyView() }
     }
 }
 
 extension Slider where Label == Text {
+    /// Creates a text-labeled slider with finite bounds and an optional positive, finite step.
     public init(
         _ title: String, value: Binding<Value>, in bounds: ClosedRange<Value> = 0...1, step: Value.Stride? = nil
     ) {

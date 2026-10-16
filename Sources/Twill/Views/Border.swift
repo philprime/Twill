@@ -2,15 +2,24 @@
 public enum Border: Sendable {
     /// The eight glyphs of a one-cell terminal border.
     public struct Glyphs: Sendable {
+        /// The character drawn at the upper leading corner.
         public let topLeft: Character
+        /// The character repeated along the top edge.
         public let top: Character
+        /// The character drawn at the upper trailing corner.
         public let topRight: Character
+        /// The character repeated along the leading edge.
         public let left: Character
+        /// The character repeated along the trailing edge.
         public let right: Character
+        /// The character drawn at the lower leading corner.
         public let bottomLeft: Character
+        /// The character repeated along the bottom edge.
         public let bottom: Character
+        /// The character drawn at the lower trailing corner.
         public let bottomRight: Character
 
+        /// Creates border glyphs. Each character must be visible and occupy exactly one terminal cell.
         public init(
             topLeft: Character, top: Character, topRight: Character,
             left: Character, right: Character,
@@ -38,11 +47,17 @@ public enum Border: Sendable {
         }
     }
 
+    /// Thin single-line edges and square corners.
     case single
+    /// Double-line edges and corners.
     case double
+    /// Thin single-line edges with rounded corners.
     case rounded
+    /// Heavy single-line edges and square corners.
     case heavy
+    /// Dashed thin edges with square corners.
     case dashed
+    /// A border using caller-supplied, validated glyphs.
     case custom(Glyphs)
 
     var glyphs: Glyphs {

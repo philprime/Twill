@@ -2,10 +2,12 @@
 /// Requires a compatible terminal such as Ghostty. Width and height are cell counts,
 /// not pixels. The terminal scales the image to this rectangle.
 public struct ImageView: View {
+    /// Primitive content rendered directly by the runtime rather than through a composed body.
     public typealias Body = Never
     private let image: Image
     private let size: CellSize
 
+    /// Displays an image in the requested terminal-cell rectangle. Negative dimensions are clamped to zero.
     public init(_ image: Image, width: Int, height: Int) {
         self.image = image
         size = CellSize(width: max(0, width), height: max(0, height))
