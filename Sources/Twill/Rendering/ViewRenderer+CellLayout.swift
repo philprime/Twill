@@ -5,7 +5,7 @@ extension ViewRenderer {
         switch description {
         case .drawing, .canvas, .textField, .textEditor:
             return [self]
-        case .group(_, .some), .styled, .border, .scroll, .dialog:
+        case .group(_, .some), .styled, .border, .scroll, .dialog, .disclosure:
             return activeChildren.flatMap(\.layoutItems).isEmpty ? [] : [self]
         case .tabs:
             return hasTabBar ? [self] : []
@@ -80,11 +80,12 @@ extension ViewRenderer {
     private func measureChildren(_ proposal: ProposedCellSize) -> CellSize {
         let items = activeChildren.flatMap(\.layoutItems)
         let layout: any PrimitiveLayout
-        if case .group(_, let groupLayout?) = description {
+        switch description {
+        case .group(_, let groupLayout?):
             layout = groupLayout
-        } else if case .dialog = description {
+        case .dialog, .disclosure:
             layout = VerticalLayout(spacing: 0, alignment: .leading)
-        } else {
+        default:
             layout = HorizontalLayout(spacing: 0)
         }
         let sizes: [CellSize]
