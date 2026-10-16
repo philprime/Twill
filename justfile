@@ -30,6 +30,8 @@ docs hosting-base-path="" *args:
     set -euo pipefail
     swift package --scratch-path .build/documentation-build dump-symbol-graph --minimum-access-level public --emit-extension-block-symbols
     xcrun docc convert --additional-symbol-graph-dir .build/documentation-build/out/symbolgraph --fallback-display-name Twill --fallback-bundle-identifier Twill --fallback-default-module-kind Library --warnings-as-errors --transform-for-static-hosting --hosting-base-path "$1" --output-path .build/documentation "${@:2}"
+    # DocC keeps module pages under /documentation; the site root is only an entry point.
+    printf '%s\n' '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta http-equiv="refresh" content="0; url=./documentation/twill/"><title>Twill Documentation</title></head><body><a href="./documentation/twill/">Twill Documentation</a></body></html>' > .build/documentation/index.html
 
 # Enable injectable collaborators in the library and unit tests, in either configuration.
 # Supports --linux, --container, and SwiftPM arguments such as --filter SomeSuite.
