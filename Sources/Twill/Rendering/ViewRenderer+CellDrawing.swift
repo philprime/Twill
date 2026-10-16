@@ -1,6 +1,7 @@
 /// Draws mounted descriptions into the host's shared cell grid.
 extension ViewRenderer {
     func draw(in context: inout DrawingContext, focused: ViewRenderer?) {
+        if case .tabs = description { drawTabBar(in: &context, focused: focused) }
         if case .button(_, .destructive, _) = description {
             context.withStyle(foreground: .red, background: nil, size: measuredSize) { region in
                 drawChildren(in: &region, focused: focused)
@@ -77,7 +78,7 @@ extension ViewRenderer {
         if case .scroll = description, !revealListSelection(), scrollFollowsFocus, let focused, focused !== self {
             reveal(focused)
         }
-        for child in children { child.revealFocus(focused) }
+        for child in activeChildren { child.revealFocus(focused) }
     }
 
     func reveal(_ focused: ViewRenderer) {
@@ -114,6 +115,8 @@ extension ViewRenderer {
             if case .listRow(_, let isSelected) = current.description { return isSelected }
             // Focusing a scroll pane enables navigation without highlighting all its content.
             if case .scroll = current.description { return false }
+            // The tab bar is its own focus target, not a container highlight or caret.
+            if case .tabs = current.description { return false }
             if current === focused { return true }
             // Nested focusable controls retain their own appearance and identity.
             if case .focusable = current.description { return false }

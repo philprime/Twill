@@ -12,17 +12,23 @@ extension ViewRenderer {
     }
 
     private func handleInScope(_ key: KeyEvent, modal: Bool) -> Bool {
-        let panes = scrollPanes()
         guard let target = focusTarget() else {
             return route(
                 key, from: modal ? sheetBranch ?? self : self, stoppingAt: modal ? self : nil,
                 includeControls: false) == .handled
         }
-        let pane = panes.first { $0.contains(target) }
-        let targets = pane?.focusableNodes() ?? focusableNodes()
+        if handleTabShortcut(key, from: target, stoppingAt: modal ? self : nil) { return true }
         if handleControl(key, at: target, stoppingAt: modal ? self : nil) { return true }
         if route(key, from: target, stoppingAt: modal ? self : nil) == .handled { return true }
+        return navigate(key, from: target)
+    }
 
+    private func navigate(_ event: KeyEvent, from target: ViewRenderer) -> Bool {
+        let panes = scrollPanes()
+        let pane = panes.first { $0.contains(target) }
+        let targets = pane?.focusableNodes() ?? focusableNodes()
+        if focusTabBar(event, from: target, pane: pane) { return true }
+        let key = target.tabNavigationKey(event)
         if let pane, key == .tab || key == .shiftTab {
             return switchPane(key, from: pane, in: panes)
         }
@@ -45,6 +51,16 @@ extension ViewRenderer {
         default:
             return false
         }
+    }
+
+    private func focusTabBar(_ key: KeyEvent, from target: ViewRenderer, pane: ViewRenderer?) -> Bool {
+        guard key == .shiftTab, let bar = target.enclosingTabView else { return false }
+        if let pane, bar.contains(pane), pane !== bar.scrollPanes().first { return false }
+        pane?.focusedNode = bar
+        focusedNode = bar
+        presentFocus(bar)
+        requestFocusPresentation()
+        return true
     }
 
     private func switchPane(_ key: KeyEvent, from pane: ViewRenderer, in panes: [ViewRenderer]) -> Bool {
@@ -86,14 +102,19 @@ extension ViewRenderer {
         default: return false
         }
         guard targets.indices.contains(destination) else { return false }
+        let next = target.tabFocusDestination(fallingBackTo: targets[destination])
         if let pane {
-            pane.focusedNode = targets[destination]
+            pane.focusedNode = next
             pane.scrollFollowsFocus = true
-            pane.revealFocus(targets[destination])
+            pane.revealFocus(next)
         } else {
-            focusedNode = targets[destination]
+            focusedNode = next
+            if let destination = scrollPanes().first(where: { $0.contains(next) }) {
+                activePane = destination
+                destination.focusedNode = next
+            }
         }
-        presentFocus(targets[destination])
+        presentFocus(next)
         // Redraw cached descriptions, not view bodies or timeline schedules.
         requestFocusPresentation()
         return true
@@ -163,6 +184,22 @@ extension ViewRenderer {
         }
     }
 
+    func restoreFocusAfterTabChange(from previous: ViewRenderer?, to selected: ViewRenderer?) {
+        guard let previous else { return }
+        var ancestor: ViewRenderer? = self
+        while let scope = ancestor {
+            if let focused = scope.presentedFocus, previous.contains(focused) {
+                let target = selected.flatMap { $0.resolveFocus(in: $0.focusableNodes()) } ?? self
+                scope.focusedNode = target
+                scope.activePane = scope.scrollPanes().first { $0.contains(target) }
+                scope.activePane?.focusedNode = target
+                scope.clearedFocusBinding = nil
+                scope.presentFocus(target)
+            }
+            ancestor = scope.parent
+        }
+    }
+
     private func requestedFocus(excluding currentTarget: ViewRenderer? = nil) -> ViewRenderer? {
         if case .sheet = description { return sheetBranch?.requestedFocus(excluding: currentTarget) }
         // Bindings on the current focus path report existing focus. A different
@@ -170,7 +207,7 @@ extension ViewRenderer {
         if case .focusBinding(_, let binding) = description, binding.isFocused() {
             if currentTarget.map({ !contains($0) }) ?? true { return self }
         }
-        return children.lazy.compactMap { $0.requestedFocus(excluding: currentTarget) }.first
+        return activeChildren.lazy.compactMap { $0.requestedFocus(excluding: currentTarget) }.first
     }
 
     private func clearedBinding(from target: ViewRenderer?) -> ViewRenderer? {
@@ -196,6 +233,11 @@ extension ViewRenderer {
         guard presentedFocus !== target else { return }
         if case .textField(let field) = presentedFocus?.description { field.blur() }
         presentedFocus = target
+        var ancestor = target
+        while let node = ancestor {
+            if case .tab = node.description { node.focusedNode = target }
+            ancestor = node.parent
+        }
         // Shared ancestor and descendant bindings must settle once per focus transition,
         // not rewrite each other's values on every presentation.
         updateFocusBindings(target)
@@ -209,6 +251,8 @@ extension ViewRenderer {
         if case .focusBinding(_, let binding) = description {
             binding.setFocused(target.map { contains($0) } ?? false)
         }
+        // Inactive destinations cannot request focus, but their bindings must
+        // still observe losing it so they do not become stale future requests.
         for child in children { child.updateFocusBindings(target) }
     }
 
@@ -240,7 +284,7 @@ extension ViewRenderer {
         if case .sheet = description { return sheetBranch?.scrollPanes() ?? [] }
         if case .scroll = description { return [self] }
         if case .textEditor = description { return [self] }
-        return children.flatMap { $0.scrollPanes() }
+        return activeChildren.flatMap { $0.scrollPanes() }
     }
 
     func requestFocusPresentation() {
@@ -260,12 +304,21 @@ extension ViewRenderer {
 
     func focusableNodes() -> [ViewRenderer] {
         if case .sheet = description { return sheetBranch?.focusableNodes() ?? [] }
-        let descendants = children.flatMap { $0.focusableNodes() }
+        let descendants = activeChildren.flatMap { $0.focusableNodes() }
         switch description {
         case .listSelection: return [self]
+        case .tabs: return hasTabBar ? [self] + descendants : []
         case .focusable, .textField, .textEditor: return [self] + descendants
         case .scroll where descendants.isEmpty: return [self]
         default: return descendants
+        }
+    }
+
+    private func handleEditingKey(_ key: KeyEvent, at target: ViewRenderer) -> KeyPressResult {
+        switch target.description {
+        case .textField(let field): return field.handle(key)
+        case .textEditor(let editor): return editor.handle(key, target.measuredSize.height)
+        default: return .ignored
         }
     }
 
@@ -280,22 +333,19 @@ extension ViewRenderer {
             // List rows are presentation within one control, not a modifier chain
             // belonging to the focused control. Their count must not affect routing.
             if case .listSelection = child.description { break }
+            if case .tabs = child.description { break }
             let descendant = child.children[0]
             if case .focusable = descendant.description { break }
             if case .keyPress(_, let action) = descendant.description, action(key) == .handled {
                 return .handled
             }
-            if includeControls, case .textField(let field) = descendant.description, field.handle(key) == .handled {
-                return .handled
-            }
-            if includeControls, case .textEditor(let editor) = descendant.description {
-                if editor.handle(key, descendant.measuredSize.height) == .handled { return .handled }
-            }
+            if includeControls, handleEditingKey(key, at: descendant) == .handled { return .handled }
             child = descendant
         }
 
         var node: ViewRenderer? = target
         while let current = node {
+            if current.handleTabKey(key, focused: target) == .handled { return .handled }
             if case .keyPress(_, let action) = current.description, action(key) == .handled {
                 return .handled
             }

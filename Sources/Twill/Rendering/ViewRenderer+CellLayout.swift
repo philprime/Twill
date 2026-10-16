@@ -6,11 +6,15 @@ extension ViewRenderer {
         case .drawing, .canvas, .textField, .textEditor:
             return [self]
         case .group(_, .some), .styled, .border, .scroll, .dialog, .disclosure:
-            return children.flatMap(\.layoutItems).isEmpty ? [] : [self]
+            return activeChildren.flatMap(\.layoutItems).isEmpty ? [] : [self]
+        case .tabs:
+            return hasTabBar ? [self] : []
+        case .tab where !isActiveTab:
+            return []
         case .sheet:
             return sheetBranch?.layoutItems ?? []
         default:
-            return children.flatMap(\.layoutItems)
+            return activeChildren.flatMap(\.layoutItems)
         }
     }
 
@@ -23,7 +27,7 @@ extension ViewRenderer {
             if case .cells = frame.maxWidth { return false }
             if frame.fillsWidth { return true }
         }
-        return children.contains { $0.wantsFillWidth }
+        return activeChildren.contains { $0.wantsFillWidth }
     }
 
     private var wantsFillHeight: Bool {
@@ -35,10 +39,11 @@ extension ViewRenderer {
             if case .cells = frame.maxHeight { return false }
             if frame.fillsHeight { return true }
         }
-        return children.contains { $0.wantsFillHeight }
+        return activeChildren.contains { $0.wantsFillHeight }
     }
 
     func measure(_ proposal: ProposedCellSize) -> CellSize {
+        if case .tabs = description { return measureTabs(proposal) }
         if case .textEditor(let editor) = description {
             return measureTextEditor(editor, proposal: proposal)
         }
@@ -47,7 +52,7 @@ extension ViewRenderer {
             return measuredSize
         }
         if case .scroll = description {
-            let items = children.flatMap(\.layoutItems)
+            let items = activeChildren.flatMap(\.layoutItems)
             let contentSize = items.first?.measure(ProposedCellSize(width: proposal.width)) ?? .zero
             scrollContentHeight = contentSize.height
             measuredSize = proposal.constrain(contentSize)
@@ -73,7 +78,7 @@ extension ViewRenderer {
     }
 
     private func measureChildren(_ proposal: ProposedCellSize) -> CellSize {
-        let items = children.flatMap(\.layoutItems)
+        let items = activeChildren.flatMap(\.layoutItems)
         let layout: any PrimitiveLayout
         switch description {
         case .group(_, let groupLayout?):

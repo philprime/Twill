@@ -13,6 +13,8 @@ enum ViewDescription {
     case canvas(interval: TimeInterval?, render: @MainActor (Canvas.Context, Canvas.Size) -> Void)
     case textField(TextFieldDescription)
     case textEditor(TextEditorDescription)
+    case tab(any View, title: String, value: AnyHashable)
+    case tabs(any View, selection: Binding<AnyHashable>)
     case body(any View)
     case button(any View, role: ButtonRole?, action: @MainActor () -> Void)
     case dialog(any View, isPresented: Binding<Bool>, kind: DialogKind)

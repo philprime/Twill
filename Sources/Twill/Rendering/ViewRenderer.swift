@@ -30,6 +30,8 @@ final class ViewRenderer {
     weak var presentedFocus: ViewRenderer?
     weak var clearedFocusBinding: ViewRenderer?
     var listReveal: ListReveal?
+    var isActiveTab = true
+    weak var activeTab: ViewRenderer?
     var editorOffset = CellPosition.zero
     var scrollOffset = 0
     var scrollFollowsFocus = true
@@ -150,12 +152,12 @@ final class ViewRenderer {
             if case .scrollReader(_, let previousProxy) = previous { previousProxy.renderer = nil }
             proxy.renderer = self
             reconcile([content], at: date)
-        case .focusable(let content), .focusBinding(let content, _), .submit(let content, _),
+        case .tab(let content, _, _), .focusable(let content), .focusBinding(let content, _), .submit(let content, _),
             .scroll(let content), .listSelection(let content, _, _), .listRow(let content, _),
             .keyPress(let content, _), .styled(let content, _, _),
             .border(let content, _, _, _):
             reconcile([content], at: date)
-        case .task, .sheet, .conditional, .timeline, .disclosure:
+        case .task, .tabs, .sheet, .conditional, .timeline, .disclosure:
             updateDynamicContent(updated, previous: previous, at: date)
         }
         collectDeadlines()
@@ -255,6 +257,7 @@ final class ViewRenderer {
         } else {
             for child in children { child.refresh(at: date) }
         }
+        if case .tabs = description { updateActiveTab() }
         if case .dialog(_, _, let kind) = description { updateDialogFallback(kind: kind, at: date) }
         collectDeadlines()
     }
@@ -272,6 +275,9 @@ final class ViewRenderer {
 extension ViewRenderer {
     private func updateDynamicContent(_ description: ViewDescription, previous: ViewDescription?, at date: Date) {
         switch description {
+        case .tabs(let content, _):
+            reconcile([content], at: date)
+            updateActiveTab()
         case .task(let content, let priority, let action):
             updateTask(content, priority: priority, action: action, at: date)
         case .disclosure(let header, let content):
