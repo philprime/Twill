@@ -24,6 +24,9 @@ final class ViewRenderer {
     private var hasDirtyDescendant = false
     var description: ViewDescription?
     var children: [ViewRenderer] = []
+    // Structural discovery is aggregated while updating, not during layout or key routing.
+    // Store descendants only: caching [self] on a Tab would retain the node forever.
+    private(set) var descendantTabNodes: [ViewRenderer] = []
     private var keyedChildren: [AnyHashable: ViewRenderer] = [:]
     weak var focusedNode: ViewRenderer?
     weak var activePane: ViewRenderer?
@@ -63,12 +66,14 @@ final class ViewRenderer {
         viewTask = nil
         for child in children { child.unmount() }
         children = []
+        descendantTabNodes = []
         keyedChildren = [:]
     }
 
     private func removeChildren() {
         for child in children { child.unmount() }
         children = []
+        descendantTabNodes = []
         keyedChildren = [:]
     }
 
@@ -161,6 +166,7 @@ final class ViewRenderer {
         case .task, .tabs, .sheet, .conditional, .timeline, .disclosure:
             updateDynamicContent(updated, previous: previous, at: date)
         }
+        updateTabState()
         collectDeadlines()
     }
 
@@ -258,9 +264,14 @@ final class ViewRenderer {
         } else {
             for child in children { child.refresh(at: date) }
         }
-        if case .tabs = description { updateActiveTab() }
         if case .dialog(_, _, let kind) = description { updateDialogFallback(kind: kind, at: date) }
+        updateTabState()
         collectDeadlines()
+    }
+
+    private func updateTabState() {
+        descendantTabNodes = children.flatMap(\.tabNodes)
+        updateActiveTab()
     }
 
     private func collectDeadlines() {
@@ -278,7 +289,6 @@ extension ViewRenderer {
         switch description {
         case .tabs(let content, _):
             reconcile([content], at: date)
-            updateActiveTab()
         case .task(let content, let priority, let action):
             updateTask(content, priority: priority, action: action, at: date)
         case .disclosure(let header, let content):

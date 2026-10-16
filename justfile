@@ -52,6 +52,18 @@ test-sanitize *args:
     just test --sanitize address "$@"
     just test-integration --sanitize address "$@"
 
+# Run SDK benchmark cases in release. Pass --list or a case name followed by -- and case arguments.
+benchmark *args:
+    just _swift batch run -c release TwillBenchmarks "$@"
+
+# Profile SDK benchmark cases in debug. Choose a new output path for each recording.
+profile-benchmark output="/tmp/twill-benchmarks.trace" *args:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    just build --product TwillBenchmarks
+    binary_dir="$(just _swift batch build --show-bin-path)"
+    xcrun xctrace record --template 'Time Profiler' --output "$1" --target-stdout - --launch -- "$binary_dir/TwillBenchmarks" "${@:2}"
+
 # Run an example, e.g. just example Clock --linux. Supports --container. Use -- before example flags.
 example name *args:
     #!/usr/bin/env bash

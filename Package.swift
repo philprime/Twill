@@ -12,6 +12,8 @@ let package = Package(
     ],
     targets: [
         .target(name: "Twill"),
+        .executableTarget(name: "TwillBenchmarks", dependencies: ["Twill"]),
+        .testTarget(name: "TwillBenchmarkTests", dependencies: ["TwillBenchmarks"]),
         .testTarget(name: "TwillTests", dependencies: ["Twill"]),
         .testTarget(name: "TwillIntegrationTests", dependencies: ["Twill"]),
     ]
