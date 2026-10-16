@@ -68,13 +68,13 @@ extension ViewRenderer {
     }
 
     func revealFocus(_ focused: ViewRenderer?) {
-        if case .scroll = description, scrollFollowsFocus, let focused, focused !== self {
+        if case .scroll = description, !revealListSelection(), scrollFollowsFocus, let focused, focused !== self {
             reveal(focused)
         }
         for child in children { child.revealFocus(focused) }
     }
 
-    private func reveal(_ focused: ViewRenderer) {
+    func reveal(_ focused: ViewRenderer) {
         guard let rect = bounds(of: focused, column: 0, row: 0) else { return }
         if rect.row < scrollOffset {
             scrollOffset = rect.row
@@ -103,9 +103,9 @@ extension ViewRenderer {
     }
 
     private func isInsideFocus(_ focused: ViewRenderer?) -> Bool {
-        guard let focused else { return false }
         var node: ViewRenderer? = self
         while let current = node {
+            if case .listRow(_, let isSelected) = current.description { return isSelected }
             // Focusing a scroll pane enables navigation without highlighting all its content.
             if case .scroll = current.description { return false }
             if current === focused { return true }

@@ -29,6 +29,7 @@ final class ViewRenderer {
     weak var activePane: ViewRenderer?
     weak var presentedFocus: ViewRenderer?
     weak var clearedFocusBinding: ViewRenderer?
+    var listReveal: ListReveal?
     var scrollOffset = 0
     var scrollFollowsFocus = true
     var scrollContentHeight = 0
@@ -147,7 +148,8 @@ final class ViewRenderer {
             proxy.renderer = self
             reconcile([content], at: date)
         case .focusable(let content), .focusBinding(let content, _), .submit(let content, _),
-            .scroll(let content), .keyPress(let content, _), .styled(let content, _, _),
+            .scroll(let content), .listSelection(let content, _, _), .listRow(let content, _),
+            .keyPress(let content, _), .styled(let content, _, _),
             .border(let content, _, _, _):
             reconcile([content], at: date)
         case .task, .sheet, .conditional, .timeline:

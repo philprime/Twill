@@ -23,6 +23,10 @@ extension ViewRenderer {
             if field.handle(key) == .handled { return true }
             if key == .enter, submit(from: target, stoppingAt: modal ? self : nil) { return true }
         }
+        if case .listSelection(_, _, let handle) = target.description {
+            if handle(key) == .handled { return true }
+            if key == .enter, submit(from: target, stoppingAt: modal ? self : nil) { return true }
+        }
         if route(key, from: target, stoppingAt: modal ? self : nil) == .handled { return true }
 
         if let pane, key == .tab || key == .shiftTab {
@@ -225,6 +229,7 @@ extension ViewRenderer {
         if case .sheet = description { return sheetBranch?.focusableNodes() ?? [] }
         let descendants = children.flatMap { $0.focusableNodes() }
         switch description {
+        case .listSelection: return [self]
         case .focusable, .textField: return [self] + descendants
         case .scroll where descendants.isEmpty: return [self]
         default: return descendants
@@ -239,6 +244,9 @@ extension ViewRenderer {
         // the single-child modifier chain so sibling controls do not receive keys.
         var child = target
         while child.children.count == 1 {
+            // List rows are presentation within one control, not a modifier chain
+            // belonging to the focused control. Their count must not affect routing.
+            if case .listSelection = child.description { break }
             let descendant = child.children[0]
             if case .focusable = descendant.description { break }
             if case .keyPress(_, let action) = descendant.description, action(key) == .handled {

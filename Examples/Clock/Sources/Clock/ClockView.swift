@@ -13,12 +13,9 @@ struct ClockView: View {
                         .frame(maxWidth: .infinity, alignment: .trailing)
                 }
             }
-            HStack(spacing: 1) {
-                ForEach(ClockFace.allCases, id: \.self) { face in
-                    Button(" \(face.rawValue + 1) \(face.title) ") { selection = face }
-                        .foregroundStyle(selection == face ? ClockPalette.background : ClockPalette.muted)
-                        .backgroundStyle(selection == face ? face.color : ClockPalette.background)
-                }
+            Picker("Face", selection: $selection, options: ClockFace.allCases) { face in
+                Text("\(face.rawValue + 1) \(face.title)")
+                    .foregroundStyle(face.color)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             GroupBox(selection.title) {
@@ -28,7 +25,7 @@ struct ClockView: View {
             }
             .foregroundStyle(selection.color)
             Text(selection.caption).foregroundStyle(ClockPalette.foreground)
-            Text("1–4: face · ←/→ Enter: choose · Ctrl-C: exit")
+            Text("1–4: face · ←/→: choose · Ctrl-C: exit")
                 .foregroundStyle(ClockPalette.muted)
         }
         .padding(1)

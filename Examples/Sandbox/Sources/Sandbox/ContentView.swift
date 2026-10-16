@@ -5,6 +5,7 @@ struct ContentView: View {
         VStack(spacing: 1) {
             ColorGrid()
             BorderGallery()
+            ProgressGallery()
         }
     }
 }
