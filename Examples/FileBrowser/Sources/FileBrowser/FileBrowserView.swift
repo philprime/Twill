@@ -34,10 +34,22 @@ struct FileBrowserView: View {
                 ForEach([directory.path], id: \.self) { _ in
                     directoryList
                 }
+                ScrollView {
+                    Toggle(
+                        "Show hidden files",
+                        isOn: Binding(
+                            get: { showHidden },
+                            set: {
+                                showHidden = $0
+                                reload()
+                            }))
+                }
+                .frame(height: 1)
             }
             Text(
                 message.isEmpty
-                    ? "h: parent  j/k: select  l/Enter: open  gg/G: first/last  .: hidden  r: reload  q: quit" : message
+                    ? "h: parent  j/k: select  l/Enter: open  gg/G: first/last  .: hidden  "
+                        + "Tab: pane  Space: toggle  r: reload  q: quit" : message
             )
             .frame(maxWidth: .infinity, alignment: .leading)
         }
