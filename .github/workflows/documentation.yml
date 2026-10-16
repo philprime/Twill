@@ -1,9 +1,8 @@
 name: Documentation
 
 on:
-  push:
-    branches: [main]
   pull_request:
+  workflow_call:
   workflow_dispatch:
 
 permissions:
@@ -24,6 +23,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event_name == 'pull_request' && github.sha || 'latest' }}
 
       - name: Setup Swift
         uses: ./.github/actions/setup-swift
@@ -49,8 +50,7 @@ jobs:
 
   deploy-github-pages:
     name: Deploy to GitHub Pages
-    # Same-repository pull requests can publish previews during documentation development.
-    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
     needs: build
     runs-on: ubuntu-latest
     timeout-minutes: 10
