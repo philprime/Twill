@@ -3,7 +3,7 @@ import Twill
 
 struct OrbitClockView: View {
     var body: some View {
-        Canvas(interval: 1.0 / 30.0) { context, size in
+        Canvas(interval: 1.0 / 5.0) { context, size in
             let time = ClockTime(context.date)
             let centerX = Double(size.width - 1) / 2
             let centerY = Double(size.height - 1) / 2

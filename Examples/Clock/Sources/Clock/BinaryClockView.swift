@@ -3,7 +3,7 @@ import Twill
 
 struct BinaryClockView: View {
     var body: some View {
-        Canvas(interval: 1) { context, size in
+        Canvas(interval: 1.0 / 5.0) { context, size in
             let time = ClockTime(context.date)
             guard size.width >= 26, size.height >= 9 else {
                 let originX = max(0, (size.width - time.label.count) / 2)

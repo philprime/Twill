@@ -3,7 +3,7 @@ import Twill
 
 struct AnalogClockView: View {
     var body: some View {
-        Canvas(interval: 1.0 / 30.0) { context, size in
+        Canvas(interval: 1.0 / 5.0) { context, size in
             drawClock(in: context, size: size)
         }
     }
