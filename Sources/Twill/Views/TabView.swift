@@ -1,6 +1,8 @@
 /// Switches between mounted destinations while retaining their state.
 /// Left/Right selects tabs when the bar is focused. Control-PageUp and
 /// Control-PageDown switch from within content without wrapping.
+/// Tab or Down enters content. Shift-Tab returns to the bar from the first pane
+/// or from content without panes, preserving the destination's remembered focus.
 /// An absent selection displays the first tab without changing the binding.
 /// Inactive contents retain their tasks and timeline schedules.
 public struct TabView<SelectionValue: Hashable, Content: View>: View {

@@ -31,8 +31,9 @@ struct TabViewApplicationTests {
         runLoop.add(
             Twill.Timer(interval: .milliseconds(1)) {
                 do {
-                    // Enter the first field, type, switch tabs, submit, return, type, submit, quit.
-                    try terminal.send(Array("\u{1B}[Ba\u{1B}[6;5~b\r\u{1B}[5;5~c\r\u{03}".utf8))
+                    // Edit both tabs, return to the bar, switch with arrows, reenter, submit, quit.
+                    let keys = "\u{1B}[Ba\u{1B}[6;5~b\r\u{1B}[5;5~c\u{1B}[Z\u{1B}[C\u{1B}[D\td\r\u{03}"
+                    try terminal.send(Array(keys.utf8))
                 } catch {
                     Issue.record(error)
                     application.stop()
@@ -46,7 +47,7 @@ struct TabViewApplicationTests {
         try pipe.fileHandleForReading.close()
 
         // -- Assert --
-        #expect(submissions == ["Second:b", "First:ac"])
+        #expect(submissions == ["Second:b", "First:acd"])
         #expect(fallbackKeys.isEmpty)
         #expect(try #require(String(bytes: data, encoding: .utf8)).contains("[First] Second"))
         #expect(try terminal.snapshot() == original)

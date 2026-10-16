@@ -12,18 +12,23 @@ extension ViewRenderer {
     }
 
     private func handleInScope(_ key: KeyEvent, modal: Bool) -> Bool {
-        let panes = scrollPanes()
         guard let target = focusTarget() else {
             return route(
                 key, from: modal ? sheetBranch ?? self : self, stoppingAt: modal ? self : nil,
                 includeControls: false) == .handled
         }
-        let pane = panes.first { $0.contains(target) }
-        let targets = pane?.focusableNodes() ?? focusableNodes()
         if handleTabShortcut(key, from: target, stoppingAt: modal ? self : nil) { return true }
         if handleControl(key, at: target, stoppingAt: modal ? self : nil) { return true }
         if route(key, from: target, stoppingAt: modal ? self : nil) == .handled { return true }
+        return navigate(key, from: target)
+    }
 
+    private func navigate(_ event: KeyEvent, from target: ViewRenderer) -> Bool {
+        let panes = scrollPanes()
+        let pane = panes.first { $0.contains(target) }
+        let targets = pane?.focusableNodes() ?? focusableNodes()
+        if focusTabBar(event, from: target, pane: pane) { return true }
+        let key = target.tabNavigationKey(event)
         if let pane, key == .tab || key == .shiftTab {
             return switchPane(key, from: pane, in: panes)
         }
@@ -46,6 +51,15 @@ extension ViewRenderer {
         default:
             return false
         }
+    }
+
+    private func focusTabBar(_ key: KeyEvent, from target: ViewRenderer, pane: ViewRenderer?) -> Bool {
+        guard key == .shiftTab, let bar = target.enclosingTabView else { return false }
+        if let pane, pane !== bar.scrollPanes().first { return false }
+        focusedNode = bar
+        presentFocus(bar)
+        requestFocusPresentation()
+        return true
     }
 
     private func switchPane(_ key: KeyEvent, from pane: ViewRenderer, in panes: [ViewRenderer]) -> Bool {
@@ -94,6 +108,10 @@ extension ViewRenderer {
             pane.revealFocus(next)
         } else {
             focusedNode = next
+            if let destination = scrollPanes().first(where: { $0.contains(next) }) {
+                activePane = destination
+                destination.focusedNode = next
+            }
         }
         presentFocus(next)
         // Redraw cached descriptions, not view bodies or timeline schedules.

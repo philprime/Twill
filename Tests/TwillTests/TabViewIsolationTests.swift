@@ -58,12 +58,18 @@ struct TabViewIsolationTests {
         let restored = try #require(renderer.render(.now).grid)
         _ = renderer.handle(.c)
         _ = renderer.render(.now)
+        _ = renderer.handle(.shiftTab)
+        let bar = try #require(renderer.render(.now).grid)
+        _ = renderer.handle(.tab)
+        _ = renderer.handle(.d)
+        _ = renderer.render(.now)
 
         // -- Assert --
-        #expect(first?.wrappedValue == "ac")
+        #expect(first?.wrappedValue == "acd")
         #expect(second?.wrappedValue == "b")
         #expect(restored.isFocused(column: 0, row: 1))
-        #expect(renderer.caretPosition == CellPosition(column: 2, row: 1))
+        #expect(bar.isFocused(column: 0, row: 0))
+        #expect(renderer.caretPosition == CellPosition(column: 3, row: 1))
     }
 
     private struct PanePage: View {
@@ -97,6 +103,55 @@ struct TabViewIsolationTests {
                 Tab("Second", value: 1) { Button("Other") {} }
             }
         }
+    }
+
+    @Test("Shift-Tab reaches the bar from a scroll pane and Tab returns to its content")
+    func barAccessFromPane() throws {
+        // -- Arrange --
+        var activated: [String] = []
+        let renderer = ViewRenderer.make(PaneTabs { activated.append($0) })
+        _ = renderer.render(.now)
+
+        // -- Act --
+        _ = renderer.handle(.shiftTab)
+        let bar = try #require(renderer.render(.now).grid)
+        _ = renderer.handle(.arrowRight)
+        let second = try #require(renderer.render(.now).grid)
+        _ = renderer.handle(.arrowLeft)
+        _ = renderer.render(.now)
+        _ = renderer.handle(.tab)
+        let content = try #require(renderer.render(.now).grid)
+        _ = renderer.handle(.enter)
+
+        // -- Assert --
+        #expect(bar.isFocused(column: 0, row: 0))
+        #expect(second.snapshotText.hasPrefix("First [Second]"))
+        #expect(second.snapshotText.contains("Other"))
+        #expect(content.isFocused(column: 0, row: 1))
+        #expect(activated == ["A1"])
+    }
+
+    @Test("Entering a tab from the bar restores its remembered nonfirst pane")
+    func rememberedPaneFromBar() {
+        // -- Arrange --
+        var activated: [String] = []
+        let renderer = ViewRenderer.make(PaneTabs { activated.append($0) })
+        _ = renderer.render(.now)
+        _ = renderer.handle(.tab)
+        _ = renderer.handle(.arrowDown)
+        _ = renderer.handle(KeyEvent(.pageDown, modifiers: .control))
+        _ = renderer.render(.now)
+
+        // -- Act --
+        _ = renderer.handle(.shiftTab)
+        _ = renderer.handle(.arrowLeft)
+        _ = renderer.render(.now)
+        _ = renderer.handle(.tab)
+        _ = renderer.render(.now)
+        _ = renderer.handle(.enter)
+
+        // -- Assert --
+        #expect(activated == ["B2"])
     }
 
     @Test("Switching back restores the active pane and its focused descendant")

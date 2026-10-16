@@ -22,6 +22,21 @@ extension ViewRenderer {
 
     var hasTabBar: Bool { !tabs.isEmpty }
 
+    var enclosingTabView: ViewRenderer? {
+        var ancestor = parent
+        while let node = ancestor {
+            if case .tabs = node.description { return node }
+            if case .sheet(_, let presented, _) = node.description, presented.wrappedValue { return nil }
+            ancestor = node.parent
+        }
+        return nil
+    }
+
+    func tabNavigationKey(_ key: KeyEvent) -> KeyEvent {
+        if case .tabs = description, key == .tab { return .arrowDown }
+        return key
+    }
+
     func tabFocusDestination(fallingBackTo candidate: ViewRenderer) -> ViewRenderer {
         guard case .tabs = description, let selectedTab = activeTab else { return candidate }
         let targets = selectedTab.focusableNodes()

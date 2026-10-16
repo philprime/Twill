@@ -11,7 +11,8 @@ struct ContentView: View {
                 Tab("Borders", value: Gallery.borders) { BorderGallery() }
                 Tab("Progress", value: Gallery.progress) { ProgressGallery() }
             }
-            Text("Left/Right: select tab · Down: enter content · Ctrl-PageUp/PageDown: switch tabs")
+            Text("Left/Right: select tab · Tab/Down: content · Shift-Tab: tab bar")
+            Text("Ctrl-PageUp/PageDown: switch tabs from content")
         }
     }
 }
