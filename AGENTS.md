@@ -55,7 +55,7 @@ final class StandardTerminalOutput {
 - Integration tests must exercise framework instances directly with real pipes or pseudo-terminals. Inject resources instead of replacing the test runner's global stdin.
 - Keep examples as manual playgrounds, not integration-test fixtures or automated verification dependencies. Public API prototypes may intentionally not compile; label them clearly and keep them outside package verification targets.
 - Test terminal behavior with nondefault inherited settings and verify resource and mode restoration on shutdown, cancellation, and error paths.
-- Use Just for development commands. Run standalone example packages with `just example <Name>`.
+- Use Just for development commands. Run examples with `just example <Name>`.
 - Use `--linux` for Linux verification. On Linux, add `--container` only to select the Docker toolchain.
 - Linux TUI workflows must run as the host UID/GID and must not create root-owned files.
 - Keep changes scoped and avoid unrelated refactoring.

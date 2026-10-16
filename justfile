@@ -70,7 +70,15 @@ example name *args:
     set -euo pipefail
     name="$1"
     shift
-    just _swift interactive run --package-path "Examples/$name" --scratch-path ".build/examples/$name" "$@"
+    swift_args=()
+    while (( $# )); do
+        case "$1" in
+            --) shift; break ;;
+            *) swift_args+=("$1"); shift ;;
+        esac
+    done
+    just _swift interactive run --package-path Examples --scratch-path .build/examples \
+        ${swift_args[@]+"${swift_args[@]}"} -- "$name" "$@"
 
 # Apply Swift and dprint formatting, including example packages.
 format:

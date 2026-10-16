@@ -21,18 +21,18 @@ On Linux, install Swift, Just, Bash, and the quality-check tools through your pr
 
 Run commands from the repository root. `just` lists the available recipes.
 
-| Command                 | Purpose                                                |
-| ----------------------- | ------------------------------------------------------ |
-| `just build`            | Build the Twill package in debug configuration.        |
-| `just test`             | Run unit tests, excluding `TwillIntegrationTests`.     |
-| `just test-integration` | Run `TwillIntegrationTests`.                           |
-| `just test-sanitize`    | Run unit and integration tests with AddressSanitizer.  |
-| `just example Clock`    | Run the standalone package in `Examples/Clock`.        |
-| `just format`           | Apply Swift and dprint formatting, including examples. |
-| `just format-check`     | Check formatting without changing files.               |
-| `just lint`             | Run SwiftLint and actionlint.                          |
-| `just analyze`          | Run lint and formatting checks.                        |
-| `just clean`            | Clean the root package's SwiftPM build output.         |
+| Command                 | Purpose                                                 |
+| ----------------------- | ------------------------------------------------------- |
+| `just build`            | Build the Twill package in debug configuration.         |
+| `just test`             | Run unit tests, excluding `TwillIntegrationTests`.      |
+| `just test-integration` | Run `TwillIntegrationTests`.                            |
+| `just test-sanitize`    | Run unit and integration tests with AddressSanitizer.   |
+| `just example Clock`    | Run the `Clock` executable from the `Examples` package. |
+| `just format`           | Apply Swift and dprint formatting, including examples.  |
+| `just format-check`     | Check formatting without changing files.                |
+| `just lint`             | Run SwiftLint and actionlint.                           |
+| `just analyze`          | Run lint and formatting checks.                         |
+| `just clean`            | Clean the root package's SwiftPM build output.          |
 
 ## Documentation
 
@@ -113,7 +113,7 @@ LINUX_SWIFT_IMAGE=swift:6.4.0 just build --linux --container
 
 `LINUX_ARCH` and `LINUX_SWIFT_IMAGE` affect containers only. Selecting another architecture may require Docker emulation. Native execution always uses the host architecture and installed toolchain.
 
-Example containers allocate an interactive terminal. Build and test containers do not require one. Example builds use `.build/examples/<name>` within the selected native or container build directory rather than writing into `Examples/`.
+Example containers allocate an interactive terminal. Build and test containers do not require one. Example builds share `.build/examples` within the selected native or container build directory rather than writing into `Examples/`.
 
 `just clean` cleans only the root package's native SwiftPM build output. It is not a command for clearing every container or example cache.
 
