@@ -5,7 +5,7 @@ extension ViewRenderer {
         switch description {
         case .drawing, .canvas, .textField:
             return [self]
-        case .group(_, .some), .styled, .border, .scroll:
+        case .group(_, .some), .styled, .border, .scroll, .dialog:
             return children.flatMap(\.layoutItems).isEmpty ? [] : [self]
         case .sheet:
             return sheetBranch?.layoutItems ?? []
@@ -72,6 +72,8 @@ extension ViewRenderer {
         let layout: any PrimitiveLayout
         if case .group(_, let groupLayout?) = description {
             layout = groupLayout
+        } else if case .dialog = description {
+            layout = VerticalLayout(spacing: 0, alignment: .leading)
         } else {
             layout = HorizontalLayout(spacing: 0)
         }

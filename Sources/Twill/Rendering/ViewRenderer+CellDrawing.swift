@@ -1,7 +1,11 @@
 /// Draws mounted descriptions into the host's shared cell grid.
 extension ViewRenderer {
     func draw(in context: inout DrawingContext, focused: ViewRenderer?) {
-        if case .styled(_, let foreground, let background) = description {
+        if case .button(_, .destructive, _) = description {
+            context.withStyle(foreground: .red, background: nil, size: measuredSize) { region in
+                drawChildren(in: &region, focused: focused)
+            }
+        } else if case .styled(_, let foreground, let background) = description {
             context.withStyle(foreground: foreground, background: background, size: measuredSize) { region in
                 drawChildren(in: &region, focused: focused)
             }
