@@ -23,11 +23,14 @@ struct NotesBrowserView: View {
     }
 
     private var selectedNote: Note? {
-        matchingNotes.first { $0.id == selectedNoteID } ?? matchingNotes.first
+        let matches = matchingNotes
+        return matches.first { $0.id == selectedNoteID } ?? matches.first
     }
 
     var body: some View {
-        VStack {
+        let matches = matchingNotes
+        let previewNote = matches.first { $0.id == selectedNoteID } ?? matches.first
+        return VStack {
             Text(" Notes  \(notes.count) in memory ")
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .foregroundStyle(NotesPalette.background)
@@ -43,16 +46,16 @@ struct NotesBrowserView: View {
             .foregroundStyle(NotesPalette.border)
             HStack(spacing: 2) {
                 GroupBox("Notes") {
-                    NoteListView(notes: matchingNotes, selectedNoteID: $selectedNoteID, onDelete: requestDeletion)
+                    NoteListView(notes: matches, selectedNoteID: $selectedNoteID, onDelete: requestDeletion)
                         .frame(width: 26)
                         .frame(maxHeight: .infinity, alignment: .top)
                         .foregroundStyle(NotesPalette.foreground)
                 }
                 .foregroundStyle(NotesPalette.border)
-                if let selectedNote {
+                if let previewNote {
                     GroupBox("Preview") {
                         ScrollView {
-                            NoteDetailView(note: selectedNote)
+                            NoteDetailView(note: previewNote)
                         }
                         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
                         .foregroundStyle(NotesPalette.foreground)

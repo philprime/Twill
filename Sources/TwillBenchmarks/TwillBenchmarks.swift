@@ -11,7 +11,11 @@ import Foundation
 struct TwillBenchmarks {
     static func main() async {
         do {
-            let suite = BenchmarkSuite(benchmarks: [NavigationBenchmark()])
+            var benchmarks: [any SDKBenchmark] = [NavigationBenchmark()]
+            #if DEBUG || BENCHMARKING
+                benchmarks += TableBenchmark.Workload.allCases.map { TableBenchmark(workload: $0) }
+            #endif
+            let suite = BenchmarkSuite(benchmarks: benchmarks)
             let command = try BenchmarkCommand(arguments: Array(CommandLine.arguments.dropFirst()))
             switch command.action {
             case .help:

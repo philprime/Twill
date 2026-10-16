@@ -9,7 +9,7 @@ struct ProcessSample: Identifiable, Sendable {
     let status: String
     let command: String
 
-    var name: String { URL(fileURLWithPath: command).lastPathComponent }
+    var name: String { (command as NSString).lastPathComponent }
 
     static func parse(_ output: String) -> [Self] {
         output.split(separator: "\n").compactMap { line in

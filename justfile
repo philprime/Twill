@@ -61,7 +61,7 @@ test-sanitize *args:
 
 # Run SDK benchmark cases in release. Pass --list or a case name followed by -- and case arguments.
 benchmark *args:
-    just _swift batch run -c release TwillBenchmarks "$@"
+    just _swift batch run -c release -Xswiftc -enable-testing -Xswiftc -DBENCHMARKING TwillBenchmarks "$@"
 
 # Profile SDK benchmark cases in debug. Choose a new output path for each recording.
 profile-benchmark output="/tmp/twill-benchmarks.trace" *args:

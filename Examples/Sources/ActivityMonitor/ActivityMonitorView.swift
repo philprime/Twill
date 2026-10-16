@@ -23,7 +23,8 @@ struct ActivityMonitorView: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading) {
+        let visibleProcesses = processes
+        return VStack(alignment: .leading) {
             HStack {
                 Text(" ACTIVITY / TWILL ").foregroundStyle(Color.ansi(.cyan))
                 Text(paused ? "PAUSED" : "LIVE · 1s")
@@ -48,8 +49,8 @@ struct ActivityMonitorView: View {
                 Button("Clear filter") { query = "" }
             }
             .frame(height: 1)
-            GroupBox("Processes · \(processes.count) matching") {
-                processTable
+            GroupBox("Processes · \(visibleProcesses.count) matching") {
+                processTable(visibleProcesses)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             GroupBox("Selected process") {
@@ -66,7 +67,7 @@ struct ActivityMonitorView: View {
         .task { await monitor() }
     }
 
-    private var processTable: some View {
+    private func processTable(_ processes: [ProcessSample]) -> some View {
         Table(processes, selection: $selectedID, sortOrder: $sortOrder) {
             TableColumn("PID", value: \ProcessSample.id) { process in
                 Text(String(process.id))

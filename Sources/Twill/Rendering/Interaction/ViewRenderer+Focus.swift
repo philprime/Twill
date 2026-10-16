@@ -43,7 +43,12 @@ extension ViewRenderer {
         if case .focusBinding(_, let binding) = description, binding.isFocused() {
             if currentTarget.map({ !contains($0) }) ?? true { return self }
         }
-        return activeChildren.lazy.compactMap { $0.requestedFocus(excluding: currentTarget) }.first
+        // Lazy compactMap followed by first re-evaluates a successful transform when
+        // indexing it. Recursive searches multiply that work at every ancestor.
+        for child in activeChildren {
+            if let requested = child.requestedFocus(excluding: currentTarget) { return requested }
+        }
+        return nil
     }
 
     private func clearedBinding(from target: ViewRenderer?) -> ViewRenderer? {
