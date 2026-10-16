@@ -10,7 +10,11 @@ struct ProgressGallery: View {
             VStack(alignment: .leading, spacing: 1) {
                 ProgressView("Files \(completed)/\(total)", value: Double(completed), total: Double(total))
                 Stepper("Completed files", value: $completed, in: 0...total)
-                Text("Left/Right: adjust  •  Up/Down: move focus")
+                Slider(
+                    "Completed files",
+                    value: Binding(get: { Double(completed) }, set: { completed = Int($0) }),
+                    in: 0...Double(total), step: 1)
+                Text("←/→: adjust  •  ↑/↓: focus  •  Home/End: slider bounds")
                 HStack(spacing: 2) {
                     Button("Reset") { completed = 0 }
                     Button(isLoading ? "Stop spinner" : "Start spinner") { isLoading.toggle() }
