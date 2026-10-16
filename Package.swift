@@ -10,6 +10,9 @@ let package = Package(
     products: [
         .library(name: "Twill", targets: ["Twill"])
     ],
+    dependencies: [
+        .package(url: "https://github.com/swiftlang/swift-docc-plugin", from: "1.5.0")
+    ],
     targets: [
         .target(name: "Twill"),
         .testTarget(name: "TwillTests", dependencies: ["Twill"]),

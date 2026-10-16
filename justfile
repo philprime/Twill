@@ -24,6 +24,12 @@ setup:
 build *args:
     just _swift batch build --disable-index-store --explicit-target-dependency-import-check warn -Xswiftc -warnings-as-errors "$@"
 
+# Generate a static DocC site in .build/documentation. Pass the Pages base path when publishing.
+docs hosting-base-path="" *args:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    swift package --allow-writing-to-directory .build/documentation generate-documentation --target Twill --disable-indexing --warnings-as-errors --transform-for-static-hosting --hosting-base-path "$1" --output-path .build/documentation "${@:2}"
+
 # Enable injectable collaborators in the library and unit tests, in either configuration.
 # Supports --linux, --container, and SwiftPM arguments such as --filter SomeSuite.
 test *args:
