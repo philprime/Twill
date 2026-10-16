@@ -18,6 +18,8 @@ enum ViewDescription {
     case focusable(any View)
     case focusBinding(any View, FocusBindingDescription)
     case submit(any View, @MainActor () -> Void)
+    case listSelection(any View, AnyHashable?, @MainActor (KeyEvent) -> KeyPressResult)
+    case listRow(any View, isSelected: Bool)
     case scroll(any View)
     case scrollReader(any View, ScrollViewProxy)
     case styled(any View, foreground: Color?, background: Color?)

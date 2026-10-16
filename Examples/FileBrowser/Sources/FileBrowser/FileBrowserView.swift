@@ -4,12 +4,17 @@ import Twill
 struct FileBrowserView: View {
     @State private var directory: URL
     @State private var entries: [FileEntry] = []
-    @State private var selected = 0
+    @State private var selectedID: FileEntry.ID?
     @State private var showHidden = false
     @State private var message = ""
     @State private var preview: FilePreview?
     @State private var previewName = ""
     @State private var pendingG = false
+
+    private var selected: Int {
+        get { entries.firstIndex { $0.id == selectedID } ?? 0 }
+        nonmutating set { selectedID = entries.indices.contains(newValue) ? entries[newValue].id : nil }
+    }
 
     init(directory: URL) {
         _directory = State(wrappedValue: directory.standardizedFileURL)
@@ -46,44 +51,32 @@ struct FileBrowserView: View {
     }
 
     private var directoryList: some View {
-        ScrollViewReader { proxy in
-            ScrollView {
-                VStack(alignment: .leading) {
-                    if entries.isEmpty { Text("(empty directory)") }
-                    ForEach(Array(entries.enumerated()), id: \.element.id) { index, entry in
-                        let marker = index == selected ? ">" : " "
-                        let suffix = entry.isDirectory ? "/" : ""
-                        Text("\(marker) \(entry.url.lastPathComponent)\(suffix)")
-                            .foregroundStyle(index == selected ? Color.ansi(.cyan) : Color.ansi(.white))
-                    }
-                }
+        VStack(alignment: .leading) {
+            if entries.isEmpty { Text("(empty directory)") }
+            List(entries, selection: $selectedID) { entry in
+                let suffix = entry.isDirectory ? "/" : ""
+                Text("\(entry.url.lastPathComponent)\(suffix)")
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+            .onSubmit { openSelection() }
             .onKeyPress { key in
                 let wasG = pendingG
                 pendingG = key == .g && !wasG
                 switch key {
-                case .j, .arrowDown: selected = min(max(0, entries.count - 1), selected + 1)
-                case .k, .arrowUp: selected = max(0, selected - 1)
-                case .G, .end: selected = max(0, entries.count - 1)
+                case .j: selected = min(max(0, entries.count - 1), selected + 1)
+                case .k: selected = max(0, selected - 1)
+                case .G: selected = max(0, entries.count - 1)
                 case .g:
                     if wasG { selected = 0 }
-                case .home: selected = 0
                 case .h, .arrowLeft, .backspace: goToParent()
-                case .l, .arrowRight, .enter: openSelection()
+                case .l, .arrowRight: openSelection()
                 case .period:
                     showHidden.toggle()
                     reload()
                 case .r: reload()
                 default: return .ignored
                 }
-                if entries.indices.contains(selected) {
-                    proxy.scrollTo(entries[selected].id)
-                }
                 return .handled
-            }
-            .task {
-                if entries.indices.contains(selected) { proxy.scrollTo(entries[selected].id) }
             }
         }
     }
