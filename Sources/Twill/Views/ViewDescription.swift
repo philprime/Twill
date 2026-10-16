@@ -14,6 +14,8 @@ enum ViewDescription {
     case textField(TextFieldDescription)
     case textEditor(TextEditorDescription)
     case body(any View)
+    case button(any View, role: ButtonRole?, action: @MainActor () -> Void)
+    case dialog(any View, isPresented: Binding<Bool>, kind: DialogKind)
     case group(children: [any View], layout: (any PrimitiveLayout)?)
     case keyed(children: [(id: AnyHashable, view: any View)])
     case focusable(any View)

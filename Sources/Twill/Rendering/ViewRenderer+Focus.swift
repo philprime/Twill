@@ -3,6 +3,7 @@
 extension ViewRenderer {
     func handle(_ key: KeyEvent) -> Bool {
         if let sheet = activeSheet() {
+            if sheet.handleDialogKey(key) { return true }
             // An ignored key cannot escape the presented scope to the base or application.
             _ = sheet.handleInScope(key, modal: true)
             return true
@@ -229,7 +230,11 @@ extension ViewRenderer {
 
     func resolveFocus(in targets: [ViewRenderer]) -> ViewRenderer? {
         if let focusedNode, targets.contains(where: { $0 === focusedNode }) { return focusedNode }
-        focusedNode = targets.first
+        // Prefer cancellation on first presentation without changing the supplied
+        // action order or using public focus state for an internal modal policy.
+        let dialog = sheetBranch?.dialogScope() ?? dialogScope()
+        focusedNode =
+            dialog == nil ? targets.first : targets.first { $0.enclosingButton?.buttonRole == .cancel } ?? targets.first
         scrollFollowsFocus = true
         return focusedNode
     }
