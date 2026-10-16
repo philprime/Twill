@@ -68,8 +68,9 @@ extension ViewRenderer {
     }
 
     func revealFocus(_ focused: ViewRenderer?) {
-        if case .scroll = description, !revealListSelection(), scrollFollowsFocus, let focused, focused !== self {
-            reveal(focused)
+        if case .scroll = description {
+            let revealed = revealListSelection(focused: focused)
+            if !revealed, scrollFollowsFocus, let focused, focused !== self { reveal(focused) }
         }
         for child in children { child.revealFocus(focused) }
     }

@@ -155,7 +155,7 @@ extension ViewRenderer {
         return nil
     }
 
-    private func contains(_ node: ViewRenderer) -> Bool {
+    func contains(_ node: ViewRenderer) -> Bool {
         var current: ViewRenderer? = node
         while let candidate = current {
             if candidate === self { return true }

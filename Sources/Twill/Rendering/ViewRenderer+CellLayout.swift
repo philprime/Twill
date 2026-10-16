@@ -5,6 +5,8 @@ extension ViewRenderer {
         switch description {
         case .drawing, .canvas, .textField:
             return [self]
+        case .group(_, let layout) where layout is TableRowLayout:
+            return [self]
         case .group(_, .some), .styled, .border, .scroll:
             return children.flatMap(\.layoutItems).isEmpty ? [] : [self]
         case .sheet:
@@ -16,7 +18,7 @@ extension ViewRenderer {
 
     private var wantsFillWidth: Bool {
         if case .canvas = description { return true }
-        if case .group(_, let layout) = description, layout is GridLayout { return true }
+        if case .group(_, let layout) = description, layout is GridLayout || layout is TableLayout { return true }
         if case .group(_, let frame as FrameLayout) = description {
             if frame.width != nil { return false }
             if case .cells = frame.maxWidth { return false }
@@ -68,15 +70,21 @@ extension ViewRenderer {
     }
 
     private func measureChildren(_ proposal: ProposedCellSize) -> CellSize {
-        let items = children.flatMap(\.layoutItems)
+        if case .group(_, let layout as TableLayout) = description {
+            resolveTableColumns(layout, proposal: proposal)
+        }
         let layout: any PrimitiveLayout
         if case .group(_, let groupLayout?) = description {
             layout = groupLayout
         } else {
             layout = HorizontalLayout(spacing: 0)
         }
+        // Every table cell occupies a slot, including cells whose content is empty.
+        let items = layout is TableRowLayout ? children : children.flatMap(\.layoutItems)
         let sizes: [CellSize]
-        if let horizontal = layout as? HorizontalLayout {
+        if layout is TableRowLayout {
+            sizes = measureTableRow(items)
+        } else if let horizontal = layout as? HorizontalLayout {
             sizes = measureHorizontal(items, proposal: proposal, spacing: horizontal.spacing)
         } else if let vertical = layout as? VerticalLayout {
             sizes = measureVertical(items, proposal: proposal, spacing: vertical.spacing)

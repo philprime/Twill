@@ -70,7 +70,7 @@ extension List: PrimitiveView {
     }
 }
 
-private struct ListSelectionContent<Content: View>: View, PrimitiveView {
+struct ListSelectionContent<Content: View>: View, PrimitiveView {
     typealias Body = Never
     let content: Content
     let selection: AnyHashable?
@@ -79,7 +79,7 @@ private struct ListSelectionContent<Content: View>: View, PrimitiveView {
     func makeDescription() -> ViewDescription { .listSelection(content, selection, handle) }
 }
 
-private struct ListRow<Content: View>: View, PrimitiveView {
+struct ListRow<Content: View>: View, PrimitiveView {
     typealias Body = Never
     let content: Content
     let isSelected: Bool

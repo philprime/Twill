@@ -6,10 +6,16 @@ extension ViewRenderer {
         let viewport: CellSize
     }
 
-    func revealListSelection() -> Bool {
-        guard let content = children.first,
+    func revealListSelection(focused: ViewRenderer?) -> Bool {
+        guard let content = children.lazy.compactMap({ $0.selectionContent() }).first,
             case .listSelection(_, let selection, _) = content.description
         else { return false }
+        // A table's headers share its pane. Reveal a focused header instead of
+        // moving it out of view to reveal the independently selected row.
+        if let focused, contains(focused), !content.contains(focused) {
+            listReveal = nil
+            return false
+        }
         let row = selection.flatMap { content.keyedNode(for: $0) }
         let updated = ListReveal(
             selection: selection,
@@ -20,5 +26,11 @@ extension ViewRenderer {
         if let row, listReveal != updated { reveal(row) }
         listReveal = updated
         return true
+    }
+
+    private func selectionContent() -> ViewRenderer? {
+        if case .listSelection = description { return self }
+        if case .scroll = description { return nil }
+        return children.lazy.compactMap { $0.selectionContent() }.first
     }
 }
