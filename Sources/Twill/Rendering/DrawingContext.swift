@@ -27,7 +27,9 @@ struct DrawingContext {
         originX += region.column
         originY += region.row
         clip = clip.intersection(CellRect(column: originX, row: originY, width: region.width, height: region.height))
-        draw(&self)
+        // Fully clipped rows cannot contribute pixels or a caret. Keep mounted
+        // layout and schedules intact while avoiding their drawing callbacks.
+        if clip.height > 0 { draw(&self) }
         originX = previousX
         originY = previousY
         clip = previousClip

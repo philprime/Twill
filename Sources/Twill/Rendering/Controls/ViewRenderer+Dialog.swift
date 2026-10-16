@@ -26,7 +26,10 @@ extension ViewRenderer {
     func dialogScope() -> ViewRenderer? {
         if case .dialog = description { return self }
         if case .sheet = description { return nil }
-        return children.lazy.compactMap { $0.dialogScope() }.first
+        for child in children {
+            if let dialog = child.dialogScope() { return dialog }
+        }
+        return nil
     }
 
     func handleDialogKey(_ key: KeyEvent) -> Bool {

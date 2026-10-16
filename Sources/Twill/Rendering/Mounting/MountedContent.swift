@@ -5,6 +5,7 @@ struct MountedContent {
     private var mountedView: (any View)?
     private var stateLocations: [String: any StateLocation] = [:]
     private var isDirty = false
+    private var hasStateProperties: Bool?
     private(set) var hasDirtyDescendant = false
 
     init(_ view: any View) {
@@ -15,12 +16,19 @@ struct MountedContent {
         initialView = nil
         // Fresh view values carry fresh property-wrapper handles. Bind them to this
         // node's locations before evaluating body, so parent updates retain state.
-        for property in Mirror(reflecting: view).children {
-            guard let name = property.label, let state = property.value as? any MountedStateProperty else { continue }
-            let location = stateLocations[name] ?? state.location
-            state.bind(to: location)
-            location.onChange = onChange
-            stateLocations[name] = location
+        // Concrete type is part of mounted identity. Once a node is known to have
+        // no state properties, later values of that type need no reflection.
+        if hasStateProperties != false {
+            for property in Mirror(reflecting: view).children {
+                guard let name = property.label, let state = property.value as? any MountedStateProperty else {
+                    continue
+                }
+                let location = stateLocations[name] ?? state.location
+                state.bind(to: location)
+                location.onChange = onChange
+                stateLocations[name] = location
+            }
+            hasStateProperties = !stateLocations.isEmpty
         }
         mountedView = view
     }

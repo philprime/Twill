@@ -3,12 +3,13 @@ import Twill
 
 struct ClockView: View {
     @State private var selection = ClockFace.orbit
+    @State private var start = Date.now
 
     var body: some View {
         VStack(spacing: 1) {
             HStack {
                 Text(" TWILL / CLOCK LAB ").foregroundStyle(ClockPalette.hours)
-                TimelineView(.periodic(from: .now, by: 1)) { context in
+                TimelineView(.periodic(from: start, by: 1)) { context in
                     Text(context.date.formatted(.dateTime.weekday(.wide).month(.wide).day()))
                         .frame(maxWidth: .infinity, alignment: .trailing)
                 }

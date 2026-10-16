@@ -7,7 +7,14 @@ extension ViewRenderer {
     }
 
     func revealListSelection(focused: ViewRenderer?) -> Bool {
-        guard let content = children.lazy.compactMap({ $0.selectionContent() }).first,
+        var selectedContent: ViewRenderer?
+        for child in children {
+            if let content = child.selectionContent() {
+                selectedContent = content
+                break
+            }
+        }
+        guard let content = selectedContent,
             case .listSelection(_, let selection, _) = content.description
         else { return false }
         // A table's headers share its pane. Reveal a focused header instead of
@@ -31,6 +38,9 @@ extension ViewRenderer {
     private func selectionContent() -> ViewRenderer? {
         if case .listSelection = description { return self }
         if case .scroll = description { return nil }
-        return children.lazy.compactMap { $0.selectionContent() }.first
+        for child in children {
+            if let content = child.selectionContent() { return content }
+        }
+        return nil
     }
 }

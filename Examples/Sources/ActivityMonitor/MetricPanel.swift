@@ -12,11 +12,11 @@ struct MetricPanel: View {
             VStack(alignment: .leading) {
                 Text(detail).foregroundStyle(color)
                 Canvas { context, size in
-                    let samples = Array(values.suffix(size.width))
+                    let samples = values.suffix(size.width)
+                    let blocks: [Character] = [" ", "▁", "▂", "▃", "▄", "▅", "▆", "▇", "█"]
                     let offset = size.width - samples.count
                     for (index, value) in samples.enumerated() {
                         let height = Int((min(100, max(0, value)) / 100 * Double(size.height * 8)).rounded())
-                        let blocks: [Character] = [" ", "▁", "▂", "▃", "▄", "▅", "▆", "▇", "█"]
                         for row in 0..<size.height {
                             let level = min(8, max(0, height - (size.height - 1 - row) * 8))
                             context.draw(

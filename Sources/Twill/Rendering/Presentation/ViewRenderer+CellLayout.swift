@@ -1,6 +1,27 @@
 /// Measures mounted children against intrinsic sizes or an explicitly requested fill axis.
 @MainActor
 extension ViewRenderer {
+    /// Rebuild once per frame, after content and active branches have settled. These
+    /// scalar summaries never retain nodes or schedule work between presentations.
+    func prepareLayout() {
+        for child in children { child.prepareLayout() }
+        layoutTraits = nil
+        layoutTraits = LayoutTraits(
+            hasContent: hasLayoutContent, fillsWidth: wantsFillWidth, fillsHeight: wantsFillHeight)
+    }
+
+    private var hasLayoutContent: Bool {
+        if let layoutTraits { return layoutTraits.hasContent }
+        switch description {
+        case .drawing, .canvas, .textField, .textEditor: return true
+        case .group(_, let layout) where layout is TableRowLayout: return true
+        case .tabs: return hasTabBar
+        case .tab where !isActiveTab: return false
+        case .sheet: return sheetBranch?.hasLayoutContent ?? false
+        default: return activeChildren.contains { $0.hasLayoutContent }
+        }
+    }
+
     var layoutItems: [ViewRenderer] {
         switch description {
         case .drawing, .canvas, .textField, .textEditor:
@@ -8,7 +29,7 @@ extension ViewRenderer {
         case .group(_, let layout) where layout is TableRowLayout:
             return [self]
         case .group(_, .some), .styled, .border, .scroll, .dialog, .disclosure:
-            return activeChildren.flatMap(\.layoutItems).isEmpty ? [] : [self]
+            return hasLayoutContent ? [self] : []
         case .tabs:
             return hasTabBar ? [self] : []
         case .tab where !isActiveTab:
@@ -21,6 +42,7 @@ extension ViewRenderer {
     }
 
     private var wantsFillWidth: Bool {
+        if let layoutTraits { return layoutTraits.fillsWidth }
         if case .canvas = description { return true }
         if case .textEditor = description { return true }
         if case .group(_, let layout) = description, layout is GridLayout || layout is TableLayout { return true }
@@ -33,6 +55,7 @@ extension ViewRenderer {
     }
 
     private var wantsFillHeight: Bool {
+        if let layoutTraits { return layoutTraits.fillsHeight }
         if case .canvas = description { return true }
         if case .textEditor = description { return true }
         if case .scroll = description { return true }
@@ -131,8 +154,24 @@ extension ViewRenderer {
         }
     }
 
+    private func measureSingleStack(_ items: [ViewRenderer], proposal: ProposedCellSize) -> CellSize? {
+        guard items.count == 1 else { return nil }
+        // There is no sibling space to distribute. A natural-size pass followed
+        // by a constrained pass would repeatedly measure the entire subtree.
+        let item = items[0]
+        return item.measure(
+            ProposedCellSize(
+                width: item.wantsFillWidth ? proposal.width : nil,
+                height: item.wantsFillHeight ? proposal.height : nil))
+    }
+
     private func measureHorizontal(_ items: [ViewRenderer], proposal: ProposedCellSize, spacing: Int) -> [CellSize] {
-        let natural = items.map { $0.measure(.unspecified) }
+        if let size = measureSingleStack(items, proposal: proposal) { return [size] }
+        // Flexible children have a known final width after sibling space is
+        // deducted. Their natural width is unused and can require a full tree walk.
+        let natural = items.map {
+            proposal.width != nil && $0.wantsFillWidth ? .zero : $0.measure(.unspecified)
+        }
         let flexible = items.indices.filter { items[$0].wantsFillWidth }
         let occupied = items.indices.filter { !items[$0].wantsFillWidth }.reduce(0) { $0 + natural[$1].width }
         let remaining = max(0, (proposal.width ?? 0) - occupied - max(0, items.count - 1) * spacing)
@@ -148,7 +187,10 @@ extension ViewRenderer {
     }
 
     private func measureVertical(_ items: [ViewRenderer], proposal: ProposedCellSize, spacing: Int) -> [CellSize] {
-        let natural = items.map { $0.measure(.unspecified) }
+        if let size = measureSingleStack(items, proposal: proposal) { return [size] }
+        let natural = items.map {
+            proposal.height != nil && $0.wantsFillHeight ? .zero : $0.measure(.unspecified)
+        }
         let flexible = items.indices.filter { items[$0].wantsFillHeight }
         let occupied = items.indices.filter { !items[$0].wantsFillHeight }.reduce(0) { $0 + natural[$1].height }
         let remaining = max(0, (proposal.height ?? 0) - occupied - max(0, items.count - 1) * spacing)

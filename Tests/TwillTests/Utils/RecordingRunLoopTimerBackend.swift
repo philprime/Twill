@@ -7,6 +7,7 @@ final class RecordingRunLoopTimerBackend: RunLoopTimerBackend {
     let scheduledDeadlines: AsyncStream<DispatchTime>
     private let deadlineContinuation: AsyncStream<DispatchTime>.Continuation
     private var action: (@Sendable () -> Void)?
+    private(set) var scheduleCount = 0
     private(set) var disarmCount = 0
     private(set) var stopCount = 0
 
@@ -16,6 +17,7 @@ final class RecordingRunLoopTimerBackend: RunLoopTimerBackend {
 
     func schedule(deadline: DispatchTime, action: @escaping @Sendable () -> Void) {
         self.action = action
+        scheduleCount += 1
         deadlineContinuation.yield(deadline)
     }
 

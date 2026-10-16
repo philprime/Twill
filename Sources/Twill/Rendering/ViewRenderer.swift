@@ -33,6 +33,13 @@ final class ViewRenderer {
     var placements: [(node: ViewRenderer, bounds: CellRect)] = []
     var tableColumnWidths: [Int] = []
     var measuredSize = CellSize.zero
+    var layoutTraits: LayoutTraits?
+
+    struct LayoutTraits {
+        let hasContent: Bool
+        let fillsWidth: Bool
+        let fillsHeight: Bool
+    }
 
     private init(_ view: any View, taskRegistry: MountedTaskRegistry) {
         viewType = ObjectIdentifier(type(of: view))

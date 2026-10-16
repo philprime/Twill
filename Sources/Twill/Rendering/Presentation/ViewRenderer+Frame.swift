@@ -3,6 +3,7 @@ import Foundation
 extension ViewRenderer {
     /// Layout and drawing never evaluate bodies or advance timeline deadlines.
     func drawFrame(proposal: ProposedCellSize, centeredInViewport: Bool = false) -> CellGrid? {
+        prepareLayout()
         let sheet = activeSheet()
         let content = sheet?.sheetBranch ?? self
         if let sheet { return drawOverlay(sheet: sheet, proposal: proposal) }
