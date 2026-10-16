@@ -13,15 +13,24 @@ struct NoteEditorView: View {
             Text(heading)
                 .foregroundStyle(NotesPalette.accent)
             Text("Title (required)")
-            TextField("Title", text: $title)
-                .border(.single, color: NotesPalette.border)
+            ScrollView {
+                TextField("Title", text: $title)
+            }
+            .frame(height: 1)
+            .border(.single, color: NotesPalette.border)
             Text("Body")
-            TextField("Body", text: $noteText)
+            TextEditor(text: $noteText)
+                .frame(height: 6)
                 .border(.single, color: NotesPalette.border)
-            Button(saveLabel, action: onSave)
-                .foregroundStyle(NotesPalette.accent)
-            Button("Cancel", action: onCancel)
-            Text("Enter: edit/choose  •  Esc: cancel")
+            ScrollView {
+                VStack(alignment: .leading) {
+                    Button(saveLabel, action: onSave)
+                        .foregroundStyle(NotesPalette.accent)
+                    Button("Cancel", action: onCancel)
+                }
+            }
+            .frame(height: 2)
+            Text("Tab: pane  •  Enter: newline/choose  •  Esc: cancel")
                 .foregroundStyle(NotesPalette.muted)
         }
         .foregroundStyle(NotesPalette.foreground)

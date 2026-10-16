@@ -3,6 +3,7 @@
 extension ViewRenderer {
     func handle(_ key: KeyEvent) -> Bool {
         if let sheet = activeSheet() {
+            if sheet.handleDialogKey(key) { return true }
             // An ignored key cannot escape the presented scope to the base or application.
             _ = sheet.handleInScope(key, modal: true)
             return true
@@ -19,14 +20,7 @@ extension ViewRenderer {
         }
         let pane = panes.first { $0.contains(target) }
         let targets = pane?.focusableNodes() ?? focusableNodes()
-        if case .textField(let field) = target.description {
-            if field.handle(key) == .handled { return true }
-            if key == .enter, submit(from: target, stoppingAt: modal ? self : nil) { return true }
-        }
-        if case .listSelection(_, _, let handle) = target.description {
-            if handle(key) == .handled { return true }
-            if key == .enter, submit(from: target, stoppingAt: modal ? self : nil) { return true }
-        }
+        if handleControl(key, at: target, stoppingAt: modal ? self : nil) { return true }
         if route(key, from: target, stoppingAt: modal ? self : nil) == .handled { return true }
 
         if let pane, key == .tab || key == .shiftTab {
@@ -36,6 +30,21 @@ extension ViewRenderer {
             return scrollViewer(key, pane: pane)
         }
         return moveFocus(key, from: target, in: targets, pane: pane)
+    }
+
+    private func handleControl(_ key: KeyEvent, at target: ViewRenderer, stoppingAt boundary: ViewRenderer?) -> Bool {
+        switch target.description {
+        case .textField(let field):
+            if field.handle(key) == .handled { return true }
+            return key == .enter && submit(from: target, stoppingAt: boundary)
+        case .textEditor(let editor):
+            return editor.handle(key, target.measuredSize.height) == .handled
+        case .listSelection(_, _, let handle):
+            if handle(key) == .handled { return true }
+            return key == .enter && submit(from: target, stoppingAt: boundary)
+        default:
+            return false
+        }
     }
 
     private func switchPane(_ key: KeyEvent, from pane: ViewRenderer, in panes: [ViewRenderer]) -> Bool {
@@ -211,6 +220,7 @@ extension ViewRenderer {
     private func scrollPanes() -> [ViewRenderer] {
         if case .sheet = description { return sheetBranch?.scrollPanes() ?? [] }
         if case .scroll = description { return [self] }
+        if case .textEditor = description { return [self] }
         return children.flatMap { $0.scrollPanes() }
     }
 
@@ -220,7 +230,11 @@ extension ViewRenderer {
 
     func resolveFocus(in targets: [ViewRenderer]) -> ViewRenderer? {
         if let focusedNode, targets.contains(where: { $0 === focusedNode }) { return focusedNode }
-        focusedNode = targets.first
+        // Prefer cancellation on first presentation without changing the supplied
+        // action order or using public focus state for an internal modal policy.
+        let dialog = sheetBranch?.dialogScope() ?? dialogScope()
+        focusedNode =
+            dialog == nil ? targets.first : targets.first { $0.enclosingButton?.buttonRole == .cancel } ?? targets.first
         scrollFollowsFocus = true
         return focusedNode
     }
@@ -230,7 +244,7 @@ extension ViewRenderer {
         let descendants = children.flatMap { $0.focusableNodes() }
         switch description {
         case .listSelection: return [self]
-        case .focusable, .textField: return [self] + descendants
+        case .focusable, .textField, .textEditor: return [self] + descendants
         case .scroll where descendants.isEmpty: return [self]
         default: return descendants
         }
@@ -254,6 +268,9 @@ extension ViewRenderer {
             }
             if includeControls, case .textField(let field) = descendant.description, field.handle(key) == .handled {
                 return .handled
+            }
+            if includeControls, case .textEditor(let editor) = descendant.description {
+                if editor.handle(key, descendant.measuredSize.height) == .handled { return .handled }
             }
             child = descendant
         }

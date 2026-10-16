@@ -12,6 +12,8 @@ struct NotesBrowserView: View {
     @State private var editingNoteID: Note.ID?
     @State private var draftTitle = ""
     @State private var draftBody = ""
+    @State private var isDeletePresented = false
+    @State private var deletingNoteID: Note.ID?
 
     private var matchingNotes: [Note] {
         notes.filter {
@@ -41,7 +43,7 @@ struct NotesBrowserView: View {
             .foregroundStyle(NotesPalette.border)
             HStack(spacing: 2) {
                 GroupBox("Notes") {
-                    NoteListView(notes: matchingNotes, selectedNoteID: $selectedNoteID, onDelete: deleteNote)
+                    NoteListView(notes: matchingNotes, selectedNoteID: $selectedNoteID, onDelete: requestDeletion)
                         .frame(width: 26)
                         .frame(maxHeight: .infinity, alignment: .top)
                         .foregroundStyle(NotesPalette.foreground)
@@ -105,6 +107,20 @@ struct NotesBrowserView: View {
                 onSave: saveNote,
                 onCancel: { isEditPresented = false })
         }
+        .confirmationDialog("Delete note?", isPresented: $isDeletePresented) {
+            Button("Delete note", role: .destructive) {
+                if let deletingNoteID { deleteNote(deletingNoteID) }
+                deletingNoteID = nil
+            }
+            Button("Keep note", role: .cancel) { deletingNoteID = nil }
+        } message: {
+            Text("This removes the note from this in-memory session.")
+        }
+    }
+
+    private func requestDeletion(_ id: Note.ID) {
+        deletingNoteID = id
+        isDeletePresented = true
     }
 
     private func saveNote() {
