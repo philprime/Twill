@@ -3,9 +3,9 @@
 extension ViewRenderer {
     var layoutItems: [ViewRenderer] {
         switch description {
-        case .drawing, .canvas, .textField:
+        case .drawing, .canvas, .textField, .textEditor:
             return [self]
-        case .group(_, .some), .styled, .border, .scroll:
+        case .group(_, .some), .styled, .border, .scroll, .dialog:
             return children.flatMap(\.layoutItems).isEmpty ? [] : [self]
         case .tabs:
             return hasTabBar ? [self] : []
@@ -20,6 +20,7 @@ extension ViewRenderer {
 
     private var wantsFillWidth: Bool {
         if case .canvas = description { return true }
+        if case .textEditor = description { return true }
         if case .group(_, let layout) = description, layout is GridLayout { return true }
         if case .group(_, let frame as FrameLayout) = description {
             if frame.width != nil { return false }
@@ -31,6 +32,7 @@ extension ViewRenderer {
 
     private var wantsFillHeight: Bool {
         if case .canvas = description { return true }
+        if case .textEditor = description { return true }
         if case .scroll = description { return true }
         if case .group(_, let frame as FrameLayout) = description {
             if frame.height != nil { return false }
@@ -42,6 +44,9 @@ extension ViewRenderer {
 
     func measure(_ proposal: ProposedCellSize) -> CellSize {
         if case .tabs = description { return measureTabs(proposal) }
+        if case .textEditor(let editor) = description {
+            return measureTextEditor(editor, proposal: proposal)
+        }
         if let drawing {
             measuredSize = drawing.sizeThatFits(proposal)
             return measuredSize
@@ -77,6 +82,8 @@ extension ViewRenderer {
         let layout: any PrimitiveLayout
         if case .group(_, let groupLayout?) = description {
             layout = groupLayout
+        } else if case .dialog = description {
+            layout = VerticalLayout(spacing: 0, alignment: .leading)
         } else {
             layout = HorizontalLayout(spacing: 0)
         }

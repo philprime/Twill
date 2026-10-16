@@ -10,27 +10,37 @@ struct TabViewIsolationTests {
         @State private var firstText = ""
         @State private var secondText = ""
         @FocusState private var secondFocused = true
+        let multiline: Bool
         let capture: (Binding<String>, Binding<String>) -> Void
 
         var body: some View {
             capture($firstText, $secondText)
             return TabView(selection: $selection) {
-                Tab("First", value: 0) { TextField("First field", text: $firstText) }
+                Tab("First", value: 0) { editor($firstText) }
                 Tab("Second", value: 1) {
-                    TextField("Second field", text: $secondText).focused($secondFocused)
+                    editor($secondText).focused($secondFocused)
                 }
                 .focused($secondFocused)
             }
         }
+
+        @ViewBuilder
+        private func editor(_ text: Binding<String>) -> some View {
+            if multiline {
+                TextEditor(text: text)
+            } else {
+                TextField("Field", text: text)
+            }
+        }
     }
 
-    @Test("Hidden focus requests cannot steal typing and editing survives tab switches")
-    func editingIsolation() throws {
+    @Test("Hidden focus requests cannot steal typing and editing survives tab switches", arguments: [false, true])
+    func editingIsolation(multiline: Bool) throws {
         // -- Arrange --
         var first: Binding<String>?
         var second: Binding<String>?
         let renderer = ViewRenderer.make(
-            EditingTabs {
+            EditingTabs(multiline: multiline) {
                 first = $0
                 second = $1
             })
@@ -129,6 +139,43 @@ struct TabViewIsolationTests {
                 }
             }
         }
+    }
+
+    private struct AlertTabs: View {
+        @State private var selection = 0
+        @State private var presented = true
+        let cancelled: () -> Void
+
+        var body: some View {
+            TabView(selection: $selection) {
+                Tab("First", value: 0) { Text("Base") }
+                Tab("Second", value: 1) { Button("Other") {} }
+                    .alert("Confirm", isPresented: $presented) {
+                        Button("Cancel", role: .cancel) { cancelled() }
+                    }
+            }
+        }
+    }
+
+    @Test("A dialog wrapping an inactive tab stays hidden and dismisses normally after selection")
+    func dialogIsolation() throws {
+        // -- Arrange --
+        var cancellations = 0
+        let renderer = ViewRenderer.make(AlertTabs { cancellations += 1 })
+        let initial = try #require(renderer.render(.now).grid)
+
+        // -- Act --
+        _ = renderer.handle(.arrowRight)
+        let dialog = try #require(renderer.render(.now).grid)
+        _ = renderer.handle(.escape)
+        let dismissed = try #require(renderer.render(.now).grid)
+
+        // -- Assert --
+        #expect(!initial.snapshotText.contains("Confirm"))
+        #expect(dialog.snapshotText.contains("Confirm"))
+        #expect(!dismissed.snapshotText.contains("Confirm"))
+        #expect(dismissed.snapshotText.contains("Other"))
+        #expect(cancellations == 1)
     }
 
     @Test("Inactive sheets stay hidden and active sheets trap tab-switch shortcuts")

@@ -32,6 +32,7 @@ final class ViewRenderer {
     var listReveal: ListReveal?
     var isActiveTab = true
     weak var activeTab: ViewRenderer?
+    var editorOffset = CellPosition.zero
     var scrollOffset = 0
     var scrollFollowsFocus = true
     var scrollContentHeight = 0
@@ -134,20 +135,19 @@ final class ViewRenderer {
         let updated = Self.describe(view)
         description = updated
         switch updated {
-        case .empty, .drawing, .textField:
+        case .empty, .drawing, .textField, .textEditor:
             removeChildren()
         case .canvas(let interval, _):
             removeChildren()
             updateCanvas(interval: interval, at: date)
-        case .body(let body):
+        case .body(let body), .button(let body, _, _):
             reconcile([body], at: date)
+        case .dialog(let actions, _, let kind):
+            updateDialog(actions, kind: kind, at: date)
         case .group(let views, _):
             reconcile(views, at: date)
         case .keyed(let views):
             reconcileKeyed(views, at: date)
-        case .tabs(let content, _):
-            reconcile([content], at: date)
-            updateActiveTab()
         case .scrollReader(let content, let proxy):
             if case .scrollReader(_, let previousProxy) = previous { previousProxy.renderer = nil }
             proxy.renderer = self
@@ -157,28 +157,28 @@ final class ViewRenderer {
             .keyPress(let content, _), .styled(let content, _, _),
             .border(let content, _, _, _):
             reconcile([content], at: date)
-        case .task, .sheet, .conditional, .timeline:
+        case .task, .tabs, .sheet, .conditional, .timeline:
             updateDynamicContent(updated, previous: previous, at: date)
         }
         collectDeadlines()
     }
 
-    private func updateDynamicContent(_ description: ViewDescription, previous: ViewDescription?, at date: Date) {
-        switch description {
-        case .task(let content, let priority, let action):
-            updateTask(content, priority: priority, action: action, at: date)
-        case .sheet(let base, let isPresented, let content):
-            let dismissing = !isPresented.wrappedValue && children.count > 1
-            reconcile(isPresented.wrappedValue ? [base, content()] : [base], at: date)
-            if dismissing { restoreFocusAfterSheetDismissal() }
-        case .conditional(let first, let content):
-            updateConditional(first: first, content: content, previous: previous, at: date)
-        case .timeline(let schedule, let content):
-            let contextDate = advanceTimeline(schedule, at: date)
-            reconcile([content(contextDate)], at: date)
-        default:
-            break
+    private func updateCanvas(interval: TimeInterval?, at date: Date) {
+        guard let interval else {
+            timeline = nil
+            canvasDate = date
+            return
         }
+        let start = timeline?.schedule.interval == interval ? timeline!.schedule.start : date
+        canvasDate = advanceTimeline(.periodic(from: start, by: interval), at: date)
+    }
+
+    private func advanceTimeline(_ schedule: PeriodicTimelineSchedule, at date: Date) -> Date {
+        if let timeline, timeline.schedule == schedule, date < timeline.deadline {
+            return timeline.date
+        }
+        timeline = TimelineState(schedule: schedule, date: date, deadline: schedule.nextUpdate(after: date))
+        return date
     }
 
     private func reconcile(_ views: [any View], at date: Date) {
@@ -258,6 +258,7 @@ final class ViewRenderer {
             for child in children { child.refresh(at: date) }
         }
         if case .tabs = description { updateActiveTab() }
+        if case .dialog(_, _, let kind) = description { updateDialogFallback(kind: kind, at: date) }
         collectDeadlines()
     }
 
@@ -272,22 +273,51 @@ final class ViewRenderer {
 }
 
 extension ViewRenderer {
-    private func updateCanvas(interval: TimeInterval?, at date: Date) {
-        guard let interval else {
-            timeline = nil
-            canvasDate = date
-            return
+    private func updateDynamicContent(_ description: ViewDescription, previous: ViewDescription?, at date: Date) {
+        switch description {
+        case .tabs(let content, _):
+            reconcile([content], at: date)
+            updateActiveTab()
+        case .task(let content, let priority, let action):
+            updateTask(content, priority: priority, action: action, at: date)
+        case .sheet(let base, let isPresented, let content):
+            let dismissing = !isPresented.wrappedValue && children.count > 1
+            reconcile(isPresented.wrappedValue ? [base, content()] : [base], at: date)
+            if dismissing { restoreFocusAfterSheetDismissal() }
+        case .conditional(let first, let content):
+            updateConditional(first: first, content: content, previous: previous, at: date)
+        case .timeline(let schedule, let content):
+            let contextDate = advanceTimeline(schedule, at: date)
+            reconcile([content(contextDate)], at: date)
+        default:
+            break
         }
-        let start = timeline?.schedule.interval == interval ? timeline!.schedule.start : date
-        canvasDate = advanceTimeline(.periodic(from: start, by: interval), at: date)
     }
 
-    private func advanceTimeline(_ schedule: PeriodicTimelineSchedule, at date: Date) -> Date {
-        if let timeline, timeline.schedule == schedule, date < timeline.deadline {
-            return timeline.date
+    private func updateDialog(_ actions: any View, kind: DialogKind, at date: Date) {
+        // Mount the supplied actions first so roles in conditional and custom views
+        // are resolved without evaluating their bodies a second time.
+        let previousFallback = children.dropFirst().first
+        children = Array(children.prefix(1))
+        reconcile([actions], at: date)
+        if let previousFallback { children.append(previousFallback) }
+        updateDialogFallback(kind: kind, at: date)
+    }
+
+    private func updateDialogFallback(kind: DialogKind, at date: Date) {
+        let buttons = children.first?.dialogButtons() ?? []
+        let needsFallback = kind == .confirmation ? !buttons.contains { $0.buttonRole == .cancel } : buttons.isEmpty
+        guard needsFallback else {
+            if children.count > 1 { children.removeLast().unmount() }
+            return
         }
-        timeline = TimelineState(schedule: schedule, date: date, deadline: schedule.nextUpdate(after: date))
-        return date
+        // Keep a mounted fallback stable across both parent and descendant updates.
+        guard children.count == 1 else { return }
+        let fallback = Button(kind == .confirmation ? "Cancel" : "OK", role: kind == .confirmation ? .cancel : nil) {}
+        let node = Self.make(fallback, taskRegistry: taskRegistry)
+        node.parent = self
+        node.update(fallback, at: date)
+        children.append(node)
     }
 
     var drawing: (any PrimitiveDrawing)? {

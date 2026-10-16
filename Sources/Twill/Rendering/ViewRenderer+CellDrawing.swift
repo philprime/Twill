@@ -2,7 +2,11 @@
 extension ViewRenderer {
     func draw(in context: inout DrawingContext, focused: ViewRenderer?) {
         if case .tabs = description { drawTabBar(in: &context, focused: focused) }
-        if case .styled(_, let foreground, let background) = description {
+        if case .button(_, .destructive, _) = description {
+            context.withStyle(foreground: .red, background: nil, size: measuredSize) { region in
+                drawChildren(in: &region, focused: focused)
+            }
+        } else if case .styled(_, let foreground, let background) = description {
             context.withStyle(foreground: foreground, background: background, size: measuredSize) { region in
                 drawChildren(in: &region, focused: focused)
             }
@@ -17,6 +21,8 @@ extension ViewRenderer {
                     drawChildren(in: &content, focused: focused)
                 }
             }
+        } else if case .textEditor(let editor) = description {
+            drawTextEditor(editor, in: &context, active: isInsideFocus(focused))
         } else if let drawing {
             let active = isInsideFocus(focused)
             context.withFocus(active) { region in

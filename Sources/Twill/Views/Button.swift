@@ -2,10 +2,12 @@
 public struct Button<Label: View>: View {
     private let action: @MainActor () -> Void
     private let label: Label
+    private let role: ButtonRole?
 
-    public init(action: @escaping @MainActor () -> Void, @ViewBuilder label: () -> Label) {
+    public init(role: ButtonRole? = nil, action: @escaping @MainActor () -> Void, @ViewBuilder label: () -> Label) {
         self.action = action
         self.label = label()
+        self.role = role
     }
 
     public var body: some View {
@@ -19,9 +21,16 @@ public struct Button<Label: View>: View {
     }
 }
 
+extension Button: PrimitiveView {
+    func makeDescription() -> ViewDescription {
+        .button(body, role: role, action: action)
+    }
+}
+
 extension Button where Label == Text {
-    public init(_ title: String, action: @escaping @MainActor () -> Void) {
+    public init(_ title: String, role: ButtonRole? = nil, action: @escaping @MainActor () -> Void) {
         self.action = action
         self.label = Text(title)
+        self.role = role
     }
 }
