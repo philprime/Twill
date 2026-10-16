@@ -14,6 +14,9 @@ struct TwillBenchmarks {
             var benchmarks: [any SDKBenchmark] = [NavigationBenchmark()]
             #if DEBUG || BENCHMARKING
                 benchmarks += TableBenchmark.Workload.allCases.map { TableBenchmark(workload: $0) }
+                benchmarks += CollectionBenchmark.Workload.allCases.map { CollectionBenchmark(workload: $0) }
+                benchmarks += EditorBenchmark.Workload.allCases.map { EditorBenchmark(workload: $0) }
+                benchmarks += TimelineBenchmark.Workload.allCases.map { TimelineBenchmark(workload: $0) }
             #endif
             let suite = BenchmarkSuite(benchmarks: benchmarks)
             let command = try BenchmarkCommand(arguments: Array(CommandLine.arguments.dropFirst()))
