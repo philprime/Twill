@@ -3,8 +3,22 @@ struct TableLayout: PrimitiveLayout {
     let columnCount: Int
     static let spacing = 2
 
-    var grid: GridLayout {
-        GridLayout(columns: Array(repeating: GridItem(.flexible()), count: columnCount), spacing: Self.spacing)
+    func columnWidths(in proposedWidth: Int?, subviews: [CellSize]) -> [Int] {
+        let naturalGrid = GridLayout(
+            columns: Array(repeating: GridItem(.flexible()), count: columnCount), spacing: Self.spacing)
+        let naturalWidth = naturalGrid.sizeThatFits(.unspecified, subviews: subviews).width
+        let natural = naturalGrid.columnWidths(in: naturalWidth, subviews: subviews)
+        guard let proposedWidth else { return natural }
+        // Preserve content before sharing surplus space. When space is scarce,
+        // cap short columns at their content width so longer columns can use it.
+        let columns = natural.map { width in
+            GridItem(
+                .flexible(
+                    minimum: proposedWidth >= naturalWidth ? width : 1,
+                    maximum: proposedWidth >= naturalWidth ? .max : width))
+        }
+        return GridLayout(columns: columns, spacing: Self.spacing)
+            .columnWidths(in: proposedWidth, subviews: subviews)
     }
 
     func sizeThatFits(_ proposal: ProposedCellSize, subviews: [CellSize]) -> CellSize {

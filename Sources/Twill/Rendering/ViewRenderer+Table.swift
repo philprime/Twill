@@ -4,8 +4,7 @@ extension ViewRenderer {
         let sizes = children.flatMap { $0.tableRows() }.flatMap { row in
             row.children.map { $0.measure(.unspecified) }
         }
-        let width = layout.grid.sizeThatFits(proposal, subviews: sizes).width
-        tableColumnWidths = layout.grid.columnWidths(in: width, subviews: sizes)
+        tableColumnWidths = layout.columnWidths(in: proposal.width, subviews: sizes)
     }
 
     func measureTableRow(_ items: [ViewRenderer]) -> [CellSize] {

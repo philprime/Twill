@@ -159,7 +159,7 @@ struct TableTests {
 
         // -- Assert --
         #expect(grid.size == CellSize(width: 8, height: 3))
-        #expect(grid.snapshotText == "Nam  N  \n界   12 \nA    3  ")
+        #expect(grid.snapshotText == "Name  N \n界界  12\nA     3 ")
     }
 
     @Test("Empty cells retain their column slots and empty rows retain their height")
