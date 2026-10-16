@@ -4,6 +4,7 @@
 extension ViewRenderer {
     var activeChildren: [ViewRenderer] {
         if case .tab = description, !isActiveTab { return [] }
+        guard !descendantTabNodes.isEmpty else { return children }
         // A modifier outside a Tab belongs to that destination too. Exclude
         // the whole branch so its focus binding or modal cannot become active.
         return children.filter { child in
@@ -15,10 +16,10 @@ extension ViewRenderer {
     var tabNodes: [ViewRenderer] {
         if case .tab = description { return [self] }
         if case .tabs = description { return [] }
-        return children.flatMap(\.tabNodes)
+        return descendantTabNodes
     }
 
-    private var tabs: [ViewRenderer] { children.flatMap(\.tabNodes) }
+    private var tabs: [ViewRenderer] { descendantTabNodes }
 
     var hasTabBar: Bool { !tabs.isEmpty }
 
