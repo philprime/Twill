@@ -30,6 +30,7 @@ final class ViewRenderer {
     weak var presentedFocus: ViewRenderer?
     weak var clearedFocusBinding: ViewRenderer?
     var listReveal: ListReveal?
+    var editorOffset = CellPosition.zero
     var scrollOffset = 0
     var scrollFollowsFocus = true
     var scrollContentHeight = 0
@@ -132,7 +133,7 @@ final class ViewRenderer {
         let updated = Self.describe(view)
         description = updated
         switch updated {
-        case .empty, .drawing, .textField:
+        case .empty, .drawing, .textField, .textEditor:
             removeChildren()
         case .canvas(let interval, _):
             removeChildren()

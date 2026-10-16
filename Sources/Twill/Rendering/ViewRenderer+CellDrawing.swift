@@ -16,6 +16,8 @@ extension ViewRenderer {
                     drawChildren(in: &content, focused: focused)
                 }
             }
+        } else if case .textEditor(let editor) = description {
+            drawTextEditor(editor, in: &context, active: isInsideFocus(focused))
         } else if let drawing {
             let active = isInsideFocus(focused)
             context.withFocus(active) { region in
