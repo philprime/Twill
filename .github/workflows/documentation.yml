@@ -30,8 +30,8 @@ jobs:
         with:
           swift-version: "6.4.0"
 
-      - name: Install Just
-        run: brew install just
+      - name: Install documentation tools
+        run: brew bundle --file Brewfile-ci
 
       - name: Configure Pages
         id: pages

@@ -24,11 +24,12 @@ setup:
 build *args:
     just _swift batch build --disable-index-store --explicit-target-dependency-import-check warn -Xswiftc -warnings-as-errors "$@"
 
-# Generate a static DocC site in .build/documentation. Pass the Pages base path when publishing.
+# Generate a static DocC site using the macOS toolchain. Pass the Pages base path when publishing.
 docs hosting-base-path="" *args:
     #!/usr/bin/env bash
     set -euo pipefail
-    swift package --allow-writing-to-directory .build/documentation generate-documentation --target Twill --disable-indexing --warnings-as-errors --transform-for-static-hosting --hosting-base-path "$1" --output-path .build/documentation "${@:2}"
+    swift package --scratch-path .build/documentation-build dump-symbol-graph --minimum-access-level public --emit-extension-block-symbols
+    xcrun docc convert --additional-symbol-graph-dir .build/documentation-build/out/symbolgraph --fallback-display-name Twill --fallback-bundle-identifier Twill --fallback-default-module-kind Library --warnings-as-errors --transform-for-static-hosting --hosting-base-path "$1" --output-path .build/documentation "${@:2}"
 
 # Enable injectable collaborators in the library and unit tests, in either configuration.
 # Supports --linux, --container, and SwiftPM arguments such as --filter SomeSuite.
