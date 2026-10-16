@@ -55,7 +55,8 @@ extension ViewRenderer {
 
     private func focusTabBar(_ key: KeyEvent, from target: ViewRenderer, pane: ViewRenderer?) -> Bool {
         guard key == .shiftTab, let bar = target.enclosingTabView else { return false }
-        if let pane, pane !== bar.scrollPanes().first { return false }
+        if let pane, bar.contains(pane), pane !== bar.scrollPanes().first { return false }
+        pane?.focusedNode = bar
         focusedNode = bar
         presentFocus(bar)
         requestFocusPresentation()
@@ -190,7 +191,8 @@ extension ViewRenderer {
             if let focused = scope.presentedFocus, previous.contains(focused) {
                 let target = selected.flatMap { $0.resolveFocus(in: $0.focusableNodes()) } ?? self
                 scope.focusedNode = target
-                scope.activePane = selected?.activePane
+                scope.activePane = scope.scrollPanes().first { $0.contains(target) }
+                scope.activePane?.focusedNode = target
                 scope.clearedFocusBinding = nil
                 scope.presentFocus(target)
             }
@@ -232,16 +234,8 @@ extension ViewRenderer {
         if case .textField(let field) = presentedFocus?.description { field.blur() }
         presentedFocus = target
         var ancestor = target
-        var pane: ViewRenderer?
         while let node = ancestor {
-            switch node.description {
-            case .scroll, .textEditor: pane = node
-            default: break
-            }
-            if case .tab = node.description {
-                node.focusedNode = target
-                node.activePane = pane
-            }
+            if case .tab = node.description { node.focusedNode = target }
             ancestor = node.parent
         }
         // Shared ancestor and descendant bindings must settle once per focus transition,
@@ -257,7 +251,9 @@ extension ViewRenderer {
         if case .focusBinding(_, let binding) = description {
             binding.setFocused(target.map { contains($0) } ?? false)
         }
-        for child in activeChildren { child.updateFocusBindings(target) }
+        // Inactive destinations cannot request focus, but their bindings must
+        // still observe losing it so they do not become stale future requests.
+        for child in children { child.updateFocusBindings(target) }
     }
 
     private func submit(from target: ViewRenderer, stoppingAt boundary: ViewRenderer?) -> Bool {

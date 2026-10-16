@@ -115,6 +115,8 @@ extension ViewRenderer {
             if case .listRow(_, let isSelected) = current.description { return isSelected }
             // Focusing a scroll pane enables navigation without highlighting all its content.
             if case .scroll = current.description { return false }
+            // The tab bar is its own focus target, not a container highlight or caret.
+            if case .tabs = current.description { return false }
             if current === focused { return true }
             // Nested focusable controls retain their own appearance and identity.
             if case .focusable = current.description { return false }
