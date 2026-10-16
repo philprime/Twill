@@ -34,6 +34,18 @@ Run commands from the repository root. `just` lists the available recipes.
 | `just analyze`          | Run lint and formatting checks.                        |
 | `just clean`            | Clean the root package's SwiftPM build output.         |
 
+## Documentation
+
+`just docs` builds the DocC catalog in `Sources/Twill/Twill.docc` together with the public symbol graph. It uses the macOS toolchain, treats DocC warnings as errors, and writes the static site to `.build/documentation`. Pass a hosting base path as the first argument when publishing beneath a URL path. The documentation workflow publishes this output to GitHub Pages.
+
+`just docs-previews` builds and runs the standalone executable package in `Tools/DocGenerator`, regenerating the checked-in SVG terminal previews and view gallery from framework-rendered fixtures. `just docs` also runs the generator before building the site. The generator checks public-view coverage and deterministic rendering. Add a fixture when introducing a public view, then regenerate previews after changing its presentation. The snapshots use a fixed date and a documented terminal palette, not a running example application.
+
+The tool builds its local Twill dependency with `-enable-testing` so it can access the internal renderer through `@testable import`, without adding a public snapshot API. It uses production collaborators without `TESTING`. Its build output lives in `.build/tools/DocGenerator`, separate from the library and test builds.
+
+SwiftLint requires documentation on public declarations, including members and initializers. Keep concise API contracts in source comments. Use catalog articles for conceptual guides and documentation extensions for examples and previews. Curate related symbols and articles under `## Topics` instead of relying on generated alphabetical groups.
+
+Follow the [Swift DocC guides](https://www.swift.org/documentation/docc/), especially [writing symbol documentation](https://www.swift.org/documentation/docc/writing-symbol-documentation-in-your-source-files), [adding supplemental content](https://www.swift.org/documentation/docc/adding-supplemental-content-to-a-documentation-catalog), [organizing pages](https://www.swift.org/documentation/docc/adding-structure-to-your-documentation-pages), and [adding images](https://www.swift.org/documentation/docc/adding-images). DocC catalog Markdown is excluded from dprint because its code-span normalization changes double-backtick symbol links into plain code. Catalog image names must be unique. Give each preview meaningful alternative text and explain nonvisual behavior in prose.
+
 ## Host and container execution
 
 `build`, `test`, `test-integration`, and `example` accept the same execution options:

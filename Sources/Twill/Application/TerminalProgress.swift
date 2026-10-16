@@ -1,8 +1,11 @@
 /// Controls the terminal emulator's single native progress indicator, not a layout view.
 @MainActor
 public final class TerminalProgress {
+    /// An explicit request for the terminal-native progress indicator.
     public enum State: Sendable {
+        /// Hides explicit progress; active scoped operations may still show the indicator.
         case hidden
+        /// Shows ongoing activity without a completion percentage.
         case indeterminate
     }
 

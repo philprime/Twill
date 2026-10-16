@@ -1,5 +1,6 @@
 /// Keeps dynamic children typed until their stable IDs enter the mounted tree.
 public struct ForEach<Data: RandomAccessCollection, ID: Hashable, Content: View>: View {
+    /// Primitive content rendered directly by the runtime rather than through a composed body.
     public typealias Body = Never
     private let data: Data
     private let id: KeyPath<Data.Element, ID>

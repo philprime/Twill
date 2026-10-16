@@ -6,6 +6,8 @@ public struct FormField<Content: View>: View {
     private let validationMessage: String?
     private let content: Content
 
+    /// Creates a labeled field with optional help and validation text.
+    /// The caller owns validation; a message does not disable the supplied control.
     public init(
         _ title: String, help: String? = nil, validationMessage: String? = nil,
         @ViewBuilder content: () -> Content
@@ -16,6 +18,7 @@ public struct FormField<Content: View>: View {
         self.content = content()
     }
 
+    /// The label, control, help text, and red validation message in display order.
     public var body: some View {
         VStack(alignment: .leading) {
             Text(title)

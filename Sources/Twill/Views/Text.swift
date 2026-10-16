@@ -1,8 +1,10 @@
 /// Single-line text measured and drawn in terminal cells. Control characters are replaced with spaces.
 public struct Text: View {
+    /// Primitive content rendered directly by the runtime rather than through a composed body.
     public typealias Body = Never
     private let content: String
 
+    /// Creates terminal text from the supplied string.
     public init(_ content: String) {
         self.content = content
     }

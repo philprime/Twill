@@ -13,6 +13,7 @@ extension View {
         }
     }
 
+    /// Presents choices without a message, initially focusing cancellation. Each action dismisses the dialog.
     public func confirmationDialog<Actions: View>(
         _ title: String, isPresented: Binding<Bool>,
         @ViewBuilder actions: @escaping @MainActor () -> Actions

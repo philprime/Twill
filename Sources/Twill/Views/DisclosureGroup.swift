@@ -3,11 +3,14 @@
 /// Collapsed content is unmounted. Keep values that must survive collapse in an
 /// ancestor and pass them into the content through bindings.
 public struct DisclosureGroup<Label: View, Content: View>: View {
+    /// Primitive content rendered directly by the runtime rather than through a composed body.
     public typealias Body = Never
     private let isExpanded: Binding<Bool>
     private let content: @MainActor () -> Content
     private let label: Label
 
+    /// Creates a disclosure control with a custom label and externally owned expansion state.
+    /// The content closure supplies children while expanded.
     public init(
         isExpanded: Binding<Bool>, @ViewBuilder content: @escaping @MainActor () -> Content,
         @ViewBuilder label: () -> Label
@@ -37,6 +40,7 @@ public struct DisclosureGroup<Label: View, Content: View>: View {
 }
 
 extension DisclosureGroup where Label == Text {
+    /// Creates a text-labeled disclosure control using the supplied expansion binding.
     public init(
         _ title: String, isExpanded: Binding<Bool>, @ViewBuilder content: @escaping @MainActor () -> Content
     ) {

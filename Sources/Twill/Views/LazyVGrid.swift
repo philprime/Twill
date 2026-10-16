@@ -1,5 +1,6 @@
 /// Arranges views in rows using the supplied column descriptions.
 public struct LazyVGrid<Content: View>: View {
+    /// Primitive content rendered directly by the runtime rather than through a composed body.
     public typealias Body = Never
     private let content: Content
     private let columns: [GridItem]

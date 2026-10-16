@@ -2,8 +2,10 @@
 public enum SpinnerStyle: Sendable {
     /// A nonempty sequence of visible, single-cell animation frames.
     public struct Frames: Sendable {
+        /// The ordered characters cycled through by the spinner.
         public let characters: [Character]
 
+        /// Creates animation frames. The sequence must be nonempty and contain only visible single-cell characters.
         public init(_ characters: [Character]) {
             precondition(
                 !characters.isEmpty
@@ -26,6 +28,7 @@ public enum SpinnerStyle: Sendable {
     case arc
     /// A rotating ASCII line for terminals with limited glyph support.
     case line
+    /// Cycles through a caller-supplied, validated sequence of frames.
     case custom(Frames)
 
     var frames: [Character] {

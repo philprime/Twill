@@ -1,12 +1,14 @@
 /// A field that accepts text whenever focused. The binding owns its value;
 /// the mounted control retains its insertion point.
 public struct TextField: View {
+    /// Primitive content rendered directly by the runtime rather than through a composed body.
     public typealias Body = Never
     @State private var caret: Int?
     private let prompt: String
     private let text: Binding<String>
     private let isSecure: Bool
 
+    /// Creates a single-line editor with bound text and a prompt displayed while the value is empty.
     public init(_ prompt: String, text: Binding<String>) {
         self.init(prompt, text: text, isSecure: false)
     }

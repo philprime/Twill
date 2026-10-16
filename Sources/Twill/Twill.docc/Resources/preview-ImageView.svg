@@ -1,0 +1,38 @@
+<!-- dprint-ignore-file -->
+<svg xmlns="http://www.w3.org/2000/svg" width="112" height="112" viewBox="0 0 112 112" role="img" aria-labelledby="title">
+<title id="title">ImageView</title>
+<rect width="100%" height="100%" rx="8" fill="#161b22"/>
+<rect x="16" y="16" width="10" height="20" fill="#161b22"/>
+<rect x="26" y="16" width="10" height="20" fill="#161b22"/>
+<rect x="36" y="16" width="10" height="20" fill="#161b22"/>
+<rect x="46" y="16" width="10" height="20" fill="#161b22"/>
+<rect x="56" y="16" width="10" height="20" fill="#161b22"/>
+<rect x="66" y="16" width="10" height="20" fill="#161b22"/>
+<rect x="76" y="16" width="10" height="20" fill="#161b22"/>
+<rect x="86" y="16" width="10" height="20" fill="#161b22"/>
+<rect x="16" y="36" width="10" height="20" fill="#161b22"/>
+<rect x="26" y="36" width="10" height="20" fill="#161b22"/>
+<rect x="36" y="36" width="10" height="20" fill="#161b22"/>
+<rect x="46" y="36" width="10" height="20" fill="#161b22"/>
+<rect x="56" y="36" width="10" height="20" fill="#161b22"/>
+<rect x="66" y="36" width="10" height="20" fill="#161b22"/>
+<rect x="76" y="36" width="10" height="20" fill="#161b22"/>
+<rect x="86" y="36" width="10" height="20" fill="#161b22"/>
+<rect x="16" y="56" width="10" height="20" fill="#161b22"/>
+<rect x="26" y="56" width="10" height="20" fill="#161b22"/>
+<rect x="36" y="56" width="10" height="20" fill="#161b22"/>
+<rect x="46" y="56" width="10" height="20" fill="#161b22"/>
+<rect x="56" y="56" width="10" height="20" fill="#161b22"/>
+<rect x="66" y="56" width="10" height="20" fill="#161b22"/>
+<rect x="76" y="56" width="10" height="20" fill="#161b22"/>
+<rect x="86" y="56" width="10" height="20" fill="#161b22"/>
+<rect x="16" y="76" width="10" height="20" fill="#161b22"/>
+<rect x="26" y="76" width="10" height="20" fill="#161b22"/>
+<rect x="36" y="76" width="10" height="20" fill="#161b22"/>
+<rect x="46" y="76" width="10" height="20" fill="#161b22"/>
+<rect x="56" y="76" width="10" height="20" fill="#161b22"/>
+<rect x="66" y="76" width="10" height="20" fill="#161b22"/>
+<rect x="76" y="76" width="10" height="20" fill="#161b22"/>
+<rect x="86" y="76" width="10" height="20" fill="#161b22"/>
+<image x="16" y="16" width="80" height="80" preserveAspectRatio="none" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAQCAIAAAD4YuoOAAAAL0lEQVR4nGMI23YIjv6nMcARtcSpZtAwtoAWhiKLj1pA2IKhn4qGvgVDPxUNeQsAwo0zLiJrTHEAAAAASUVORK5CYII="/>
+</svg>

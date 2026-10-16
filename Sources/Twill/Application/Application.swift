@@ -22,6 +22,8 @@ public final class Application {
     private var runtimeError: Error?
     private var isStopping = false
 
+    /// Creates an application with a root view and injected runtime collaborators.
+    /// When no keyboard source is supplied, input is read from the session’s borrowed descriptor.
     public init(
         rootView: any View,
         runLoop: RunLoop = DefaultRunLoop(),
@@ -47,6 +49,7 @@ public final class Application {
         terminalProgress.onError = { [weak self] error in self?.fail(error) }
     }
 
+    /// Requests shutdown of application work. The running lifecycle joins owned work before restoring terminal modes.
     public func stop() {
         isStopping = true
         terminalProgress.stop()

@@ -1,15 +1,20 @@
 import Dispatch
 
 #if TESTING
+    /// A replaceable source that decodes terminal bytes into keys on the UI actor.
     @MainActor
     public protocol KeyboardEventSource: AnyObject, Sendable {
+        /// The synchronous handler for each decoded key.
         var onKeyEvent: (@MainActor (KeyEvent) -> Void)? { get set }
+        /// Delivers keys until input ends, shutdown is requested, or the task is cancelled; awaits reader cleanup.
         func run() async throws
+        /// Requests shutdown and wakes an idle input consumer.
         func stop()
     }
 
     extension DefaultKeyboardEventSource: KeyboardEventSource {}
 #else
+    /// The concrete terminal key decoder used by an application.
     public typealias KeyboardEventSource = DefaultKeyboardEventSource
 #endif
 
@@ -22,6 +27,7 @@ import Dispatch
 public final class DefaultKeyboardEventSource {
     private static let escapeTimeout: DispatchTimeInterval = .milliseconds(50)
 
+    /// The synchronous UI-actor handler invoked for each decoded key.
     public var onKeyEvent: (@MainActor (KeyEvent) -> Void)?
     private let inputSource: InputSource
     private let runLoop: RunLoop
@@ -29,6 +35,7 @@ public final class DefaultKeyboardEventSource {
     private var escapeGeneration = 0
     private var isStopped = false
 
+    /// Creates a decoder using the supplied byte source and run loop for Escape disambiguation.
     public init(inputSource: InputSource, runLoop: RunLoop) {
         self.inputSource = inputSource
         self.runLoop = runLoop

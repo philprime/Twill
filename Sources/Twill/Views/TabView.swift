@@ -6,10 +6,12 @@
 /// An absent selection displays the first tab without changing the binding.
 /// Inactive contents retain their tasks and timeline schedules.
 public struct TabView<SelectionValue: Hashable, Content: View>: View {
+    /// Primitive content rendered directly by the runtime rather than through a composed body.
     public typealias Body = Never
     private let selection: Binding<SelectionValue>
     private let content: Content
 
+    /// Creates a tab container whose active tab is controlled by the supplied selection binding.
     public init(selection: Binding<SelectionValue>, @ViewBuilder content: () -> Content) {
         self.selection = selection
         self.content = content()

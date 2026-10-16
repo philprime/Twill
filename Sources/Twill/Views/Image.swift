@@ -2,10 +2,16 @@ import Foundation
 
 /// Immutable PNG data. File loading belongs to the caller, not view evaluation.
 public struct Image: Sendable, Equatable {
-    public enum InvalidImage: Error { case invalidPNG }
+    /// Errors raised when PNG header validation fails.
+    public enum InvalidImage: Error {
+        /// The data lacks a supported PNG header or valid positive dimensions.
+        case invalidPNG
+    }
 
     let data: Data
+    /// The positive image width read from the PNG header, in pixels.
     public let pixelWidth: Int
+    /// The positive image height read from the PNG header, in pixels.
     public let pixelHeight: Int
 
     /// Checks the PNG signature and dimensions. Pixel decoding is delegated to the terminal.

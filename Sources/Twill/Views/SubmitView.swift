@@ -1,5 +1,6 @@
 /// Handles submission from a focused text field within this view.
 public struct SubmitView<Content: View>: View {
+    /// Primitive content rendered directly by the runtime rather than through a composed body.
     public typealias Body = Never
     private let content: Content
     private let action: @MainActor () -> Void
@@ -11,6 +12,7 @@ public struct SubmitView<Content: View>: View {
 }
 
 extension View {
+    /// Runs an action when submission bubbles from a descendant control, such as Enter in a text field.
     public func onSubmit(_ action: @escaping @MainActor () -> Void) -> SubmitView<Self> {
         SubmitView(content: self, action: action)
     }

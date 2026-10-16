@@ -1,15 +1,24 @@
 import Dispatch
 
 #if TESTING
+    /// A replaceable coordinator for UI-actor source actions and logical timers.
     @MainActor
     public protocol RunLoop: AnyObject {
+        /// Queues a logical timer for registration.
         func add(_ timer: Timer)
+        /// Permanently cancels the timer and suppresses future delivery.
         func cancel(_ timer: Timer)
+        /// Registers a source and returns its thread-safe readiness-signaling capability.
         @discardableResult func add(_ source: RunLoopSource) -> RunLoopSourceRegistration
+        /// Marks a registered source ready, coalescing repeated pending signals.
         func signal(_ source: RunLoopSource)
+        /// Clears pending source readiness without invoking its action.
         func consume(_ source: RunLoopSource)
+        /// Removes a source and deactivates its registration capability.
         func remove(_ source: RunLoopSource)
+        /// Permanently stops delivery and deactivates registrations.
         func stop()
+        /// Delivers ready work until stopped or cancelled, suspending while idle.
         func run() async
     }
 

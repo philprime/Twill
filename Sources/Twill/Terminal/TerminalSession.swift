@@ -8,16 +8,23 @@
     /// Owns borrowed input modes and presentation modes, but not input readers or rendering.
     @MainActor
     public protocol TerminalSession: AnyObject {
+        /// The borrowed input descriptor whose terminal attributes are managed.
         var fileDescriptor: FileDescriptor { get }
+        /// The destination for terminal mode and presentation commands.
         var output: TerminalOutput { get }
+        /// Saves inherited attributes and enables immediate, unechoed terminal input.
         func start() throws
+        /// Acquires cursor and screen modes for the selected presentation mode.
         func beginPresentation(mode: Application.Options.UIOptions.Mode) throws
+        /// Shows or clears terminal-native indeterminate progress.
         func setProgress(active: Bool) throws
+        /// Restores borrowed terminal modes on a best-effort basis.
         func restore()
     }
 
     extension DefaultTerminalSession: TerminalSession {}
 #else
+    /// The concrete manager of borrowed input and presentation modes.
     public typealias TerminalSession = DefaultTerminalSession
 #endif
 
@@ -47,13 +54,16 @@ public final class DefaultTerminalSession {
     private static let activeProgress = "\u{1B}]9;4;3\u{7}"
     private static let clearProgress = "\u{1B}]9;4;0\u{7}"
 
+    /// The borrowed input descriptor whose attributes are saved and restored.
     public let fileDescriptor: FileDescriptor
+    /// The destination used for cursor, screen, and progress commands.
     public let output: TerminalOutput
     private var original: termios?
     private var needsCursorRestore = false
     private var needsScreenRestore = false
     private var needsProgressClear = false
 
+    /// Creates a session that borrows the input descriptor and writes mode commands through the supplied output.
     public init(fileDescriptor: FileDescriptor = .standardInput, output: TerminalOutput = DefaultTerminalOutput()) {
         self.fileDescriptor = fileDescriptor
         self.output = output
@@ -71,6 +81,7 @@ public final class DefaultTerminalSession {
         try output.write(Self.hideCursor)
     }
 
+    /// Saves inherited terminal attributes and enables raw input while preserving inherited output processing.
     public func start() throws {
         var saved = termios()
         guard tcgetattr(fileDescriptor.rawValue, &saved) == 0 else {
@@ -116,6 +127,7 @@ public final class DefaultTerminalSession {
         }
     }
 
+    /// Restores progress, screen, cursor visibility, and saved input attributes on a best-effort basis.
     public func restore() {
         if needsProgressClear {
             try? output.write(Self.clearProgress)

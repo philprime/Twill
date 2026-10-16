@@ -5,6 +5,7 @@ public struct PeriodicTimelineSchedule: Sendable, Equatable {
     let start: Date
     let interval: TimeInterval
 
+    /// Creates a schedule anchored to a finite start date with a positive, finite interval in seconds.
     public static func periodic(from start: Date, by interval: TimeInterval) -> Self {
         precondition(start.timeIntervalSinceReferenceDate.isFinite, "Timeline start must be finite")
         precondition(interval.isFinite && interval > 0, "Timeline interval must be positive and finite")

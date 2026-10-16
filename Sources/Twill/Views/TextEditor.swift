@@ -5,11 +5,13 @@
 /// lines scroll horizontally without soft wrapping. Focus changes retain the
 /// insertion point. The terminal host alone presents the hardware cursor.
 public struct TextEditor: View {
+    /// Primitive content rendered directly by the runtime rather than through a composed body.
     public typealias Body = Never
     @State private var caret: Int?
     @State private var preferredColumn: Int?
     private let text: Binding<String>
 
+    /// Creates a multiline editor whose text is owned by the supplied binding.
     public init(text: Binding<String>) {
         self.text = text
     }

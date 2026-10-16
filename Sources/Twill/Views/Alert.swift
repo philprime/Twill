@@ -12,6 +12,7 @@ extension View {
         }
     }
 
+    /// Presents an alert without a message. Actions dismiss it after running; Escape cancels or dismisses.
     public func alert<Actions: View>(
         _ title: String, isPresented: Binding<Bool>,
         @ViewBuilder actions: @escaping @MainActor () -> Actions

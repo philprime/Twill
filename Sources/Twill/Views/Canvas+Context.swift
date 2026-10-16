@@ -4,6 +4,7 @@ extension Canvas {
     /// The short-lived drawing surface for one presentation. Do not retain it after rendering.
     @MainActor
     public final class Context {
+        /// The presentation date shared by drawing operations in this context.
         public let date: Date
         var drawing: DrawingContext
 
@@ -12,6 +13,8 @@ extension Canvas {
             self.drawing = drawing
         }
 
+        /// Draws a character at zero-based cell coordinates within the canvas.
+        /// Control and format characters become spaces; leading combining marks gain a dotted-circle base.
         public func draw(
             _ character: Character, column: Int, row: Int,
             foreground: Color? = nil, background: Color? = nil
@@ -31,6 +34,8 @@ extension Canvas {
                 foreground: foreground, background: background)
         }
 
+        /// Draws the set cells of a buffer at the given origin, leaving unset cells untouched.
+        /// Characters that extend beyond the buffer's right edge are skipped.
         public func render(_ buffer: Canvas.Buffer, column: Int = 0, row: Int = 0) {
             for bufferRow in 0..<buffer.size.height {
                 for bufferColumn in 0..<buffer.size.width {

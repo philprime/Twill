@@ -1,10 +1,14 @@
 import Dispatch
 
 #if TESTING
+    /// A replaceable physical timer used to wake the logical run-loop scheduler.
     @MainActor
     public protocol RunLoopTimerBackend: AnyObject {
+        /// Replaces the pending wake-up deadline and callback.
         func schedule(deadline: DispatchTime, action: @escaping @Sendable () -> Void)
+        /// Clears the pending wake-up while leaving the backend available for later scheduling.
         func disarm()
+        /// Permanently cancels the backend and releases its pending callback.
         func stop()
     }
 

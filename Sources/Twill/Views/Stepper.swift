@@ -27,6 +27,7 @@ public struct Stepper<Value: FixedWidthInteger, Label: View>: View {
         self.label = label
     }
 
+    /// The label and value with availability markers and Left/Right adjustment handling.
     public var body: some View {
         HStack(spacing: 1) {
             Text(value.wrappedValue > bounds.lowerBound ? "[-]" : "(-)")
@@ -55,6 +56,7 @@ public struct Stepper<Value: FixedWidthInteger, Label: View>: View {
 }
 
 extension Stepper where Label == Text {
+    /// Creates a text-labeled integer stepper with a positive step and optional inclusive bounds.
     public init(
         _ title: String, value: Binding<Value>, in bounds: ClosedRange<Value> = Value.min...Value.max, step: Value = 1
     ) {

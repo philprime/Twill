@@ -23,6 +23,7 @@ public struct Picker<SelectionValue: Hashable, OptionLabel: View>: View {
         options.firstIndex(of: selection.wrappedValue) ?? options.indices.first
     }
 
+    /// The labeled choices, selection marker, and keyboard adjustment handler.
     public var body: some View {
         let selected = selectedIndex.map { options[$0] }
         return HStack {

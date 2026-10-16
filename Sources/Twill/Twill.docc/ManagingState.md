@@ -1,0 +1,46 @@
+# Managing State
+
+Keep values alive with mounted view identity and share mutations through bindings.
+
+## Overview
+
+View values are descriptions that can be recreated. Twill retains ``State`` storage in the mounted hierarchy, not in each new copy of a description. The initial value is used when the owner first mounts. Later descriptions with the same identity reuse that storage.
+
+## Share a Value with a Control
+
+Declare `@State` in the view that owns a value. Pass its projected value, prefixed with `$`, to a control that edits it:
+
+```swift
+struct Preferences: View {
+    @State private var name = "Taylor"
+    @State private var notifications = true
+
+    var body: some View {
+        VStack {
+            TextField("Name", text: $name)
+            Toggle("Notifications", isOn: $notifications)
+            Text("Hello, \(name)")
+        }
+    }
+}
+```
+
+A ``Binding`` reads and writes the owner's value. It does not create independent storage or extend the owner's lifetime. A write requests presentation internally. Multiple writes can be coalesced, and unchanged output does not cause another terminal frame to be written.
+
+Use bindings for shared mutable values and action closures for commands. A child can declare `@Binding var name: String` to receive a value owned by an ancestor.
+
+## Preserve Identity
+
+For ordinary composition, structural position and concrete view type determine mounted identity. Replacing a type or switching a conditional branch replaces the affected subtree. Removing a view releases its state. Mounting it again starts from its initial values.
+
+Use ``ForEach`` with stable, unique element identifiers for dynamic collections. Reordering elements then preserves state for the identifiers that remain mounted. Do not use an index as identity when insertion or reordering changes which logical element occupies it.
+
+Keep state in a persistent ancestor when it must survive removal of a child. In particular, collapsed disclosure content is unmounted. A hidden tab destination, in contrast, remains mounted and retains its state.
+
+## Separate Selection from Focus
+
+Selection identifies an item within a collection. Focus identifies the control receiving keyboard input. Store selection in an ancestor if it needs to survive navigation. A selected row can remain visibly selected even when focus moves to another control.
+
+When a collection's bound selection is absent, the first visible item is the effective selection without rewriting the binding. User selection then updates the bound value. Empty collections have no activation target.
+
+See <doc:KeyboardInteraction> for focus routing and <doc:ScheduledWork> for work owned by a mounted view.
