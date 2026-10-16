@@ -1,3 +1,4 @@
+import Foundation
 import Twill
 
 struct NoteEditorView: View {
@@ -9,19 +10,25 @@ struct NoteEditorView: View {
     let onCancel: @MainActor () -> Void
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 1) {
-            Text(heading)
-                .foregroundStyle(NotesPalette.accent)
-            Text("Title (required)")
-            ScrollView {
-                TextField("Title", text: $title)
+        Form {
+            FormSection(heading) {
+                FormField(
+                    "Title", help: "A title is required to save.",
+                    validationMessage: title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                        ? "Enter a title." : nil
+                ) {
+                    ScrollView {
+                        TextField("Title", text: $title)
+                    }
+                    .frame(height: 1)
+                    .border(.single, color: NotesPalette.border)
+                }
+                FormField("Body") {
+                    TextEditor(text: $noteText)
+                        .frame(height: 6)
+                        .border(.single, color: NotesPalette.border)
+                }
             }
-            .frame(height: 1)
-            .border(.single, color: NotesPalette.border)
-            Text("Body")
-            TextEditor(text: $noteText)
-                .frame(height: 6)
-                .border(.single, color: NotesPalette.border)
             ScrollView {
                 VStack(alignment: .leading) {
                     Button(saveLabel, action: onSave)
