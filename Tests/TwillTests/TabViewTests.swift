@@ -191,6 +191,31 @@ struct TabViewTests {
         #expect(selection?.wrappedValue == 2)
     }
 
+    @Test("Destination wrappers participate in layout and drawing without exposing inactive tabs")
+    func destinationModifiers() throws {
+        // -- Arrange --
+        var selection = 0
+        let renderer = ViewRenderer.make(
+            TabView(selection: Binding(get: { selection }, set: { selection = $0 })) {
+                Tab("A", value: 0) { Text("X") }
+                    .padding(1)
+                    .frame(width: 5, height: 3, alignment: .leading)
+                    .foregroundStyle(Color.red)
+                    .backgroundStyle(Color.blue)
+                Tab("B", value: 1) { Text("Hidden") }.frame(width: 50, height: 20)
+            })
+
+        // -- Act --
+        let frame = try #require(renderer.render(.now).grid)
+
+        // -- Assert --
+        #expect(frame.size == CellSize(width: 5, height: 4))
+        #expect(frame[1, 2] == .glyph("X", width: 1))
+        #expect(frame.foreground(column: 1, row: 2) == .red)
+        #expect(frame.background(column: 0, row: 1) == .blue)
+        #expect(frame.foreground(column: 0, row: 0) == nil)
+    }
+
     @Test("The tab bar marks the bound selection and renders only that tab")
     func visibleSelection() throws {
         // -- Arrange --

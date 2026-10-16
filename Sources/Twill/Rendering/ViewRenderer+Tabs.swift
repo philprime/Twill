@@ -68,7 +68,7 @@ extension ViewRenderer {
 
     func measureTabs(_ proposal: ProposedCellSize) -> CellSize {
         let bar = tabBar.sizeThatFits(.unspecified)
-        let content = activeTab
+        let content = children.first
         let size =
             content?.measure(
                 ProposedCellSize(width: proposal.width, height: proposal.height.map { max(0, $0 - 1) })) ?? .zero

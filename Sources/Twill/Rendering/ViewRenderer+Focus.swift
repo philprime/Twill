@@ -215,7 +215,10 @@ extension ViewRenderer {
         var ancestor = target
         var pane: ViewRenderer?
         while let node = ancestor {
-            if case .scroll = node.description { pane = node }
+            switch node.description {
+            case .scroll, .textEditor: pane = node
+            default: break
+            }
             if case .tab = node.description {
                 node.focusedNode = target
                 node.activePane = pane

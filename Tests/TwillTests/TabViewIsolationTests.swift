@@ -174,6 +174,47 @@ struct TabViewIsolationTests {
         #expect(activated == ["B2"])
     }
 
+    private struct EditorPaneTabs: View {
+        @State private var selection = 0
+        @State private var text = ""
+        let capture: (Binding<String>) -> Void
+
+        var body: some View {
+            capture($text)
+            return TabView(selection: $selection) {
+                Tab("First", value: 0) {
+                    HStack {
+                        ScrollView { Button("Navigation") {} }.frame(height: 2)
+                        TextEditor(text: $text).frame(width: 8, height: 2)
+                    }
+                }
+                Tab("Second", value: 1) { Button("Other") {} }
+            }
+        }
+    }
+
+    @Test("Switching tabs restores a TextEditor after a different scroll pane")
+    func editorPaneRestoration() {
+        // -- Arrange --
+        var text: Binding<String>?
+        let renderer = ViewRenderer.make(EditorPaneTabs { text = $0 })
+        _ = renderer.render(.now)
+        _ = renderer.handle(.tab)
+        _ = renderer.handle(.a)
+        _ = renderer.render(.now)
+
+        // -- Act --
+        _ = renderer.handle(KeyEvent(.pageDown, modifiers: .control))
+        _ = renderer.render(.now)
+        _ = renderer.handle(KeyEvent(.pageUp, modifiers: .control))
+        _ = renderer.render(.now)
+        _ = renderer.handle(.b)
+        _ = renderer.render(.now)
+
+        // -- Assert --
+        #expect(text?.wrappedValue == "ab")
+    }
+
     private struct SheetTabs: View {
         @State private var selection = 0
         @State private var presented = true
