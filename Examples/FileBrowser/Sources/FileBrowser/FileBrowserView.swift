@@ -5,6 +5,7 @@ struct FileBrowserView: View {
     @State private var directory: URL
     @State private var entries: [FileEntry] = []
     @State private var selectedID: FileEntry.ID?
+    @State private var sortOrder = [KeyPathComparator(\FileEntry.kind), KeyPathComparator(\FileEntry.name)]
     @State private var showHidden = false
     @State private var message = ""
     @State private var preview: FilePreview?
@@ -37,7 +38,7 @@ struct FileBrowserView: View {
                     }
             } else {
                 ForEach([directory.path], id: \.self) { _ in
-                    directoryList
+                    directoryTable
                 }
                 ScrollView {
                     Toggle(
@@ -54,7 +55,7 @@ struct FileBrowserView: View {
             Text(
                 message.isEmpty
                     ? "h: parent  j/k: select  l/Enter: open  gg/G: first/last  .: hidden  "
-                        + "Tab: pane  Space: toggle  r: reload  q: quit" : message
+                        + "↑ at first: headers  ←/→ Enter: sort  Tab: pane  Space: toggle  r: reload  q: quit" : message
             )
             .frame(maxWidth: .infinity, alignment: .leading)
         }
@@ -62,12 +63,20 @@ struct FileBrowserView: View {
         .task { reload() }
     }
 
-    private var directoryList: some View {
+    private var directoryTable: some View {
         VStack(alignment: .leading) {
             if entries.isEmpty { Text("(empty directory)") }
-            List(entries, selection: $selectedID) { entry in
-                let suffix = entry.isDirectory ? "/" : ""
-                Text("\(entry.url.lastPathComponent)\(suffix)")
+            Table(
+                entries, selection: $selectedID,
+                sortOrder: Binding(
+                    get: { sortOrder },
+                    set: {
+                        sortOrder = $0
+                        entries.sort(using: $0)
+                    })
+            ) {
+                TableColumn("Name", value: \.name)
+                TableColumn("Kind", value: \.kind)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             .onSubmit { openSelection() }
@@ -95,7 +104,7 @@ struct FileBrowserView: View {
 
     private func reload(selecting url: URL? = nil) {
         do {
-            let loaded = try FileEntry.contents(of: directory, showHidden: showHidden)
+            let loaded = try FileEntry.contents(of: directory, showHidden: showHidden).sorted(using: sortOrder)
             entries = loaded
             selected = url.flatMap { target in loaded.firstIndex { $0.url == target } } ?? 0
             message = ""
@@ -120,7 +129,7 @@ struct FileBrowserView: View {
         if entry.isDirectory {
             // Leave the current directory usable if the destination is unreadable.
             do {
-                let loaded = try FileEntry.contents(of: entry.url, showHidden: showHidden)
+                let loaded = try FileEntry.contents(of: entry.url, showHidden: showHidden).sorted(using: sortOrder)
                 directory = entry.url
                 entries = loaded
                 selected = 0

@@ -3,6 +3,8 @@ import Twill
 
 struct FileEntry: Identifiable {
     var id: String { url.path }
+    var name: String { url.lastPathComponent }
+    var kind: String { isDirectory ? "Directory" : "File" }
     let url: URL
     let isDirectory: Bool
 

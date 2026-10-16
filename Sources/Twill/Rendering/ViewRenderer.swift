@@ -39,6 +39,7 @@ final class ViewRenderer {
     private var timeline: TimelineState?
     private var canvasDate: Date?
     var placements: [(node: ViewRenderer, bounds: CellRect)] = []
+    var tableColumnWidths: [Int] = []
     var measuredSize = CellSize.zero
     private var nextUpdate: Date?
 
