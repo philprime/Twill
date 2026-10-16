@@ -30,7 +30,14 @@ docs hosting-base-path="" *args:
     set -euo pipefail
     just docs-previews
     swift package --scratch-path .build/documentation-build dump-symbol-graph --minimum-access-level public --emit-extension-block-symbols
-    xcrun docc convert Sources/Twill/Twill.docc --additional-symbol-graph-dir .build/documentation-build/out/symbolgraph --fallback-display-name Twill --fallback-bundle-identifier Twill --fallback-default-module-kind Library --warnings-as-errors --transform-for-static-hosting --hosting-base-path "$1" --output-path .build/documentation "${@:2}"
+    # SwiftPM also emits executable modules. Give this catalog only the SDK's graphs
+    # so unqualified symbol extensions resolve within Twill rather than a multi-module bundle.
+    symbol_graph_dir="$(mktemp -d)"
+    trap 'rm -rf "$symbol_graph_dir"' EXIT
+    shopt -s nullglob
+    symbol_graphs=(.build/documentation-build/out/symbolgraph/Twill.symbols.json .build/documentation-build/out/symbolgraph/Twill@*.symbols.json)
+    cp "${symbol_graphs[@]}" "$symbol_graph_dir/"
+    xcrun docc convert Sources/Twill/Twill.docc --additional-symbol-graph-dir "$symbol_graph_dir" --fallback-display-name Twill --fallback-bundle-identifier Twill --fallback-default-module-kind Library --warnings-as-errors --transform-for-static-hosting --hosting-base-path "$1" --output-path .build/documentation "${@:2}"
     # DocC keeps module pages under /documentation; the site root is only an entry point.
     printf '%s\n' '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta http-equiv="refresh" content="0; url=./documentation/twill/"><title>Twill Documentation</title></head><body><a href="./documentation/twill/">Twill Documentation</a></body></html>' > .build/documentation/index.html
 
