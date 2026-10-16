@@ -60,7 +60,7 @@ struct ClockView: View {
 }
 ```
 
-`ClockView` describes the screen. `TimelineView` requests updates on its schedule, while `Application` owns the terminal session and runs until it stops. The runnable version lives in [`Examples/Clock`](Examples/Clock).
+`ClockView` describes the screen. `TimelineView` requests updates on its schedule, while `Application` owns the terminal session and runs until it stops. The runnable version lives in [`Examples/Sources/Clock`](Examples/Sources/Clock).
 
 ## Explore further
 
