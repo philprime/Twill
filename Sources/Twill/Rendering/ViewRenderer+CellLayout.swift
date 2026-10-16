@@ -7,6 +7,10 @@ extension ViewRenderer {
             return [self]
         case .group(_, .some), .styled, .border, .scroll:
             return children.flatMap(\.layoutItems).isEmpty ? [] : [self]
+        case .tabs:
+            return hasTabBar ? [self] : []
+        case .tab where !isActiveTab:
+            return []
         case .sheet:
             return sheetBranch?.layoutItems ?? []
         default:
@@ -22,7 +26,7 @@ extension ViewRenderer {
             if case .cells = frame.maxWidth { return false }
             if frame.fillsWidth { return true }
         }
-        return children.contains { $0.wantsFillWidth }
+        return activeChildren.contains { $0.wantsFillWidth }
     }
 
     private var wantsFillHeight: Bool {
@@ -33,10 +37,11 @@ extension ViewRenderer {
             if case .cells = frame.maxHeight { return false }
             if frame.fillsHeight { return true }
         }
-        return children.contains { $0.wantsFillHeight }
+        return activeChildren.contains { $0.wantsFillHeight }
     }
 
     func measure(_ proposal: ProposedCellSize) -> CellSize {
+        if case .tabs = description { return measureTabs(proposal) }
         if let drawing {
             measuredSize = drawing.sizeThatFits(proposal)
             return measuredSize

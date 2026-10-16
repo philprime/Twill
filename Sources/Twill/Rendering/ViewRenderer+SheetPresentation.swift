@@ -11,7 +11,7 @@ extension ViewRenderer {
             guard let branch = sheetBranch else { return nil }
             return branch.activeSheet() ?? (isPresented.wrappedValue ? self : nil)
         }
-        for child in children.reversed() {
+        for child in activeChildren.reversed() {
             if let sheet = child.activeSheet() { return sheet }
         }
         return nil

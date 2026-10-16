@@ -12,6 +12,8 @@ enum ViewDescription {
     case drawing(any PrimitiveDrawing)
     case canvas(interval: TimeInterval?, render: @MainActor (Canvas.Context, Canvas.Size) -> Void)
     case textField(TextFieldDescription)
+    case tab(any View, title: String, value: AnyHashable)
+    case tabs(any View, selection: Binding<AnyHashable>)
     case body(any View)
     case group(children: [any View], layout: (any PrimitiveLayout)?)
     case keyed(children: [(id: AnyHashable, view: any View)])

@@ -1,0 +1,155 @@
+import Testing
+
+@testable import Twill
+
+@Suite("Tab view isolation")
+@MainActor
+struct TabViewIsolationTests {
+    private struct EditingTabs: View {
+        @State private var selection = 0
+        @State private var firstText = ""
+        @State private var secondText = ""
+        @FocusState private var secondFocused = true
+        let capture: (Binding<String>, Binding<String>) -> Void
+
+        var body: some View {
+            capture($firstText, $secondText)
+            return TabView(selection: $selection) {
+                Tab("First", value: 0) { TextField("First field", text: $firstText) }
+                Tab("Second", value: 1) {
+                    TextField("Second field", text: $secondText).focused($secondFocused)
+                }
+                .focused($secondFocused)
+            }
+        }
+    }
+
+    @Test("Hidden focus requests cannot steal typing and editing survives tab switches")
+    func editingIsolation() throws {
+        // -- Arrange --
+        var first: Binding<String>?
+        var second: Binding<String>?
+        let renderer = ViewRenderer.make(
+            EditingTabs {
+                first = $0
+                second = $1
+            })
+        _ = renderer.render(.now)
+        _ = renderer.handle(.arrowDown)
+
+        // -- Act --
+        _ = renderer.handle(.a)
+        _ = renderer.render(.now)
+        _ = renderer.handle(KeyEvent(.pageDown, modifiers: .control))
+        _ = renderer.render(.now)
+        _ = renderer.handle(.b)
+        _ = renderer.render(.now)
+        _ = renderer.handle(KeyEvent(.pageUp, modifiers: .control))
+        let restored = try #require(renderer.render(.now).grid)
+        _ = renderer.handle(.c)
+        _ = renderer.render(.now)
+
+        // -- Assert --
+        #expect(first?.wrappedValue == "ac")
+        #expect(second?.wrappedValue == "b")
+        #expect(restored.isFocused(column: 0, row: 1))
+        #expect(renderer.caretPosition == CellPosition(column: 2, row: 1))
+    }
+
+    private struct PanePage: View {
+        let activate: (String) -> Void
+
+        var body: some View {
+            HStack {
+                ScrollView {
+                    VStack {
+                        Button("A1") { activate("A1") }
+                        Button("A2") { activate("A2") }
+                    }
+                }.frame(height: 2)
+                ScrollView {
+                    VStack {
+                        Button("B1") { activate("B1") }
+                        Button("B2") { activate("B2") }
+                    }
+                }.frame(height: 2)
+            }
+        }
+    }
+
+    private struct PaneTabs: View {
+        @State private var selection = 0
+        let activate: (String) -> Void
+
+        var body: some View {
+            TabView(selection: $selection) {
+                Tab("First", value: 0) { PanePage(activate: activate) }
+                Tab("Second", value: 1) { Button("Other") {} }
+            }
+        }
+    }
+
+    @Test("Switching back restores the active pane and its focused descendant")
+    func paneRestoration() {
+        // -- Arrange --
+        var activated: [String] = []
+        let renderer = ViewRenderer.make(PaneTabs { activated.append($0) })
+        _ = renderer.render(.now)
+        _ = renderer.handle(.tab)
+        _ = renderer.handle(.arrowDown)
+
+        // -- Act --
+        _ = renderer.handle(KeyEvent(.pageDown, modifiers: .control))
+        _ = renderer.render(.now)
+        _ = renderer.handle(KeyEvent(.pageUp, modifiers: .control))
+        _ = renderer.render(.now)
+        _ = renderer.handle(.enter)
+
+        // -- Assert --
+        #expect(activated == ["B2"])
+    }
+
+    private struct SheetTabs: View {
+        @State private var selection = 0
+        @State private var presented = true
+        let capture: (Binding<Int>) -> Void
+        let sheetKey: (KeyEvent) -> Void
+
+        var body: some View {
+            capture($selection)
+            return TabView(selection: $selection) {
+                Tab("First", value: 0) { Button("Base") {} }
+                Tab("Second", value: 1) {
+                    Text("Other").sheet(isPresented: $presented) {
+                        Text("Modal").focusable().onKeyPress { key in
+                            sheetKey(key)
+                            return .ignored
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    @Test("Inactive sheets stay hidden and active sheets trap tab-switch shortcuts")
+    func modalIsolation() throws {
+        // -- Arrange --
+        var selection: Binding<Int>?
+        var modalKeys: [KeyEvent] = []
+        let renderer = ViewRenderer.make(SheetTabs(capture: { selection = $0 }, sheetKey: { modalKeys.append($0) }))
+        let initial = try #require(renderer.render(.now).grid)
+
+        // -- Act --
+        _ = renderer.handle(.arrowRight)
+        let modal = try #require(renderer.render(.now).grid)
+        let shortcut = KeyEvent(.pageUp, modifiers: .control)
+        let trapped = renderer.handle(shortcut)
+
+        // -- Assert --
+        #expect(!initial.snapshotText.contains("Modal"))
+        #expect(modal.snapshotText.contains("Modal"))
+        #expect(trapped)
+        #expect(selection?.wrappedValue == 1)
+        #expect(modalKeys == [shortcut])
+    }
+}

@@ -30,6 +30,8 @@ final class ViewRenderer {
     weak var presentedFocus: ViewRenderer?
     weak var clearedFocusBinding: ViewRenderer?
     var listReveal: ListReveal?
+    var isActiveTab = true
+    weak var activeTab: ViewRenderer?
     var scrollOffset = 0
     var scrollFollowsFocus = true
     var scrollContentHeight = 0
@@ -143,11 +145,14 @@ final class ViewRenderer {
             reconcile(views, at: date)
         case .keyed(let views):
             reconcileKeyed(views, at: date)
+        case .tabs(let content, _):
+            reconcile([content], at: date)
+            updateActiveTab()
         case .scrollReader(let content, let proxy):
             if case .scrollReader(_, let previousProxy) = previous { previousProxy.renderer = nil }
             proxy.renderer = self
             reconcile([content], at: date)
-        case .focusable(let content), .focusBinding(let content, _), .submit(let content, _),
+        case .tab(let content, _, _), .focusable(let content), .focusBinding(let content, _), .submit(let content, _),
             .scroll(let content), .listSelection(let content, _, _), .listRow(let content, _),
             .keyPress(let content, _), .styled(let content, _, _),
             .border(let content, _, _, _):
@@ -174,24 +179,6 @@ final class ViewRenderer {
         default:
             break
         }
-    }
-
-    private func updateCanvas(interval: TimeInterval?, at date: Date) {
-        guard let interval else {
-            timeline = nil
-            canvasDate = date
-            return
-        }
-        let start = timeline?.schedule.interval == interval ? timeline!.schedule.start : date
-        canvasDate = advanceTimeline(.periodic(from: start, by: interval), at: date)
-    }
-
-    private func advanceTimeline(_ schedule: PeriodicTimelineSchedule, at date: Date) -> Date {
-        if let timeline, timeline.schedule == schedule, date < timeline.deadline {
-            return timeline.date
-        }
-        timeline = TimelineState(schedule: schedule, date: date, deadline: schedule.nextUpdate(after: date))
-        return date
     }
 
     private func reconcile(_ views: [any View], at date: Date) {
@@ -270,6 +257,7 @@ final class ViewRenderer {
         } else {
             for child in children { child.refresh(at: date) }
         }
+        if case .tabs = description { updateActiveTab() }
         collectDeadlines()
     }
 
@@ -284,6 +272,24 @@ final class ViewRenderer {
 }
 
 extension ViewRenderer {
+    private func updateCanvas(interval: TimeInterval?, at date: Date) {
+        guard let interval else {
+            timeline = nil
+            canvasDate = date
+            return
+        }
+        let start = timeline?.schedule.interval == interval ? timeline!.schedule.start : date
+        canvasDate = advanceTimeline(.periodic(from: start, by: interval), at: date)
+    }
+
+    private func advanceTimeline(_ schedule: PeriodicTimelineSchedule, at date: Date) -> Date {
+        if let timeline, timeline.schedule == schedule, date < timeline.deadline {
+            return timeline.date
+        }
+        timeline = TimelineState(schedule: schedule, date: date, deadline: schedule.nextUpdate(after: date))
+        return date
+    }
+
     var drawing: (any PrimitiveDrawing)? {
         switch description {
         case .drawing(let drawing): return drawing

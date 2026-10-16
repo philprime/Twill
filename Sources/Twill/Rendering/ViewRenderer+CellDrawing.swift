@@ -1,6 +1,7 @@
 /// Draws mounted descriptions into the host's shared cell grid.
 extension ViewRenderer {
     func draw(in context: inout DrawingContext, focused: ViewRenderer?) {
+        if case .tabs = description { drawTabBar(in: &context, focused: focused) }
         if case .styled(_, let foreground, let background) = description {
             context.withStyle(foreground: foreground, background: background, size: measuredSize) { region in
                 drawChildren(in: &region, focused: focused)
@@ -71,7 +72,7 @@ extension ViewRenderer {
         if case .scroll = description, !revealListSelection(), scrollFollowsFocus, let focused, focused !== self {
             reveal(focused)
         }
-        for child in children { child.revealFocus(focused) }
+        for child in activeChildren { child.revealFocus(focused) }
     }
 
     func reveal(_ focused: ViewRenderer) {
