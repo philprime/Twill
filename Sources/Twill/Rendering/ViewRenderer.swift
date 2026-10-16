@@ -156,7 +156,7 @@ final class ViewRenderer {
             .keyPress(let content, _), .styled(let content, _, _),
             .border(let content, _, _, _):
             reconcile([content], at: date)
-        case .task, .sheet, .conditional, .timeline:
+        case .task, .sheet, .conditional, .timeline, .disclosure:
             updateDynamicContent(updated, previous: previous, at: date)
         }
         collectDeadlines()
@@ -275,6 +275,9 @@ extension ViewRenderer {
         switch description {
         case .task(let content, let priority, let action):
             updateTask(content, priority: priority, action: action, at: date)
+        case .disclosure(let header, let content):
+            if content == nil { restoreFocusBeforeDisclosureCollapse() }
+            reconcile(content.map { [header, $0] } ?? [header], at: date)
         case .sheet(let base, let isPresented, let content):
             let dismissing = !isPresented.wrappedValue && children.count > 1
             reconcile(isPresented.wrappedValue ? [base, content()] : [base], at: date)

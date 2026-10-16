@@ -7,7 +7,7 @@ extension ViewRenderer {
             return [self]
         case .group(_, let layout) where layout is TableRowLayout:
             return [self]
-        case .group(_, .some), .styled, .border, .scroll, .dialog:
+        case .group(_, .some), .styled, .border, .scroll, .dialog, .disclosure:
             return children.flatMap(\.layoutItems).isEmpty ? [] : [self]
         case .sheet:
             return sheetBranch?.layoutItems ?? []
@@ -41,6 +41,9 @@ extension ViewRenderer {
     }
 
     func measure(_ proposal: ProposedCellSize) -> CellSize {
+        if case .group(_, let layout as TableLayout) = description {
+            resolveTableColumns(layout, proposal: proposal)
+        }
         if case .textEditor(let editor) = description {
             return measureTextEditor(editor, proposal: proposal)
         }
@@ -75,15 +78,13 @@ extension ViewRenderer {
     }
 
     private func measureChildren(_ proposal: ProposedCellSize) -> CellSize {
-        if case .group(_, let layout as TableLayout) = description {
-            resolveTableColumns(layout, proposal: proposal)
-        }
         let layout: any PrimitiveLayout
-        if case .group(_, let groupLayout?) = description {
+        switch description {
+        case .group(_, let groupLayout?):
             layout = groupLayout
-        } else if case .dialog = description {
+        case .dialog, .disclosure:
             layout = VerticalLayout(spacing: 0, alignment: .leading)
-        } else {
+        default:
             layout = HorizontalLayout(spacing: 0)
         }
         // Every table cell occupies a slot, including cells whose content is empty.
