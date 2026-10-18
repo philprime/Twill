@@ -3,8 +3,8 @@
 @MainActor
 extension ViewRenderer {
     func restoreFocusBeforeDisclosureCollapse() {
-        guard let content = children.dropFirst().first,
-            let header = children.first?.focusableNodes().first
+        guard let content = retainedChildren.dropFirst().first,
+            let header = retainedChildren.first?.focusableNodes().first
         else { return }
         // Redirect only focus owned by the disappearing branch. Updating every
         // enclosing scope also preserves pane and modal focus memories.

@@ -20,13 +20,13 @@ extension ViewRenderer {
     func dialogButtons() -> [ViewRenderer] {
         if case .button = description { return [self] }
         if case .sheet = description { return [] }
-        return children.flatMap { $0.dialogButtons() }
+        return retainedChildren.flatMap { $0.dialogButtons() }
     }
 
     func dialogScope() -> ViewRenderer? {
         if case .dialog = description { return self }
         if case .sheet = description { return nil }
-        for child in children {
+        for child in retainedChildren {
             if let dialog = child.dialogScope() { return dialog }
         }
         return nil
@@ -53,22 +53,22 @@ extension ViewRenderer {
     func updateDialog(_ actions: any View, kind: DialogKind, at date: Date) {
         // Mount the supplied actions first so roles in conditional and custom views
         // are resolved without evaluating their bodies a second time.
-        let previousFallback = children.dropFirst().first
-        childStorage.nodes = Array(children.prefix(1))
+        let previousFallback = retainedChildren.dropFirst().first
+        childStorage.nodes = Array(retainedChildren.prefix(1))
         reconcile([actions], at: date)
         if let previousFallback { childStorage.nodes.append(previousFallback) }
         updateDialogFallback(kind: kind, at: date)
     }
 
     func updateDialogFallback(kind: DialogKind, at date: Date) {
-        let buttons = children.first?.dialogButtons() ?? []
+        let buttons = retainedChildren.first?.dialogButtons() ?? []
         let needsFallback = kind == .confirmation ? !buttons.contains { $0.buttonRole == .cancel } : buttons.isEmpty
         guard needsFallback else {
-            if children.count > 1 { childStorage.nodes.removeLast().unmount() }
+            if retainedChildren.count > 1 { childStorage.nodes.removeLast().unmount() }
             return
         }
         // Keep a mounted fallback stable across both parent and descendant updates.
-        guard children.count == 1 else { return }
+        guard retainedChildren.count == 1 else { return }
         let fallback = Button(kind == .confirmation ? "Cancel" : "OK", role: kind == .confirmation ? .cancel : nil) {}
         let node = makeChild(fallback)
         node.parent = self

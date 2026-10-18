@@ -56,6 +56,8 @@ Persistent `ViewRenderer` nodes retain concrete type, children, owned state, cac
 
 Optional absence retains its structural position so later siblings do not shift identity. Keyed collections use stable element IDs rather than positions. Generic composition type is part of structural identity. Removed nodes release their state and deadlines. The full ownership contract is defined in [State and identity](STATE.md).
 
+Mounted traversal distinguishes retained lifetime, presentation participation, and interaction eligibility. Retained traversal includes inactive destinations for content refresh, deadline aggregation, and structural discovery. Presentation excludes inactive destinations but keeps underlying modal layers available for composition. Interaction follows the active modal branch. These policies do not create separate trees or change mounted identity.
+
 ## Timeline scheduling
 
 Timeline nodes retain their schedule, current context date, and independent deadline. Periodic schedules remain anchored to their start date, and missed entries are skipped rather than replayed.

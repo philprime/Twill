@@ -2,17 +2,6 @@
 /// participates in layout, focus discovery, modal presentation, and input.
 @MainActor
 extension ViewRenderer {
-    var activeChildren: [ViewRenderer] {
-        if case .tab = description, !tabState.isActive { return [] }
-        guard !descendantTabNodes.isEmpty else { return children }
-        // A modifier outside a Tab belongs to that destination too. Exclude
-        // the whole branch so its focus binding or modal cannot become active.
-        return children.filter { child in
-            let destinations = child.tabNodes
-            return destinations.isEmpty || destinations.contains(where: \.tabState.isActive)
-        }
-    }
-
     var tabNodes: [ViewRenderer] {
         if case .tab = description { return [self] }
         if case .tabs = description { return [] }
@@ -76,7 +65,7 @@ extension ViewRenderer {
 
     func measureTabs(_ proposal: ProposedCellSize) -> CellSize {
         let bar = tabBar.sizeThatFits(.unspecified)
-        let content = children.first
+        let content = retainedChildren.first
         let size =
             content?.measure(
                 ProposedCellSize(width: proposal.width, height: proposal.height.map { max(0, $0 - 1) })) ?? .zero

@@ -39,7 +39,6 @@ extension ViewRenderer {
     }
 
     private func requestedFocus(excluding currentTarget: ViewRenderer? = nil) -> ViewRenderer? {
-        if case .sheet = description { return sheetBranch?.requestedFocus(excluding: currentTarget) }
         // Bindings on the current focus path report existing focus. A different
         // activated binding is a new request, even when it follows them in tree order.
         if case .focusBinding(_, let binding) = description, binding.isFocused() {
@@ -47,7 +46,7 @@ extension ViewRenderer {
         }
         // Lazy compactMap followed by first re-evaluates a successful transform when
         // indexing it. Recursive searches multiply that work at every ancestor.
-        for child in activeChildren {
+        for child in interactionChildren {
             if let requested = child.requestedFocus(excluding: currentTarget) { return requested }
         }
         return nil
@@ -96,7 +95,7 @@ extension ViewRenderer {
         }
         // Inactive destinations cannot request focus, but their bindings must
         // still observe losing it so they do not become stale future requests.
-        for child in children { child.updateFocusBindings(target) }
+        for child in retainedChildren { child.updateFocusBindings(target) }
     }
 
     private func rememberedFocus(outside panes: [ViewRenderer]) -> ViewRenderer? {
@@ -113,10 +112,9 @@ extension ViewRenderer {
     }
 
     func scrollPanes() -> [ViewRenderer] {
-        if case .sheet = description { return sheetBranch?.scrollPanes() ?? [] }
         if case .scroll = description { return [self] }
         if case .textEditor = description { return [self] }
-        return activeChildren.flatMap { $0.scrollPanes() }
+        return interactionChildren.flatMap { $0.scrollPanes() }
     }
 
     func requestFocusPresentation() {
@@ -137,8 +135,7 @@ extension ViewRenderer {
     }
 
     func focusableNodes() -> [ViewRenderer] {
-        if case .sheet = description { return sheetBranch?.focusableNodes() ?? [] }
-        let descendants = activeChildren.flatMap { $0.focusableNodes() }
+        let descendants = interactionChildren.flatMap { $0.focusableNodes() }
         switch description {
         case .listSelection: return [self]
         case .tabs: return hasTabBar ? [self] + descendants : []

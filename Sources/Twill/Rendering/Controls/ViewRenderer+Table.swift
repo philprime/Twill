@@ -1,8 +1,8 @@
 /// Column sizing happens after mounting so cell bodies and state stay in the runtime.
 extension ViewRenderer {
     func resolveTableColumns(_ layout: TableLayout, proposal: ProposedCellSize) {
-        let sizes = children.flatMap { $0.tableRows() }.flatMap { row in
-            row.children.map { $0.measure(.unspecified) }
+        let sizes = retainedChildren.flatMap { $0.tableRows() }.flatMap { row in
+            row.retainedChildren.map { $0.measure(.unspecified) }
         }
         tableColumnWidths = layout.columnWidths(in: proposal.width, subviews: sizes)
     }
@@ -27,6 +27,6 @@ extension ViewRenderer {
             // Nested tables resolve their own columns and are one cell here.
             if layout is TableLayout { return [] }
         }
-        return children.flatMap { $0.tableRows() }
+        return retainedChildren.flatMap { $0.tableRows() }
     }
 }

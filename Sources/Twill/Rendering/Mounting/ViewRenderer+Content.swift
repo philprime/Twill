@@ -41,7 +41,7 @@ extension ViewRenderer {
             updateDynamicContent(updated, previous: previous, at: date)
         }
         updateTabState()
-        schedule.collectDeadlines(children.lazy.map(\.nextUpdate))
+        schedule.collectDeadlines(retainedChildren.lazy.map(\.nextUpdate))
     }
 
     private func updateDynamicContent(_ description: ViewDescription, previous: ViewDescription?, at date: Date) {
@@ -54,7 +54,7 @@ extension ViewRenderer {
             if content == nil { restoreFocusBeforeDisclosureCollapse() }
             reconcile(content.map { [header, $0] } ?? [header], at: date)
         case .sheet(let base, let isPresented, let content):
-            let dismissing = !isPresented.wrappedValue && children.count > 1
+            let dismissing = !isPresented.wrappedValue && retainedChildren.count > 1
             reconcile(isPresented.wrappedValue ? [base, content()] : [base], at: date)
             if dismissing { restoreFocusAfterSheetDismissal() }
         case .conditional(let first, let content):

@@ -6,7 +6,7 @@ extension ViewRenderer {
             let revealed = revealListSelection(focused: focused)
             if !revealed, scrollState.followsFocus, let focused, focused !== self { reveal(focused) }
         }
-        for child in activeChildren { child.revealFocus(focused) }
+        for child in presentationChildren { child.revealFocus(focused) }
     }
 
     func reveal(_ focused: ViewRenderer) {

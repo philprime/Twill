@@ -2,7 +2,7 @@
 extension ViewRenderer {
     func revealListSelection(focused: ViewRenderer?) -> Bool {
         var selectedContent: ViewRenderer?
-        for child in children {
+        for child in retainedChildren {
             if let content = child.selectionContent() {
                 selectedContent = content
                 break
@@ -32,7 +32,7 @@ extension ViewRenderer {
     private func selectionContent() -> ViewRenderer? {
         if case .listSelection = description { return self }
         if case .scroll = description { return nil }
-        for child in children {
+        for child in retainedChildren {
             if let content = child.selectionContent() { return content }
         }
         return nil
