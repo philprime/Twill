@@ -32,8 +32,20 @@ struct TableLayout: PrimitiveLayout {
     }
 }
 
-/// Marks rows whose cells use their enclosing table's resolved column widths.
+/// Uses widths supplied by its enclosing table's current measurement pass.
+/// Empty cells still occupy slots and empty rows retain a terminal line, so selection
+/// and subsequent rows do not shift when a cell has no drawing content.
 struct TableRowLayout: PrimitiveLayout {
+    let context: TableLayoutContext
+
+    @MainActor
+    func measureSubviews(_ proposal: ProposedCellSize, subviews: [LayoutSubview]) -> [CellSize] {
+        zip(subviews, context.columnWidths).map { child, width in
+            let size = child.sizeThatFits(ProposedCellSize(width: width))
+            return CellSize(width: width, height: size.height)
+        }
+    }
+
     func sizeThatFits(_ proposal: ProposedCellSize, subviews: [CellSize]) -> CellSize {
         let size = HorizontalLayout(spacing: TableLayout.spacing).sizeThatFits(proposal, subviews: subviews)
         return proposal.constrain(CellSize(width: size.width, height: max(1, size.height)))

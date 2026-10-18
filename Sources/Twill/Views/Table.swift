@@ -124,7 +124,7 @@ extension Table: PrimitiveView {
                 .focused($focus, equals: .rows)
             }
         }
-        return .group(children: [content], layout: TableLayout(columnCount: descriptions.count))
+        return .table(content, TableLayout(columnCount: descriptions.count))
     }
 }
 
@@ -133,7 +133,7 @@ private struct TableRow: View, PrimitiveView {
     let cells: [any View]
 
     func makeDescription() -> ViewDescription {
-        .group(children: cells.map { TableCell(content: $0) }, layout: TableRowLayout())
+        .tableRow(cells: cells.map { TableCell(content: $0) })
     }
 }
 

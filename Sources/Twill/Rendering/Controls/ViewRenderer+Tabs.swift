@@ -63,12 +63,13 @@ extension ViewRenderer {
             }.joined(separator: " "))
     }
 
-    func measureTabs(_ proposal: ProposedCellSize) -> CellSize {
+    func measureTabs(_ proposal: ProposedCellSize, tableContext: TableLayoutContext?) -> CellSize {
         let bar = tabBar.sizeThatFits(.unspecified)
         let content = retainedChildren.first
         let size =
             content?.measure(
-                ProposedCellSize(width: proposal.width, height: proposal.height.map { max(0, $0 - 1) })) ?? .zero
+                ProposedCellSize(width: proposal.width, height: proposal.height.map { max(0, $0 - 1) }),
+                tableContext: tableContext) ?? .zero
         layoutState.size = proposal.constrain(CellSize(width: max(bar.width, size.width), height: 1 + size.height))
         layoutState.placements =
             content.map { [($0, CellRect(column: 0, row: 1, width: size.width, height: size.height))] } ?? []
