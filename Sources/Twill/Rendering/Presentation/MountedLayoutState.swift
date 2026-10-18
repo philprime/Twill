@@ -1,4 +1,7 @@
-/// Frame caches contain descendant placements, never the owning node itself.
+/// Measurement and placement caches used to draw already-mounted descriptions.
+/// Keeping them separate from content state lets resize redraw without reevaluating bodies
+/// or shifting schedules. Scalar traits are invalidated each frame, while placements retain
+/// descendants only. Caching the owning node here would create a self-retaining cycle.
 @MainActor
 struct MountedLayoutState {
     struct Traits {
