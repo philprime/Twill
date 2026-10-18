@@ -25,18 +25,9 @@ extension ViewRenderer {
     }
 
     private func handleControl(_ key: KeyEvent, at target: ViewRenderer, stoppingAt boundary: ViewRenderer?) -> Bool {
-        switch target.description {
-        case .textField(let field):
-            if field.handle(key) == .handled { return true }
-            return key == .enter && submit(from: target, stoppingAt: boundary)
-        case .textEditor(let editor):
-            return editor.handle(key, target.layoutState.size.height) == .handled
-        case .listSelection(_, _, let handle):
-            if handle(key) == .handled { return true }
-            return key == .enter && submit(from: target, stoppingAt: boundary)
-        default:
-            return false
-        }
+        guard let interaction = target.description?.controlInteraction else { return false }
+        if interaction.handleFocusedKey(key, target.layoutState.size) == .handled { return true }
+        return interaction.submitsOnEnter && key == .enter && submit(from: target, stoppingAt: boundary)
     }
 
     private func submit(from target: ViewRenderer, stoppingAt boundary: ViewRenderer?) -> Bool {
@@ -52,12 +43,8 @@ extension ViewRenderer {
         return false
     }
 
-    private func handleEditingKey(_ key: KeyEvent, at target: ViewRenderer) -> KeyPressResult {
-        switch target.description {
-        case .textField(let field): return field.handle(key)
-        case .textEditor(let editor): return editor.handle(key, target.layoutState.size.height)
-        default: return .ignored
-        }
+    private func handleDescendantKey(_ key: KeyEvent, at target: ViewRenderer) -> KeyPressResult {
+        target.description?.controlInteraction?.handleDescendantKey?(key, target.layoutState.size) ?? .ignored
     }
 
     private func route(
@@ -77,7 +64,7 @@ extension ViewRenderer {
             if case .keyPress(_, let action) = descendant.description, action(key) == .handled {
                 return .handled
             }
-            if includeControls, handleEditingKey(key, at: descendant) == .handled { return .handled }
+            if includeControls, handleDescendantKey(key, at: descendant) == .handled { return .handled }
             child = descendant
         }
 
