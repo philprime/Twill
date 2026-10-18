@@ -25,6 +25,7 @@ enum ViewDescription {
     case table(any View, TableLayout)
     case tableRow(cells: [any View])
     case keyed(children: [(id: AnyHashable, view: any View)])
+    case disabled(any View, Bool)
     case focusable(any View)
     case control(any View, ControlInteraction)
     case focusBinding(any View, FocusBindingDescription)

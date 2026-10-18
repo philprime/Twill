@@ -18,6 +18,14 @@ Retained inactive destinations do not participate in focus discovery, key routin
 
 A `.sheet` establishes a modal focus scope. Its content replaces the active inline frame while the underlying view remains mounted and retains its timeline deadlines. Presentation remembers the underlying focus and activates the sheet's first control. While presented, keys cannot reach the underlying screen, even when a handler returns `.ignored`. Dismissal restores the remembered control if it remains mounted, otherwise focus falls back to the active screen's first control. Explicit `@FocusState` and `.focused(...)` are for programmatic focus changes when automatic focus behavior is insufficient. A Boolean binding identifies a single focus target; an optional hashable value identifies one of several targets with `.focused(_:equals:)`. Bindings follow automatic focus traversal. Focusing a container restores its remembered focusable descendant when available, otherwise its first descendant. Programmatic focus can reach controls elsewhere in the active screen. Setting a binding to `false` or `nil` removes focus until another target is requested.
 
+## Disabled state
+
+`.disabled(_:)` sets inherited interaction eligibility. A disabled ancestor cannot be re-enabled by a descendant. Disabled content remains mounted and visible, retaining state, selection, viewport memory, tasks, and timeline deadlines. The modifier does not change layout or colors.
+
+Disabled controls are excluded from automatic and programmatic focus, editing, activation, and key handlers within the disabled scope. Disabling the focused control hides its caret and falls back to an eligible target, or clears focus when none remains. Enabled enclosing handlers and application-owned lifecycle commands remain available. Modal isolation still applies when a presented scope has no enabled controls.
+
+Menu shortcuts and direct dialog actions respect disabled state. Escape dismisses an alert or confirmation without invoking a disabled cancel action. Confirmation dialogs supply a cancellation fallback when no enabled cancel action is available, so destructive actions do not become the default. Disabled tab destinations remain visible in the bar and are skipped by keyboard selection.
+
 ## Text-field input
 
 A focused text field accepts input immediately. It consumes text and caret keys before screen or application shortcuts. Losing focus hides its caret; regaining focus places the insertion point at the end of the current text. Editing does not require a separate public state or activation key. Tab and Shift-Tab are not editing keys: they route through enclosing handlers and move between controls without wrapping. No scroll container or navigation wrapper is needed to leave a field.

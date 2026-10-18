@@ -326,6 +326,9 @@ extension DocumentationPreviewFixture {
             Self("BorderView", "The border modifier encloses content in rounded terminal glyphs.") {
                 Text("Bordered content").border(.rounded, color: Color.cyan)
             },
+            Self("DisabledView", "Disabled controls stay visible but do not receive focus or activate.") {
+                Button("Unavailable") {}.disabled(true)
+            },
             Self("PaddingView", "The padding modifier reserves one blank cell around the enclosed content.") {
                 Text("Padded").padding(1)
             },
