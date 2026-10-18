@@ -3,6 +3,18 @@ struct GridLayout: PrimitiveLayout {
     let columns: [GridItem]
     let spacing: Int
 
+    var behavior: LayoutBehavior { LayoutBehavior(width: .filling) }
+
+    @MainActor
+    func measureSubviews(_ proposal: ProposedCellSize, subviews: [LayoutSubview]) -> [CellSize] {
+        let natural = subviews.map { $0.sizeThatFits(.unspecified) }
+        let size = sizeThatFits(proposal, subviews: natural)
+        let widths = columnWidths(in: size.width, subviews: natural)
+        return subviews.enumerated().map { index, child in
+            child.sizeThatFits(ProposedCellSize(width: widths[index % widths.count]))
+        }
+    }
+
     func sizeThatFits(_ proposal: ProposedCellSize, subviews: [CellSize]) -> CellSize {
         guard !subviews.isEmpty else { return .zero }
         let width = proposal.width ?? intrinsicWidth(for: subviews, columns: columns)
