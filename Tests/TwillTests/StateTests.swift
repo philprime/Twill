@@ -32,6 +32,45 @@ struct StateTests {
         }
     }
 
+    private struct EvaluationWriter: View {
+        @State private var count = 0
+        let record: (Int) -> Void
+
+        var body: some View {
+            let current = count
+            record(current)
+            if current < 2 { count = current + 1 }
+            return Text("\(current)")
+        }
+    }
+
+    @Test("State writes during evaluation remain pending for subsequent presentations")
+    func evaluationInvalidation() throws {
+        // -- Arrange --
+        let runLoop = RecordingRunLoop()
+        let output = RecordingTerminalOutput()
+        var evaluated: [Int] = []
+        let host = ViewHost(
+            rootView: EvaluationWriter { evaluated.append($0) }, runLoop: runLoop, output: output)
+        try host.start()
+        defer { host.stop() }
+        let source = try #require(runLoop.sources.first)
+        let initial = evaluated
+
+        // -- Act --
+        source.action()
+        let afterFirstDelivery = evaluated
+        source.action()
+
+        // -- Assert --
+        #expect(initial == [0])
+        #expect(afterFirstDelivery == [0, 1])
+        #expect(evaluated == [0, 1, 2])
+        #expect(runLoop.signalled.count == 2)
+        #expect(runLoop.timers.isEmpty)
+        #expect(output.writes == ["\r\u{1B}[2K0", "\r1", "\r2"])
+    }
+
     @Test("Captured state actions release their view when the owner goes away")
     func capturedActionLifetime() {
         // -- Arrange --
