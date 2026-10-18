@@ -22,6 +22,8 @@ The mounted node owns the task. Parent reevaluation and state updates that prese
 
 Structural position and concrete view type determine identity for ordinary children. Compatible descriptions update their mounted nodes while retaining state. Switching conditional branches or changing a child's type replaces the affected subtree. An absent optional branch retains its position so later siblings do not inherit its state. Removing a branch releases its children and their pending deadlines.
 
+An explicit `.id(_:)` boundary keys its content within its structural position. Equal IDs preserve the mounted subtree while updating its inputs. A changed ID unmounts the old subtree and mounts fresh content, discarding its state, focus memory, viewport offsets, and deadlines. Returning to a removed ID does not restore its former state. Modifiers outside the boundary retain their own identity. Tasks owned inside a replaced boundary are cancelled, and the host retains their unfinished cleanup until it can join them during shutdown.
+
 Dynamic collections reconcile children by stable element ID rather than current index. Reordering or inserting elements preserves state for IDs that remain mounted. Removing an ID releases its state. An ID reused for a different logical element incorrectly inherits state, so callers must choose stable IDs.
 
 Selection is independent of mounted child identity and keyboard focus. A collection control may store a selected element ID in an ancestor so selection survives screen changes. If that ID is absent from the visible collection, the first visible element is the effective selection until the user selects another; the stored ID remains unchanged. An empty collection has neither an effective selection nor an activation target.
