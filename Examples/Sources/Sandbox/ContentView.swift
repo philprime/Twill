@@ -1,12 +1,31 @@
 import Twill
 
 struct ContentView: View {
-    private enum Gallery: Hashable { case colors, borders, progress, outline }
+    private enum Gallery: Hashable {
+        case colors, borders, progress, outline
+
+        var title: String {
+            switch self {
+            case .colors: "Colors"
+            case .borders: "Borders"
+            case .progress: "Progress"
+            case .outline: "Outline"
+            }
+        }
+    }
+
+    private struct GalleryState: Identifiable {
+        let id: Gallery
+        var isExpanded: Bool
+    }
+
     @State private var selection = Gallery.colors
-    @State private var colorsExpanded = false
-    @State private var bordersExpanded = false
-    @State private var progressExpanded = true
-    @State private var outlineExpanded = true
+    @State private var galleries = [
+        GalleryState(id: .colors, isExpanded: false),
+        GalleryState(id: .borders, isExpanded: false),
+        GalleryState(id: .progress, isExpanded: true),
+        GalleryState(id: .outline, isExpanded: true),
+    ]
 
     var body: some View {
         VStack(alignment: .leading, spacing: 1) {
@@ -15,40 +34,42 @@ struct ContentView: View {
                 items: [
                     MenuItem(
                         "Expand all", shortcut: MenuShortcut(.e, hint: "e"),
-                        isEnabled: !colorsExpanded || !bordersExpanded || !progressExpanded || !outlineExpanded
-                    ) {
-                        colorsExpanded = true
-                        bordersExpanded = true
-                        progressExpanded = true
-                        outlineExpanded = true
-                    },
+                        isEnabled: galleries.contains { !$0.isExpanded }
+                    ) { setExpanded(true) },
                     MenuItem(
                         "Collapse all", shortcut: MenuShortcut(.c, hint: "c"),
-                        isEnabled: colorsExpanded || bordersExpanded || progressExpanded || outlineExpanded
-                    ) {
-                        colorsExpanded = false
-                        bordersExpanded = false
-                        progressExpanded = false
-                        outlineExpanded = false
-                    },
+                        isEnabled: galleries.contains { $0.isExpanded }
+                    ) { setExpanded(false) },
                 ])
             TabView(selection: $selection) {
-                Tab("Colors", value: Gallery.colors) {
-                    DisclosureGroup("Colors", isExpanded: $colorsExpanded) { ColorGrid() }
-                }
-                Tab("Borders", value: Gallery.borders) {
-                    DisclosureGroup("Borders", isExpanded: $bordersExpanded) { BorderGallery() }
-                }
-                Tab("Progress", value: Gallery.progress) {
-                    DisclosureGroup("Progress", isExpanded: $progressExpanded) { ProgressGallery() }
-                }
-                Tab("Outline", value: Gallery.outline) {
-                    DisclosureGroup("Outline", isExpanded: $outlineExpanded) { OutlineGallery() }
+                ForEach($galleries) { gallery in
+                    let kind = gallery.wrappedValue.id
+                    Tab(kind.title, value: kind) {
+                        DisclosureGroup(kind.title, isExpanded: gallery.isExpanded) {
+                            content(for: kind)
+                        }
+                    }
                 }
             }
             Text("Left/Right: select tab · Tab/Down: content · Shift-Tab: tab bar")
             Text("Ctrl-PageUp/PageDown: switch tabs from content")
             Text("Enter/Space: expand or collapse gallery · Gallery actions: Enter to open, Esc to dismiss")
+        }
+    }
+
+    @ViewBuilder
+    private func content(for gallery: Gallery) -> some View {
+        switch gallery {
+        case .colors: ColorGrid()
+        case .borders: BorderGallery()
+        case .progress: ProgressGallery()
+        case .outline: OutlineGallery()
+        }
+    }
+
+    private func setExpanded(_ expanded: Bool) {
+        for index in galleries.indices {
+            $galleries[index].isExpanded.wrappedValue = expanded
         }
     }
 }
