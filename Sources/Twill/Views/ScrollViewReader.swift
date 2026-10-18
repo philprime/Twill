@@ -43,13 +43,12 @@ public final class ScrollViewProxy {
                 let requested =
                     switch anchor {
                     case .top: bounds.row
-                    case .bottom: bounds.row + bounds.height - node.measuredSize.height
+                    case .bottom: bounds.row + bounds.height - node.layoutState.size.height
                     }
-                let offset = min(max(0, requested), max(0, node.scrollContentHeight - node.measuredSize.height))
                 // Explicit scrolling must survive redraws without moving keyboard focus.
-                node.scrollFollowsFocus = false
-                guard offset != node.scrollOffset else { return }
-                node.scrollOffset = offset
+                guard node.scrollState.scroll(to: requested, viewportHeight: node.layoutState.size.height) else {
+                    return
+                }
                 node.requestFocusPresentation()
                 return
             }

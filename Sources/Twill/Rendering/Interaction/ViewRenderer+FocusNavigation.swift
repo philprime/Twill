@@ -20,8 +20,8 @@ extension ViewRenderer {
     private func focusTabBar(_ key: KeyEvent, from target: ViewRenderer, pane: ViewRenderer?) -> Bool {
         guard key == .shiftTab, let bar = target.enclosingTabView else { return false }
         if let pane, bar.contains(pane), pane !== bar.scrollPanes().first { return false }
-        pane?.focusedNode = bar
-        focusedNode = bar
+        pane?.focusState.focusedNode = bar
+        focusState.focusedNode = bar
         presentFocus(bar)
         requestFocusPresentation()
         return true
@@ -31,7 +31,7 @@ extension ViewRenderer {
         guard let index = panes.firstIndex(where: { $0 === pane }) else { return false }
         let next = index + (key == .tab ? 1 : -1)
         guard panes.indices.contains(next) else { return false }
-        activePane = panes[next]
+        focusState.activePane = panes[next]
         presentFocus(panes[next].resolveFocus(in: panes[next].focusableNodes()))
         requestFocusPresentation()
         return true
@@ -42,15 +42,11 @@ extension ViewRenderer {
         switch key {
         case .arrowDown: distance = 1
         case .arrowUp: distance = -1
-        case .pageDown: distance = max(1, pane.measuredSize.height)
-        case .pageUp: distance = -max(1, pane.measuredSize.height)
+        case .pageDown: distance = max(1, pane.layoutState.size.height)
+        case .pageUp: distance = -max(1, pane.layoutState.size.height)
         default: return false
         }
-        let offset = min(
-            max(0, pane.scrollOffset + distance), max(0, pane.scrollContentHeight - pane.measuredSize.height))
-        guard offset != pane.scrollOffset else { return false }
-        pane.scrollFollowsFocus = false
-        pane.scrollOffset = offset
+        guard pane.scrollState.scroll(by: distance, viewportHeight: pane.layoutState.size.height) else { return false }
         requestFocusPresentation()
         return true
     }
@@ -68,14 +64,14 @@ extension ViewRenderer {
         guard targets.indices.contains(destination) else { return false }
         let next = target.tabFocusDestination(fallingBackTo: targets[destination])
         if let pane {
-            pane.focusedNode = next
-            pane.scrollFollowsFocus = true
+            pane.focusState.focusedNode = next
+            pane.scrollState.followFocus()
             pane.revealFocus(next)
         } else {
-            focusedNode = next
+            focusState.focusedNode = next
             if let destination = scrollPanes().first(where: { $0.contains(next) }) {
-                activePane = destination
-                destination.focusedNode = next
+                focusState.activePane = destination
+                destination.focusState.focusedNode = next
             }
         }
         presentFocus(next)

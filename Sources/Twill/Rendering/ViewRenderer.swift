@@ -19,27 +19,12 @@ final class ViewRenderer {
     var descendantTabNodes: [ViewRenderer] { childStorage.tabDestinations }
     var nextUpdate: Date? { schedule.nextUpdate }
 
-    weak var focusedNode: ViewRenderer?
-    weak var activePane: ViewRenderer?
-    weak var presentedFocus: ViewRenderer?
-    weak var clearedFocusBinding: ViewRenderer?
-    var listReveal: ListReveal?
-    var isActiveTab = true
-    weak var activeTab: ViewRenderer?
-    var editorOffset = CellPosition.zero
-    var scrollOffset = 0
-    var scrollFollowsFocus = true
-    var scrollContentHeight = 0
-    var placements: [(node: ViewRenderer, bounds: CellRect)] = []
+    var focusState = MountedFocusState()
+    var tabState = MountedTabState()
+    var editorState = MountedEditorState()
+    var scrollState = MountedScrollState()
+    var layoutState = MountedLayoutState()
     var tableColumnWidths: [Int] = []
-    var measuredSize = CellSize.zero
-    var layoutTraits: LayoutTraits?
-
-    struct LayoutTraits {
-        let hasContent: Bool
-        let fillsWidth: Bool
-        let fillsHeight: Bool
-    }
 
     private init(_ view: any View, taskRegistry: MountedTaskRegistry) {
         viewType = ObjectIdentifier(type(of: view))

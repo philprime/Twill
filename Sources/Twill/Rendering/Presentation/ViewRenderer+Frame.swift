@@ -30,7 +30,7 @@ extension ViewRenderer {
         switch description {
         case .drawing(let drawing): return drawing
         case .canvas(_, let render):
-            return Canvas.Drawing(size: measuredSize, date: schedule.canvasDate ?? .now, render: render)
+            return Canvas.Drawing(size: layoutState.size, date: schedule.canvasDate ?? .now, render: render)
         case .textField(let field): return field.drawing
         default: return nil
         }

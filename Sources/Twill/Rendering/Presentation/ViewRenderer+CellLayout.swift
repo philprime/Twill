@@ -5,18 +5,18 @@ extension ViewRenderer {
     /// scalar summaries never retain nodes or schedule work between presentations.
     func prepareLayout() {
         for child in children { child.prepareLayout() }
-        layoutTraits = nil
-        layoutTraits = LayoutTraits(
+        layoutState.beginFrame()
+        layoutState.traits = MountedLayoutState.Traits(
             hasContent: hasLayoutContent, fillsWidth: wantsFillWidth, fillsHeight: wantsFillHeight)
     }
 
     private var hasLayoutContent: Bool {
-        if let layoutTraits { return layoutTraits.hasContent }
+        if let traits = layoutState.traits { return traits.hasContent }
         switch description {
         case .drawing, .canvas, .textField, .textEditor: return true
         case .group(_, let layout) where layout is TableRowLayout: return true
         case .tabs: return hasTabBar
-        case .tab where !isActiveTab: return false
+        case .tab where !tabState.isActive: return false
         case .sheet: return sheetBranch?.hasLayoutContent ?? false
         default: return activeChildren.contains { $0.hasLayoutContent }
         }
@@ -32,7 +32,7 @@ extension ViewRenderer {
             return hasLayoutContent ? [self] : []
         case .tabs:
             return hasTabBar ? [self] : []
-        case .tab where !isActiveTab:
+        case .tab where !tabState.isActive:
             return []
         case .sheet:
             return sheetBranch?.layoutItems ?? []
@@ -42,7 +42,7 @@ extension ViewRenderer {
     }
 
     private var wantsFillWidth: Bool {
-        if let layoutTraits { return layoutTraits.fillsWidth }
+        if let traits = layoutState.traits { return traits.fillsWidth }
         if case .canvas = description { return true }
         if case .textEditor = description { return true }
         if case .group(_, let layout) = description, layout is GridLayout || layout is TableLayout { return true }
@@ -55,7 +55,7 @@ extension ViewRenderer {
     }
 
     private var wantsFillHeight: Bool {
-        if let layoutTraits { return layoutTraits.fillsHeight }
+        if let traits = layoutState.traits { return traits.fillsHeight }
         if case .canvas = description { return true }
         if case .textEditor = description { return true }
         if case .scroll = description { return true }
@@ -76,21 +76,19 @@ extension ViewRenderer {
             return measureTextEditor(editor, proposal: proposal)
         }
         if let drawing {
-            measuredSize = drawing.sizeThatFits(proposal)
-            return measuredSize
+            layoutState.size = drawing.sizeThatFits(proposal)
+            return layoutState.size
         }
         if case .scroll = description {
             let items = activeChildren.flatMap(\.layoutItems)
             let contentSize = items.first?.measure(ProposedCellSize(width: proposal.width)) ?? .zero
-            scrollContentHeight = contentSize.height
-            measuredSize = proposal.constrain(contentSize)
-            if proposal.height != nil {
-                scrollOffset = min(scrollOffset, max(0, contentSize.height - measuredSize.height))
-            }
-            placements = items.map {
+            layoutState.size = proposal.constrain(contentSize)
+            scrollState.updateContent(
+                height: contentSize.height, viewportHeight: proposal.height.map { _ in layoutState.size.height })
+            layoutState.placements = items.map {
                 ($0, CellRect(column: 0, row: 0, width: contentSize.width, height: contentSize.height))
             }
-            return measuredSize
+            return layoutState.size
         }
         if case .border(_, _, _, let title) = description {
             let inner = ProposedCellSize(
@@ -98,11 +96,12 @@ extension ViewRenderer {
                 height: proposal.height.map { max(0, $0 - 2) })
             let size = measureChildren(inner)
             let titleWidth = title.map { $0.sizeThatFits(.unspecified).width + 3 } ?? 0
-            measuredSize = proposal.constrain(CellSize(width: max(size.width + 2, titleWidth), height: size.height + 2))
-            return measuredSize
+            layoutState.size = proposal.constrain(
+                CellSize(width: max(size.width + 2, titleWidth), height: size.height + 2))
+            return layoutState.size
         }
-        measuredSize = measureChildren(proposal)
-        return measuredSize
+        layoutState.size = measureChildren(proposal)
+        return layoutState.size
     }
 
     private func measureChildren(_ proposal: ProposedCellSize) -> CellSize {
@@ -139,7 +138,7 @@ extension ViewRenderer {
             sizes = items.map { $0.measure(.unspecified) }
         }
         let size = layout.sizeThatFits(proposal, subviews: sizes)
-        placements = zip(items, layout.placeSubviews(sizes, in: size)).map { ($0, $1) }
+        layoutState.placements = zip(items, layout.placeSubviews(sizes, in: size)).map { ($0, $1) }
         return size
     }
 

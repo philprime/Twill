@@ -30,7 +30,7 @@ extension ViewRenderer {
             if field.handle(key) == .handled { return true }
             return key == .enter && submit(from: target, stoppingAt: boundary)
         case .textEditor(let editor):
-            return editor.handle(key, target.measuredSize.height) == .handled
+            return editor.handle(key, target.layoutState.size.height) == .handled
         case .listSelection(_, _, let handle):
             if handle(key) == .handled { return true }
             return key == .enter && submit(from: target, stoppingAt: boundary)
@@ -55,7 +55,7 @@ extension ViewRenderer {
     private func handleEditingKey(_ key: KeyEvent, at target: ViewRenderer) -> KeyPressResult {
         switch target.description {
         case .textField(let field): return field.handle(key)
-        case .textEditor(let editor): return editor.handle(key, target.measuredSize.height)
+        case .textEditor(let editor): return editor.handle(key, target.layoutState.size.height)
         default: return .ignored
         }
     }

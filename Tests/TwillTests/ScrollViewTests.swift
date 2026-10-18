@@ -6,6 +6,44 @@ import Testing
 @Suite("Scrollable panes")
 @MainActor
 struct ScrollViewTests {
+    @Test("Parent refresh retains manual scroll position and keyed replacement resets it")
+    func mountedScrollLifetime() throws {
+        // -- Arrange --
+        let start = Date(timeIntervalSinceReferenceDate: 100)
+        let renderer = ViewRenderer.make(
+            TimelineView(.periodic(from: start, by: 1)) { context in
+                ForEach(context.date < start.addingTimeInterval(2) ? [0] : [1], id: \.self) { _ in
+                    ScrollView {
+                        VStack {
+                            Text("0")
+                            Text("1")
+                            Text("2")
+                            Text("3")
+                        }
+                    }.frame(height: 2)
+                }
+            })
+        let initial = try #require(renderer.render(start).grid)
+        weak var originalPane: ViewRenderer?
+        originalPane = renderer.focusTarget()
+
+        // -- Act --
+        let handled = renderer.handle(.arrowDown)
+        let scrolled = try #require(renderer.render(start).grid)
+        let refreshed = try #require(renderer.render(start.addingTimeInterval(1)).grid)
+        let retainedPane = originalPane != nil
+        let replaced = try #require(renderer.render(start.addingTimeInterval(2)).grid)
+
+        // -- Assert --
+        #expect(handled)
+        #expect(initial.snapshotText == "0\n1")
+        #expect(scrolled.snapshotText == "1\n2")
+        #expect(refreshed == scrolled)
+        #expect(replaced == initial)
+        #expect(retainedPane)
+        #expect(originalPane == nil)
+    }
+
     @Test("Moving focus below the viewport reveals the focused row")
     func revealsOffscreenFocus() throws {
         // -- Arrange --
