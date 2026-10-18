@@ -1,4 +1,4 @@
-/// Repairs enclosing focus scopes before removed content can become unreachable.
+/// Repairs enclosing scopes before removed content can become unreachable.
 /// Retained siblings keep their own focus and pane memories.
 @MainActor
 extension ViewRenderer {
@@ -10,15 +10,19 @@ extension ViewRenderer {
         // enclosing scope also preserves pane and modal focus memories.
         var current: ViewRenderer? = self
         while let node = current {
+            var transition = FocusTransition()
             if let focused = node.focusState.focusedNode, content.contains(focused) {
-                node.focusState.focusedNode = header
+                transition.effects.append(.remember(scope: node, target: header))
             }
             if let presented = node.focusState.presentedFocus, content.contains(presented) {
-                node.focusState.focusedNode = header
-                node.focusState.clearedFocusBinding = nil
-                node.presentFocus(header)
+                transition.effects.append(.remember(scope: node, target: header))
+                transition.effects.append(.clearedBinding(scope: node, binding: nil))
+                transition.presentation = .target(header)
             }
-            if let pane = node.focusState.activePane, content.contains(pane) { node.focusState.activePane = nil }
+            node.applyFocusTransition(transition)
+            if let pane = node.focusState.activePane, content.contains(pane) {
+                node.applyFocusTransition(FocusTransition(effects: [.activatePane(scope: node, pane: nil)]))
+            }
             current = node.parent
         }
     }
@@ -28,8 +32,7 @@ extension ViewRenderer {
         // not explicit requests to clear the enclosing screen's remembered focus.
         var current: ViewRenderer? = self
         while let node = current {
-            node.focusState.presentedFocus = nil
-            node.focusState.clearedFocusBinding = nil
+            node.applyFocusTransition(FocusTransition(presentation: .reset))
             current = node.parent
         }
     }
@@ -40,11 +43,13 @@ extension ViewRenderer {
         while let scope = ancestor {
             if let focused = scope.focusState.presentedFocus, previous.contains(focused) {
                 let target = selected.flatMap { $0.resolveFocus(in: $0.focusableNodes()) } ?? self
-                scope.focusState.focusedNode = target
-                scope.focusState.activePane = scope.scrollPanes().first { $0.contains(target) }
-                scope.focusState.activePane?.focusState.focusedNode = target
-                scope.focusState.clearedFocusBinding = nil
-                scope.presentFocus(target)
+                let pane = scope.scrollPanes().first { $0.contains(target) }
+                var effects: [FocusTransition.Effect] = [
+                    .remember(scope: scope, target: target), .activatePane(scope: scope, pane: pane),
+                ]
+                if let pane { effects.append(.remember(scope: pane, target: target)) }
+                effects.append(.clearedBinding(scope: scope, binding: nil))
+                scope.applyFocusTransition(FocusTransition(presentation: .target(target), effects: effects))
             }
             ancestor = scope.parent
         }

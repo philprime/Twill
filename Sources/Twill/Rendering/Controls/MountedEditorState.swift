@@ -1,4 +1,6 @@
-/// A mounted editor retains its viewport independently of transient descriptions.
+/// Viewport memory for one mounted editor, separate from the edited value and caret state.
+/// Recreating a description must not reset which cells are visible. Measurement reveals the
+/// current caret against new bounds, while replacing mounted identity starts with fresh memory.
 struct MountedEditorState {
     private(set) var offset = CellPosition.zero
 

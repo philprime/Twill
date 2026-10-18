@@ -1,4 +1,8 @@
-/// Manual scrolling persists until navigation or selection explicitly requests reveal.
+/// Viewport memory shared by scrolling containers and selection-reveal behavior.
+/// Offset is independent of keyboard focus: explicit scrolling can move the focused row out
+/// of view without moving focus. Navigation resumes follow-focus, while selection changes
+/// can request reveal independently. These transitions live here so measurement, key routing,
+/// and programmatic scrolling use the same clamping rules without owning competing offsets.
 struct MountedScrollState {
     struct ListReveal: Equatable {
         let selection: AnyHashable?

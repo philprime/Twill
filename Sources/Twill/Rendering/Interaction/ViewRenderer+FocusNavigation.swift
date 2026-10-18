@@ -20,10 +20,10 @@ extension ViewRenderer {
     private func focusTabBar(_ key: KeyEvent, from target: ViewRenderer, pane: ViewRenderer?) -> Bool {
         guard key == .shiftTab, let bar = target.enclosingTabView else { return false }
         if let pane, bar.contains(pane), pane !== bar.scrollPanes().first { return false }
-        pane?.focusState.focusedNode = bar
-        focusState.focusedNode = bar
-        presentFocus(bar)
-        requestFocusPresentation()
+        var effects: [FocusTransition.Effect] = []
+        if let pane { effects.append(.remember(scope: pane, target: bar)) }
+        effects.append(.remember(scope: self, target: bar))
+        applyFocusTransition(FocusTransition(presentation: .target(bar), effects: effects, requestsPresentation: true))
         return true
     }
 
@@ -31,9 +31,13 @@ extension ViewRenderer {
         guard let index = panes.firstIndex(where: { $0 === pane }) else { return false }
         let next = index + (key == .tab ? 1 : -1)
         guard panes.indices.contains(next) else { return false }
-        focusState.activePane = panes[next]
-        presentFocus(panes[next].resolveFocus(in: panes[next].focusableNodes()))
-        requestFocusPresentation()
+        let destination = panes[next]
+        let selection = destination.focusSelection(in: destination.focusableNodes())
+        applyFocusTransition(
+            FocusTransition(
+                presentation: .target(selection.target),
+                effects: [.activatePane(scope: self, pane: destination)] + selection.effects,
+                requestsPresentation: true))
         return true
     }
 
@@ -63,20 +67,20 @@ extension ViewRenderer {
         }
         guard targets.indices.contains(destination) else { return false }
         let next = target.tabFocusDestination(fallingBackTo: targets[destination])
+        var effects: [FocusTransition.Effect]
         if let pane {
-            pane.focusState.focusedNode = next
-            pane.scrollState.followFocus()
-            pane.revealFocus(next)
+            effects = [
+                .remember(scope: pane, target: next), .followFocus(pane: pane), .reveal(pane: pane, target: next),
+            ]
         } else {
-            focusState.focusedNode = next
+            effects = [.remember(scope: self, target: next)]
             if let destination = scrollPanes().first(where: { $0.contains(next) }) {
-                focusState.activePane = destination
-                destination.focusState.focusedNode = next
+                effects.append(.activatePane(scope: self, pane: destination))
+                effects.append(.remember(scope: destination, target: next))
             }
         }
-        presentFocus(next)
         // Redraw cached descriptions, not view bodies or timeline schedules.
-        requestFocusPresentation()
+        applyFocusTransition(FocusTransition(presentation: .target(next), effects: effects, requestsPresentation: true))
         return true
     }
 }
