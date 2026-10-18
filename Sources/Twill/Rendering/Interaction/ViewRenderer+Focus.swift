@@ -5,25 +5,27 @@ extension ViewRenderer {
     func focusTarget() -> ViewRenderer? {
         let panes = scrollPanes()
         let target: ViewRenderer?
-        if let requested = requestedFocus(excluding: presentedFocus) ?? requestedFocus() {
-            clearedFocusBinding = nil
+        if let requested = requestedFocus(excluding: focusState.presentedFocus) ?? requestedFocus() {
+            focusState.clearedFocusBinding = nil
             let targets = requested.focusableNodes()
             if let pane = panes.first(where: { requested.contains($0) || $0.contains(requested) }) {
-                activePane = pane
-                let remembered = pane.focusedNode
+                focusState.activePane = pane
+                let remembered = pane.focusState.focusedNode
                 target =
                     remembered.flatMap { candidate in targets.contains { $0 === candidate } ? candidate : nil }
                     ?? targets.first
-                pane.focusedNode = target
-                if presentedFocus !== target { pane.scrollFollowsFocus = true }
+                pane.focusState.focusedNode = target
+                if focusState.presentedFocus !== target { pane.scrollState.followFocus() }
             } else {
                 target =
-                    focusedNode.flatMap { candidate in targets.contains { $0 === candidate } ? candidate : nil }
+                    focusState.focusedNode.flatMap { candidate in
+                        targets.contains { $0 === candidate } ? candidate : nil
+                    }
                     ?? targets.first
-                focusedNode = target
+                focusState.focusedNode = target
             }
-        } else if let cleared = clearedBinding(from: presentedFocus) ?? clearedFocusBinding {
-            clearedFocusBinding = cleared
+        } else if let cleared = clearedBinding(from: focusState.presentedFocus) ?? focusState.clearedFocusBinding {
+            focusState.clearedFocusBinding = cleared
             target = nil
         } else if let remembered = rememberedFocus(outside: panes) {
             target = remembered
@@ -71,12 +73,12 @@ extension ViewRenderer {
     }
 
     func presentFocus(_ target: ViewRenderer?) {
-        guard presentedFocus !== target else { return }
-        if case .textField(let field) = presentedFocus?.description { field.blur() }
-        presentedFocus = target
+        guard focusState.presentedFocus !== target else { return }
+        if case .textField(let field) = focusState.presentedFocus?.description { field.blur() }
+        focusState.presentedFocus = target
         var ancestor = target
         while let node = ancestor {
-            if case .tab = node.description { node.focusedNode = target }
+            if case .tab = node.description { node.focusState.focusedNode = target }
             ancestor = node.parent
         }
         // Shared ancestor and descendant bindings must settle once per focus transition,
@@ -98,14 +100,16 @@ extension ViewRenderer {
     }
 
     private func rememberedFocus(outside panes: [ViewRenderer]) -> ViewRenderer? {
-        guard let focusedNode, focusableNodes().contains(where: { $0 === focusedNode }) else { return nil }
+        guard let focusedNode = focusState.focusedNode,
+            focusableNodes().contains(where: { $0 === focusedNode })
+        else { return nil }
         return panes.contains(where: { $0.contains(focusedNode) }) ? nil : focusedNode
     }
 
     private func resolvePane(in panes: [ViewRenderer]) -> ViewRenderer? {
-        if let activePane, panes.contains(where: { $0 === activePane }) { return activePane }
-        activePane = panes.first
-        return activePane
+        if let activePane = focusState.activePane, panes.contains(where: { $0 === activePane }) { return activePane }
+        focusState.activePane = panes.first
+        return focusState.activePane
     }
 
     func scrollPanes() -> [ViewRenderer] {
@@ -120,14 +124,16 @@ extension ViewRenderer {
     }
 
     func resolveFocus(in targets: [ViewRenderer]) -> ViewRenderer? {
-        if let focusedNode, targets.contains(where: { $0 === focusedNode }) { return focusedNode }
+        if let focusedNode = focusState.focusedNode, targets.contains(where: { $0 === focusedNode }) {
+            return focusedNode
+        }
         // Prefer cancellation on first presentation without changing the supplied
         // action order or using public focus state for an internal modal policy.
         let dialog = sheetBranch?.dialogScope() ?? dialogScope()
-        focusedNode =
+        focusState.focusedNode =
             dialog == nil ? targets.first : targets.first { $0.enclosingButton?.buttonRole == .cancel } ?? targets.first
-        scrollFollowsFocus = true
-        return focusedNode
+        scrollState.followFocus()
+        return focusState.focusedNode
     }
 
     func focusableNodes() -> [ViewRenderer] {

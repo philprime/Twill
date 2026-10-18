@@ -10,13 +10,15 @@ extension ViewRenderer {
         // enclosing scope also preserves pane and modal focus memories.
         var current: ViewRenderer? = self
         while let node = current {
-            if let focused = node.focusedNode, content.contains(focused) { node.focusedNode = header }
-            if let presented = node.presentedFocus, content.contains(presented) {
-                node.focusedNode = header
-                node.clearedFocusBinding = nil
+            if let focused = node.focusState.focusedNode, content.contains(focused) {
+                node.focusState.focusedNode = header
+            }
+            if let presented = node.focusState.presentedFocus, content.contains(presented) {
+                node.focusState.focusedNode = header
+                node.focusState.clearedFocusBinding = nil
                 node.presentFocus(header)
             }
-            if let pane = node.activePane, content.contains(pane) { node.activePane = nil }
+            if let pane = node.focusState.activePane, content.contains(pane) { node.focusState.activePane = nil }
             current = node.parent
         }
     }
@@ -26,8 +28,8 @@ extension ViewRenderer {
         // not explicit requests to clear the enclosing screen's remembered focus.
         var current: ViewRenderer? = self
         while let node = current {
-            node.presentedFocus = nil
-            node.clearedFocusBinding = nil
+            node.focusState.presentedFocus = nil
+            node.focusState.clearedFocusBinding = nil
             current = node.parent
         }
     }
@@ -36,12 +38,12 @@ extension ViewRenderer {
         guard let previous else { return }
         var ancestor: ViewRenderer? = self
         while let scope = ancestor {
-            if let focused = scope.presentedFocus, previous.contains(focused) {
+            if let focused = scope.focusState.presentedFocus, previous.contains(focused) {
                 let target = selected.flatMap { $0.resolveFocus(in: $0.focusableNodes()) } ?? self
-                scope.focusedNode = target
-                scope.activePane = scope.scrollPanes().first { $0.contains(target) }
-                scope.activePane?.focusedNode = target
-                scope.clearedFocusBinding = nil
+                scope.focusState.focusedNode = target
+                scope.focusState.activePane = scope.scrollPanes().first { $0.contains(target) }
+                scope.focusState.activePane?.focusState.focusedNode = target
+                scope.focusState.clearedFocusBinding = nil
                 scope.presentFocus(target)
             }
             ancestor = scope.parent

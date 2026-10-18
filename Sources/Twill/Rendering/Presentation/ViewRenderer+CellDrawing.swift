@@ -3,20 +3,22 @@ extension ViewRenderer {
     func draw(in context: inout DrawingContext, focused: ViewRenderer?) {
         if case .tabs = description { drawTabBar(in: &context, focused: focused) }
         if case .button(_, .destructive, _) = description {
-            context.withStyle(foreground: .red, background: nil, size: measuredSize) { region in
+            context.withStyle(foreground: .red, background: nil, size: layoutState.size) { region in
                 drawChildren(in: &region, focused: focused)
             }
         } else if case .styled(_, let foreground, let background) = description {
-            context.withStyle(foreground: foreground, background: background, size: measuredSize) { region in
+            context.withStyle(foreground: foreground, background: background, size: layoutState.size) { region in
                 drawChildren(in: &region, focused: focused)
             }
         } else if case .border(_, let glyphs, let color, let title) = description {
             drawBorder(glyphs, color: color, title: title, in: &context, focused: focused)
         } else if case .scroll = description {
-            let viewport = CellRect(column: 0, row: 0, width: measuredSize.width, height: measuredSize.height)
+            let viewport = CellRect(column: 0, row: 0, width: layoutState.size.width, height: layoutState.size.height)
             context.withRegion(viewport) { viewport in
                 viewport.withRegion(
-                    CellRect(column: 0, row: -scrollOffset, width: measuredSize.width, height: scrollContentHeight)
+                    CellRect(
+                        column: 0, row: -scrollState.offset, width: layoutState.size.width,
+                        height: scrollState.contentHeight)
                 ) { content in
                     drawChildren(in: &content, focused: focused)
                 }
@@ -40,10 +42,10 @@ extension ViewRenderer {
         _ glyphs: Border.Glyphs, color: Color?, title: TextDrawing?, in context: inout DrawingContext,
         focused: ViewRenderer?
     ) {
-        let width = measuredSize.width
-        let height = measuredSize.height
+        let width = layoutState.size.width
+        let height = layoutState.size.height
         guard width >= 2, height >= 2 else { return }
-        context.withStyle(foreground: color, background: nil, size: measuredSize) { region in
+        context.withStyle(foreground: color, background: nil, size: layoutState.size) { region in
             region.draw(glyphs.topLeft, width: 1, column: 0, row: 0)
             region.draw(glyphs.topRight, width: 1, column: width - 1, row: 0)
             region.draw(glyphs.bottomLeft, width: 1, column: 0, row: height - 1)
@@ -69,7 +71,7 @@ extension ViewRenderer {
     }
 
     private func drawChildren(in context: inout DrawingContext, focused: ViewRenderer?) {
-        for placement in placements {
+        for placement in layoutState.placements {
             context.withRegion(placement.bounds) { placement.node.draw(in: &$0, focused: focused) }
         }
     }

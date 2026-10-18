@@ -4,23 +4,18 @@ extension ViewRenderer {
     func revealFocus(_ focused: ViewRenderer?) {
         if case .scroll = description {
             let revealed = revealListSelection(focused: focused)
-            if !revealed, scrollFollowsFocus, let focused, focused !== self { reveal(focused) }
+            if !revealed, scrollState.followsFocus, let focused, focused !== self { reveal(focused) }
         }
         for child in activeChildren { child.revealFocus(focused) }
     }
 
     func reveal(_ focused: ViewRenderer) {
         guard let rect = bounds(of: focused, column: 0, row: 0) else { return }
-        if rect.row < scrollOffset {
-            scrollOffset = rect.row
-        } else if rect.row + rect.height > scrollOffset + measuredSize.height {
-            scrollOffset = rect.row + rect.height - measuredSize.height
-        }
-        scrollOffset = min(max(0, scrollOffset), max(0, scrollContentHeight - measuredSize.height))
+        scrollState.reveal(rect, viewport: layoutState.size)
     }
 
     func bounds(of target: ViewRenderer, column: Int, row: Int) -> CellRect? {
-        for placement in placements {
+        for placement in layoutState.placements {
             let bounds = placement.bounds
             let originX = column + bounds.column
             let originY = row + bounds.row

@@ -1,3 +1,4 @@
+import Foundation
 import Testing
 
 @testable import Twill
@@ -5,6 +6,44 @@ import Testing
 @Suite("Text editor viewport and focus")
 @MainActor
 struct TextEditorViewportTests {
+    @Test("Parent refresh retains editor viewport and keyed replacement resets it")
+    func mountedEditorLifetime() throws {
+        // -- Arrange --
+        let start = Date(timeIntervalSinceReferenceDate: 100)
+        var text = "first\nsecond\nthird"
+        let renderer = ViewRenderer.make(
+            TimelineView(.periodic(from: start, by: 1)) { context in
+                ForEach(context.date < start.addingTimeInterval(2) ? [0] : [1], id: \.self) { _ in
+                    TextEditor(text: Binding(get: { text }, set: { text = $0 }))
+                        .frame(width: 4, height: 1)
+                }
+            })
+        let initial = try #require(renderer.render(start).grid)
+        let initialCaret = renderer.caretPosition
+        weak var originalEditor: ViewRenderer?
+        originalEditor = renderer.focusTarget()
+
+        // -- Act --
+        _ = renderer.handle(.home)
+        _ = renderer.handle(.arrowUp)
+        let scrolled = try #require(renderer.render(start).grid)
+        let refreshed = try #require(renderer.render(start.addingTimeInterval(1)).grid)
+        let retainedCaret = renderer.caretPosition
+        let retainedEditor = originalEditor != nil
+        let replaced = try #require(renderer.render(start.addingTimeInterval(2)).grid)
+
+        // -- Assert --
+        #expect(initial.snapshotText == "ird ")
+        #expect(scrolled.snapshotText == "seco")
+        #expect(refreshed == scrolled)
+        #expect(retainedCaret == .zero)
+        #expect(replaced == initial)
+        #expect(renderer.caretPosition == initialCaret)
+        #expect(text == "first\nsecond\nthird")
+        #expect(retainedEditor)
+        #expect(originalEditor == nil)
+    }
+
     @Test("Resize keeps the caret visible and restores content when the viewport grows")
     func resizing() throws {
         // -- Arrange --
