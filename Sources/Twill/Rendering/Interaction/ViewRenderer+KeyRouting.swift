@@ -3,7 +3,7 @@
 @MainActor
 extension ViewRenderer {
     func handle(_ key: KeyEvent) -> Bool {
-        if let sheet = activeSheet() {
+        if let sheet = activeModalScope() {
             if sheet.handleDialogKey(key) { return true }
             // An ignored key cannot escape the presented scope to the base or application.
             _ = sheet.handleInScope(key, modal: true)
@@ -67,12 +67,12 @@ extension ViewRenderer {
         // A handler can wrap a focusable view or be wrapped by it. Follow only
         // the single-child modifier chain so sibling controls do not receive keys.
         var child = target
-        while child.children.count == 1 {
+        while child.retainedChildren.count == 1 {
             // List rows are presentation within one control, not a modifier chain
             // belonging to the focused control. Their count must not affect routing.
             if case .listSelection = child.description { break }
             if case .tabs = child.description { break }
-            let descendant = child.children[0]
+            let descendant = child.retainedChildren[0]
             if case .focusable = descendant.description { break }
             if case .keyPress(_, let action) = descendant.description, action(key) == .handled {
                 return .handled

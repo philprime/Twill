@@ -4,7 +4,7 @@ extension ViewRenderer {
     /// Rebuild once per frame, after content and active branches have settled. These
     /// scalar summaries never retain nodes or schedule work between presentations.
     func prepareLayout() {
-        for child in children { child.prepareLayout() }
+        for child in retainedChildren { child.prepareLayout() }
         layoutState.beginFrame()
         layoutState.traits = MountedLayoutState.Traits(
             hasContent: hasLayoutContent, fillsWidth: wantsFillWidth, fillsHeight: wantsFillHeight)
@@ -18,7 +18,7 @@ extension ViewRenderer {
         case .tabs: return hasTabBar
         case .tab where !tabState.isActive: return false
         case .sheet: return sheetBranch?.hasLayoutContent ?? false
-        default: return activeChildren.contains { $0.hasLayoutContent }
+        default: return presentationChildren.contains { $0.hasLayoutContent }
         }
     }
 
@@ -37,7 +37,7 @@ extension ViewRenderer {
         case .sheet:
             return sheetBranch?.layoutItems ?? []
         default:
-            return activeChildren.flatMap(\.layoutItems)
+            return presentationChildren.flatMap(\.layoutItems)
         }
     }
 
@@ -51,7 +51,7 @@ extension ViewRenderer {
             if case .cells = frame.maxWidth { return false }
             if frame.fillsWidth { return true }
         }
-        return activeChildren.contains { $0.wantsFillWidth }
+        return presentationChildren.contains { $0.wantsFillWidth }
     }
 
     private var wantsFillHeight: Bool {
@@ -64,7 +64,7 @@ extension ViewRenderer {
             if case .cells = frame.maxHeight { return false }
             if frame.fillsHeight { return true }
         }
-        return activeChildren.contains { $0.wantsFillHeight }
+        return presentationChildren.contains { $0.wantsFillHeight }
     }
 
     func measure(_ proposal: ProposedCellSize) -> CellSize {
@@ -80,7 +80,7 @@ extension ViewRenderer {
             return layoutState.size
         }
         if case .scroll = description {
-            let items = activeChildren.flatMap(\.layoutItems)
+            let items = presentationChildren.flatMap(\.layoutItems)
             let contentSize = items.first?.measure(ProposedCellSize(width: proposal.width)) ?? .zero
             layoutState.size = proposal.constrain(contentSize)
             scrollState.updateContent(
@@ -115,7 +115,7 @@ extension ViewRenderer {
             layout = HorizontalLayout(spacing: 0)
         }
         // Every table cell occupies a slot, including cells whose content is empty.
-        let items = layout is TableRowLayout ? children : activeChildren.flatMap(\.layoutItems)
+        let items = layout is TableRowLayout ? retainedChildren : presentationChildren.flatMap(\.layoutItems)
         let sizes: [CellSize]
         if layout is TableRowLayout {
             sizes = measureTableRow(items)

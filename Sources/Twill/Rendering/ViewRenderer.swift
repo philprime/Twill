@@ -15,7 +15,6 @@ final class ViewRenderer {
     var childStorage = MountedChildren()
     var schedule = MountedSchedule()
     var description: ViewDescription?
-    var children: [ViewRenderer] { childStorage.nodes }
     var descendantTabNodes: [ViewRenderer] { childStorage.tabDestinations }
     var nextUpdate: Date? { schedule.nextUpdate }
 
@@ -71,7 +70,7 @@ final class ViewRenderer {
 
     func keyedNode(for id: AnyHashable) -> ViewRenderer? {
         if let node = childStorage.keyedNode(for: id) { return node }
-        for child in children {
+        for child in retainedChildren {
             if let node = child.keyedNode(for: id) { return node }
         }
         return nil
@@ -122,13 +121,13 @@ final class ViewRenderer {
                 break
             }
         } else {
-            for child in children { child.refresh(at: date) }
+            for child in retainedChildren { child.refresh(at: date) }
         }
         if case .dialog(_, _, let kind) = description { updateDialogFallback(kind: kind, at: date) }
         // Children must settle before selection/focus restoration and deadline aggregation.
         // Those operations may inspect a descendant's freshly reconciled identity.
         updateTabState()
-        schedule.collectDeadlines(children.lazy.map(\.nextUpdate))
+        schedule.collectDeadlines(retainedChildren.lazy.map(\.nextUpdate))
     }
 
     func updateTask(

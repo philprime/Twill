@@ -1,22 +1,6 @@
 /// Draws the retained page and each modal sheet into one viewport-sized frame.
 @MainActor
 extension ViewRenderer {
-    var sheetBranch: ViewRenderer? {
-        guard case .sheet(_, let isPresented, _) = description else { return nil }
-        return isPresented.wrappedValue ? children.dropFirst().first : children.first
-    }
-
-    func activeSheet() -> ViewRenderer? {
-        if case .sheet(_, let isPresented, _) = description {
-            guard let branch = sheetBranch else { return nil }
-            return branch.activeSheet() ?? (isPresented.wrappedValue ? self : nil)
-        }
-        for child in activeChildren.reversed() {
-            if let sheet = child.activeSheet() { return sheet }
-        }
-        return nil
-    }
-
     func drawOverlay(sheet: ViewRenderer, proposal: ProposedCellSize) -> CellGrid? {
         // Walk from the outermost modal layer so nested sheets retain their
         // enclosing presentation underneath the active keyboard scope.
@@ -30,11 +14,11 @@ extension ViewRenderer {
         }
         var layers: [ViewRenderer] = []
         var current: ViewRenderer? = outer
-        while let sheet = current, let base = sheet.children.first {
+        while let sheet = current, let base = sheet.retainedChildren.first {
             layers.append(base)
-            guard let presented = sheet.children.dropFirst().first else { break }
+            guard let presented = sheet.retainedChildren.dropFirst().first else { break }
             layers.append(presented)
-            if let nested = presented.activeSheet(), nested !== sheet {
+            if let nested = presented.activeModalScope(), nested !== sheet {
                 current = nested
             } else {
                 break
