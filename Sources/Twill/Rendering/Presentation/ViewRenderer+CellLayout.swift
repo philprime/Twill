@@ -28,7 +28,7 @@ extension ViewRenderer {
             return [self]
         case .group(_, let layout) where layout is TableRowLayout:
             return [self]
-        case .group(_, .some), .styled, .border, .scroll, .dialog, .disclosure:
+        case .group(_, .some), .control, .styled, .border, .scroll, .dialog, .disclosure:
             return hasLayoutContent ? [self] : []
         case .tabs:
             return hasTabBar ? [self] : []

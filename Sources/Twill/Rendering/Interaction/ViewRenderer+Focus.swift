@@ -73,7 +73,7 @@ extension ViewRenderer {
 
     func presentFocus(_ target: ViewRenderer?) {
         guard focusState.presentedFocus !== target else { return }
-        if case .textField(let field) = focusState.presentedFocus?.description { field.blur() }
+        focusState.presentedFocus?.description?.controlInteraction?.blur?()
         focusState.presentedFocus = target
         var ancestor = target
         while let node = ancestor {
@@ -139,7 +139,7 @@ extension ViewRenderer {
         switch description {
         case .listSelection: return [self]
         case .tabs: return hasTabBar ? [self] + descendants : []
-        case .focusable, .textField, .textEditor: return [self] + descendants
+        case .focusable, .control, .textField, .textEditor: return [self] + descendants
         case .scroll where descendants.isEmpty: return [self]
         default: return descendants
         }

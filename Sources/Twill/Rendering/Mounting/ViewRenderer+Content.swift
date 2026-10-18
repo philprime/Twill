@@ -32,7 +32,8 @@ extension ViewRenderer {
             if case .scrollReader(_, let previousProxy) = previous { previousProxy.renderer = nil }
             proxy.renderer = self
             reconcile([content], at: date)
-        case .tab(let content, _, _), .focusable(let content), .focusBinding(let content, _), .submit(let content, _),
+        case .tab(let content, _, _), .focusable(let content), .control(let content, _),
+            .focusBinding(let content, _), .submit(let content, _),
             .scroll(let content), .listSelection(let content, _, _), .listRow(let content, _),
             .keyPress(let content, _), .styled(let content, _, _),
             .border(let content, _, _, _):

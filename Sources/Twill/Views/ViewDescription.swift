@@ -22,6 +22,7 @@ enum ViewDescription {
     case group(children: [any View], layout: (any PrimitiveLayout)?)
     case keyed(children: [(id: AnyHashable, view: any View)])
     case focusable(any View)
+    case control(any View, ControlInteraction)
     case focusBinding(any View, FocusBindingDescription)
     case submit(any View, @MainActor () -> Void)
     case listSelection(any View, AnyHashable?, @MainActor (KeyEvent) -> KeyPressResult)
