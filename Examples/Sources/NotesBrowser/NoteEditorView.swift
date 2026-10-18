@@ -9,13 +9,16 @@ struct NoteEditorView: View {
     let onSave: @MainActor () -> Void
     let onCancel: @MainActor () -> Void
 
+    private var isTitleEmpty: Bool {
+        title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+
     var body: some View {
         Form {
             FormSection(heading) {
                 FormField(
                     "Title", help: "A title is required to save.",
-                    validationMessage: title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-                        ? "Enter a title." : nil
+                    validationMessage: isTitleEmpty ? "Enter a title." : nil
                 ) {
                     TextField("Title", text: $title)
                         .border(.single, color: NotesPalette.border)
@@ -29,6 +32,7 @@ struct NoteEditorView: View {
             VStack(alignment: .leading) {
                 Button(saveLabel, action: onSave)
                     .foregroundStyle(NotesPalette.accent)
+                    .disabled(isTitleEmpty)
                 Button("Cancel", action: onCancel)
             }
             Text("Tab: focus  •  Enter: newline/choose  •  Esc: cancel")

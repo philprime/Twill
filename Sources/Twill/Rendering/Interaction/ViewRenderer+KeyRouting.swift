@@ -51,31 +51,38 @@ extension ViewRenderer {
         _ key: KeyEvent, from target: ViewRenderer, stoppingAt boundary: ViewRenderer? = nil,
         includeControls: Bool = true
     ) -> KeyPressResult {
+        if routeDescendantModifiers(key, from: target, includeControls: includeControls) == .handled { return .handled }
+        var node: ViewRenderer? = target
+        while let current = node {
+            if current.handleTabKey(key, focused: target) == .handled { return .handled }
+            if current.isEnabled, case .keyPress(_, let action) = current.description, action(key) == .handled {
+                return .handled
+            }
+            if current === boundary { break }
+            node = current.parent
+        }
+        return .ignored
+    }
+
+    private func routeDescendantModifiers(
+        _ key: KeyEvent, from target: ViewRenderer, includeControls: Bool
+    ) -> KeyPressResult {
         // A handler can wrap a focusable view or be wrapped by it. Follow only
         // the single-child modifier chain so sibling controls do not receive keys.
         var child = target
-        while child.retainedChildren.count == 1 {
+        while child.isEnabled, child.retainedChildren.count == 1 {
             // List rows are presentation within one control, not a modifier chain
             // belonging to the focused control. Their count must not affect routing.
             if case .listSelection = child.description { break }
             if case .tabs = child.description { break }
             let descendant = child.retainedChildren[0]
+            guard descendant.isEnabled else { break }
             if case .focusable = descendant.description { break }
             if case .keyPress(_, let action) = descendant.description, action(key) == .handled {
                 return .handled
             }
             if includeControls, handleDescendantKey(key, at: descendant) == .handled { return .handled }
             child = descendant
-        }
-
-        var node: ViewRenderer? = target
-        while let current = node {
-            if current.handleTabKey(key, focused: target) == .handled { return .handled }
-            if case .keyPress(_, let action) = current.description, action(key) == .handled {
-                return .handled
-            }
-            if current === boundary { break }
-            node = current.parent
         }
         return .ignored
     }

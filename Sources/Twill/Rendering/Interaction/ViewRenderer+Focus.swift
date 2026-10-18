@@ -51,6 +51,7 @@ extension ViewRenderer {
     }
 
     func keyboardStops() -> [ViewRenderer] {
+        guard isEnabled else { return [] }
         switch description {
         case .pane, .textEditor, .textField, .control, .focusable:
             return [self]
@@ -69,6 +70,7 @@ extension ViewRenderer {
     }
 
     func keyboardCandidates() -> [ViewRenderer] {
+        guard isEnabled else { return [] }
         if case .tabs = description { return hasTabBar ? [self] : [] }
         return focusableNodes()
     }
@@ -88,6 +90,7 @@ extension ViewRenderer {
     }
 
     func focusableNodes() -> [ViewRenderer] {
+        guard isEnabled else { return [] }
         let descendants = interactionChildren.flatMap { $0.focusableNodes() }
         switch description {
         case .listSelection: return [self]
@@ -111,9 +114,10 @@ extension ViewRenderer {
     }
 
     private func requestedFocus(excluding currentTarget: ViewRenderer? = nil) -> ViewRenderer? {
+        guard isEnabled else { return nil }
         // Bindings on the current focus path report existing focus. A different
         // activated binding is a new request, even when it follows them in tree order.
-        if case .focusBinding(_, let binding) = description, binding.isFocused() {
+        if case .focusBinding(_, let binding) = description, binding.isFocused(), !focusableNodes().isEmpty {
             if currentTarget.map({ !contains($0) }) ?? true { return self }
         }
         // Lazy compactMap followed by first re-evaluates a successful transform when
@@ -125,6 +129,7 @@ extension ViewRenderer {
     }
 
     private func clearedBinding(from target: ViewRenderer?) -> ViewRenderer? {
+        guard target?.isEnabled != false else { return nil }
         var current = target
         while let node = current, node !== self {
             if case .focusBinding(_, let binding) = node.description, !binding.isFocused() { return node }
