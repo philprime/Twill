@@ -178,7 +178,7 @@ struct ScrollViewTests {
                             return .handled
                         }
                     }
-                }.frame(height: 1)
+                }.frame(height: 1).keyboardPane()
                 ScrollView {
                     VStack {
                         Text("B1").focusable().onKeyPress { key in
@@ -192,7 +192,7 @@ struct ScrollViewTests {
                             return .handled
                         }
                     }
-                }.frame(height: 1)
+                }.frame(height: 1).keyboardPane()
             })
         _ = renderer.render(.now)
 
@@ -275,7 +275,7 @@ private struct PaneTraversalFixture: View {
             GroupBox("Search") {
                 ScrollView {
                     TextField("Search", text: text)
-                }.frame(width: 8, height: 1)
+                }.frame(width: 8, height: 1).keyboardPane()
             }
             GroupBox("Notes") {
                 ScrollView {
@@ -283,7 +283,7 @@ private struct PaneTraversalFixture: View {
                         Button("One") { onActivate("One") }
                         Button("Two") { onActivate("Two") }
                     }
-                }.frame(width: 6, height: 1)
+                }.frame(width: 6, height: 1).keyboardPane()
             }
             GroupBox("Preview") {
                 ScrollView {
@@ -291,7 +291,7 @@ private struct PaneTraversalFixture: View {
                         Text("First")
                         Text("Second")
                     }
-                }.frame(width: 8, height: 1)
+                }.frame(width: 8, height: 1).keyboardPane()
             }
         }
     }

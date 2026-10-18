@@ -134,7 +134,7 @@ private struct EditorInputFixture: View {
     var body: some View {
         VStack {
             TextEditor(text: $text).frame(width: 6, height: 2)
-            ScrollView { Button("Save") { onSave(text) } }.frame(height: 1)
+            Button("Save") { onSave(text) }.frame(height: 1)
         }
     }
 }

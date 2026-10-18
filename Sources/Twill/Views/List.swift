@@ -1,8 +1,8 @@
 /// A single-selection, vertically scrolling collection of keyed rows.
 ///
-/// The list is one keyboard pane. Up/Down and Home/End change selection,
+/// The list is one control-level Tab stop. Up/Down and Home/End change selection,
 /// and Enter invokes the nearest `.onSubmit` action. Selection stays visible
-/// when another pane is active. Row content describes presentation, not
+/// when another control has focus. Row content describes presentation, not
 /// independently focusable controls.
 public struct List<Data: RandomAccessCollection, ID: Hashable, RowContent: View>: View {
     /// Primitive content rendered directly by the runtime rather than through a composed body.
@@ -61,14 +61,16 @@ extension List where Data.Element: Identifiable, ID == Data.Element.ID {
 extension List: PrimitiveView {
     func makeDescription() -> ViewDescription {
         let selectedID = selectedIndex.map { data[$0][keyPath: id] }
-        return .scroll(
-            ListSelectionContent(
-                content: VStack(alignment: .leading, spacing: 0) {
-                    ForEach(data, id: id) { element in
-                        ListRow(content: rowContent(element), isSelected: element[keyPath: id] == selectedID)
-                    }
-                },
-                selection: selectedID.map(AnyHashable.init), handle: handle))
+        return .pane(
+            ScrollView {
+                ListSelectionContent(
+                    content: VStack(alignment: .leading, spacing: 0) {
+                        ForEach(data, id: id) { element in
+                            ListRow(content: rowContent(element), isSelected: element[keyPath: id] == selectedID)
+                        }
+                    },
+                    selection: selectedID.map(AnyHashable.init), handle: handle)
+            })
     }
 }
 
