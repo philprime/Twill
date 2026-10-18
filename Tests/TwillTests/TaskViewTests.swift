@@ -75,6 +75,81 @@ struct TaskViewTests {
         #expect(frame.grid?.snapshotText == "Gone")
     }
 
+    @MainActor
+    private final class GatedTaskCleanup {
+        let started = AsyncStream<Void>.makeStream()
+        let cleanupStarted = AsyncStream<Void>.makeStream()
+        private let idle = AsyncStream<Void>.makeStream()
+        private var continuation: CheckedContinuation<Void, Never>?
+        private(set) var isFinished = false
+
+        func run() async {
+            started.continuation.yield(())
+            for await _ in idle.stream {}
+            await withCheckedContinuation { continuation in
+                self.continuation = continuation
+                cleanupStarted.continuation.yield(())
+            }
+            isFinished = true
+        }
+
+        func release() {
+            continuation?.resume()
+            continuation = nil
+        }
+    }
+
+    @Test("Shutdown joins gated cleanup after the owning keyed node is removed", .timeLimit(.minutes(1)))
+    func removedKeyedTaskCleanup() async throws {
+        // -- Arrange --
+        let start = Date(timeIntervalSinceReferenceDate: 100)
+        var now = start
+        let cleanup = GatedTaskCleanup()
+        let joinStarted = AsyncStream<Void>.makeStream()
+        var joinReturned = false
+        let runLoop = RecordingRunLoop()
+        let host = ViewHost(
+            rootView: TimelineView(.periodic(from: start, by: 1)) { context in
+                ForEach(context.date == start ? [1] : [], id: \.self) { _ in
+                    Text("Active").task { await cleanup.run() }
+                }
+            }, runLoop: runLoop, output: RecordingTerminalOutput(), now: { now })
+        try host.start()
+        defer {
+            host.stop()
+            cleanup.release()
+        }
+        let timer = try #require(runLoop.timers.first)
+        var starts = cleanup.started.stream.makeAsyncIterator()
+        _ = await starts.next()
+
+        // -- Act --
+        now = start.addingTimeInterval(1)
+        timer.action()
+        var cleanups = cleanup.cleanupStarted.stream.makeAsyncIterator()
+        _ = await cleanups.next()
+        host.stop()
+        let join = Task {
+            joinStarted.continuation.yield(())
+            await host.joinTasks()
+            joinReturned = true
+            return cleanup.isFinished
+        }
+        var joins = joinStarted.stream.makeAsyncIterator()
+        _ = await joins.next()
+        await Task.yield()
+        let returnedBeforeRelease = joinReturned
+        let finishedBeforeRelease = cleanup.isFinished
+        cleanup.release()
+        let finishedWhenJoined = await join.value
+
+        // -- Assert --
+        #expect(!returnedBeforeRelease)
+        #expect(!finishedBeforeRelease)
+        #expect(finishedWhenJoined)
+        #expect(joinReturned)
+    }
+
     @Test("Unmounting before a task starts does not run its action")
     func stopBeforeStart() async throws {
         // -- Arrange --
