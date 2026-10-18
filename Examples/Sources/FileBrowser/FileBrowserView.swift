@@ -37,9 +37,8 @@ struct FileBrowserView: View {
                         }
                     }
             } else {
-                ForEach([directory.path], id: \.self) { _ in
-                    directoryTable
-                }
+                directoryTable
+                    .id(directory.path)
                 ScrollView {
                     Toggle(
                         "Show hidden files",
