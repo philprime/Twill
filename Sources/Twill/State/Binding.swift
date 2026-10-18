@@ -1,6 +1,7 @@
 /// Read/write access to a value owned by another mounted view.
 @MainActor
 @propertyWrapper
+@dynamicMemberLookup
 public struct Binding<Value> {
     private let getValue: @MainActor () -> Value
     private let setValue: @MainActor (Value) -> Void
@@ -19,4 +20,20 @@ public struct Binding<Value> {
 
     /// The binding itself, available through property-wrapper projection.
     public var projectedValue: Binding<Value> { self }
+
+    /// Creates a binding that always reads the supplied value and ignores writes.
+    public static func constant(_ value: Value) -> Binding<Value> {
+        Binding(get: { value }, set: { _ in })
+    }
+
+    /// Projects a writable property, reading the latest owner value on every access.
+    public subscript<Member>(dynamicMember keyPath: WritableKeyPath<Value, Member>) -> Binding<Member> {
+        Binding<Member>(
+            get: { wrappedValue[keyPath: keyPath] },
+            set: { newValue in
+                var value = wrappedValue
+                value[keyPath: keyPath] = newValue
+                wrappedValue = value
+            })
+    }
 }

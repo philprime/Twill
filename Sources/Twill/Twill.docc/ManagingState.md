@@ -29,6 +29,10 @@ A ``Binding`` reads and writes the owner's value. It does not create independent
 
 Use bindings for shared mutable values and action closures for commands. A child can declare `@Binding var name: String` to receive a value owned by an ancestor.
 
+Project writable properties through a binding, such as `$settings.name`, to edit one property of a larger state value. Projections can be chained for nested properties. Each write updates the latest owner value while preserving its other properties and requests presentation through the original binding.
+
+Use `Binding.constant(value)` when a control needs a binding to a fixed value. The binding returns the supplied value and ignores writes from the control.
+
 ## Preserve Identity
 
 For ordinary composition, structural position and concrete view type determine mounted identity. Replacing a type or switching a conditional branch replaces the affected subtree. Removing a view releases its state. Mounting it again starts from its initial values.
