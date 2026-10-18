@@ -55,7 +55,7 @@ extension ViewRenderer {
         if previous !== selected { restoreFocusAfterTabChange(from: previous, to: selected) }
     }
 
-    private var tabBar: TextDrawing {
+    var tabBar: TextDrawing {
         TextDrawing(
             tabs.map { node in
                 guard case .tab(_, let title, _) = node.description else { return "" }
@@ -64,22 +64,17 @@ extension ViewRenderer {
     }
 
     func measureTabs(_ proposal: ProposedCellSize, tableContext: TableLayoutContext?) -> CellSize {
-        let bar = tabBar.sizeThatFits(.unspecified)
         let content = retainedChildren.first
-        let size =
-            content?.measure(
-                ProposedCellSize(width: proposal.width, height: proposal.height.map { max(0, $0 - 1) }),
-                tableContext: tableContext) ?? .zero
-        layoutState.size = proposal.constrain(CellSize(width: max(bar.width, size.width), height: 1 + size.height))
-        layoutState.placements =
-            content.map { [($0, CellRect(column: 0, row: 1, width: size.width, height: size.height))] } ?? []
-        return layoutState.size
-    }
-
-    func drawTabBar(in context: inout DrawingContext, focused: ViewRenderer?) {
-        context.withRegion(CellRect(column: 0, row: 0, width: layoutState.size.width, height: 1)) { bar in
-            bar.withFocus(focused === self) { tabBar.draw(in: &$0) }
+        let size = nodePresentation.sizeThatFits(proposal) { childProposal in
+            let contentSize = content?.measure(childProposal, tableContext: tableContext) ?? .zero
+            layoutState.placements =
+                content.map {
+                    [($0, CellRect(column: 0, row: 1, width: contentSize.width, height: contentSize.height))]
+                } ?? []
+            return contentSize
         }
+        layoutState.size = size
+        return size
     }
 
     func handleTabShortcut(_ key: KeyEvent, from target: ViewRenderer, stoppingAt boundary: ViewRenderer?) -> Bool {

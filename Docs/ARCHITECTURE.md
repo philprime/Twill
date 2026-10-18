@@ -72,6 +72,10 @@ Deadlines are scheduling requests rather than real-time guarantees. Due siblings
 
 `ViewHost` measures mounted content into terminal cells, diffs committed frames, and serializes output. It advances the diff baseline only after a successful write. Control characters are rendered safely, and wide graphemes are never partially drawn.
 
+Layouts choose child proposals through synchronous measurement capabilities and return geometry in child order. Fill intent is scalar metadata rather than a renderer decision based on concrete layout types. Shared column geometry belongs to a single measurement pass and is replaced at nested ownership boundaries. Measurement capabilities are not cached or used by deferred work.
+
+Node-local presentation uses snapshots of drawing data, decoration, and viewport offsets. Measurement and drawing reach children only through synchronous runtime callbacks, without access to mounted nodes. The runtime retains identity, updates viewport memory after measurement, and resolves focus appearance. Modal layers remain a tree-composition concern, and terminal operations remain host-owned.
+
 State invalidation signals one coalescing presentation source. A due timeline render may consume the same pending work. Readiness is cleared before rendering so state changes during rendering request a later frame.
 
 Resize keeps only the newest unread dimensions and redraws cached content without reevaluating view bodies or changing timeline deadlines. Static trees return to idle after presentation.
