@@ -20,6 +20,10 @@ enum ViewDescription {
     case dialog(any View, isPresented: Binding<Bool>, kind: DialogKind)
     case disclosure(header: any View, content: (any View)?)
     case group(children: [any View], layout: (any PrimitiveLayout)?)
+    // Shared-column ownership is structural, not a concrete-layout tag on a generic group.
+    // Rows require a table-local measurement context and preserve even empty cell slots.
+    case table(any View, TableLayout)
+    case tableRow(cells: [any View])
     case keyed(children: [(id: AnyHashable, view: any View)])
     case focusable(any View)
     case control(any View, ControlInteraction)

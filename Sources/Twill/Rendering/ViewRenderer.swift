@@ -23,7 +23,6 @@ final class ViewRenderer {
     var editorState = MountedEditorState()
     var scrollState = MountedScrollState()
     var layoutState = MountedLayoutState()
-    var tableColumnWidths: [Int] = []
 
     private init(_ view: any View, taskRegistry: MountedTaskRegistry) {
         viewType = ObjectIdentifier(type(of: view))

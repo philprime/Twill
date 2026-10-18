@@ -20,11 +20,11 @@ extension ViewRenderer {
         case .canvas(let interval, _):
             removeChildren()
             schedule.updateCanvas(interval: interval, at: date)
-        case .body(let body), .button(let body, _, _):
+        case .body(let body), .button(let body, _, _), .table(let body, _):
             reconcile([body], at: date)
         case .dialog(let actions, _, let kind):
             updateDialog(actions, kind: kind, at: date)
-        case .group(let views, _):
+        case .group(let views, _), .tableRow(let views):
             reconcile(views, at: date)
         case .keyed(let views):
             reconcileKeyed(views, at: date)

@@ -1,32 +1,21 @@
-/// Column sizing happens after mounting so cell bodies and state stay in the runtime.
+/// Column discovery stays with the mounted tree; row sizing uses only pass-local geometry.
 extension ViewRenderer {
-    func resolveTableColumns(_ layout: TableLayout, proposal: ProposedCellSize) {
+    func resolveTableContext(
+        _ proposal: ProposedCellSize, inherited: TableLayoutContext?
+    ) -> TableLayoutContext? {
+        guard case .table(_, let layout) = description else { return inherited }
+        // Scan natural cell sizes before constraining rows. A cell containing a nested
+        // table resolves that table independently, rather than inheriting these widths.
         let sizes = retainedChildren.flatMap { $0.tableRows() }.flatMap { row in
             row.retainedChildren.map { $0.measure(.unspecified) }
         }
-        tableColumnWidths = layout.columnWidths(in: proposal.width, subviews: sizes)
-    }
-
-    func measureTableRow(_ items: [ViewRenderer]) -> [CellSize] {
-        var ancestor = parent
-        while let node = ancestor {
-            if case .group(_, let layout) = node.description, layout is TableLayout {
-                return zip(items, node.tableColumnWidths).map { item, width in
-                    let size = item.measure(ProposedCellSize(width: width))
-                    return CellSize(width: width, height: size.height)
-                }
-            }
-            ancestor = node.parent
-        }
-        preconditionFailure("A table row must be mounted inside a table")
+        return TableLayoutContext(columnWidths: layout.columnWidths(in: proposal.width, subviews: sizes))
     }
 
     private func tableRows() -> [ViewRenderer] {
-        if case .group(_, let layout) = description {
-            if layout is TableRowLayout { return [self] }
-            // Nested tables resolve their own columns and are one cell here.
-            if layout is TableLayout { return [] }
-        }
+        if case .tableRow = description { return [self] }
+        // A nested table is one outer cell and owns the widths of its own rows.
+        if case .table = description { return [] }
         return retainedChildren.flatMap { $0.tableRows() }
     }
 }
