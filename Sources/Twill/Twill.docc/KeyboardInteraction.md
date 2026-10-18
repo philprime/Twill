@@ -6,7 +6,7 @@ Route input through focused controls, scoped handlers, and modal presentations.
 
 Twill manages focus independently of selection, scroll position, and the terminal's hardware cursor. Controls such as ``Button`` and ``TextField`` are focusable automatically. Apply `.focusable()` when a custom row needs to participate in keyboard navigation.
 
-The first eligible control receives initial focus. Outside scroll panes, arrow keys move focus in composition order when the control does not consume them. Navigation is not spatial. Tab and Shift-Tab switch scroll panes when panes are present, without wrapping. They do not provide default screen-wide focus traversal outside panes.
+The first eligible control receives initial focus. Tab and Shift-Tab move between controls in composition order, without wrapping. This works automatically, with no navigation wrappers. Compound controls such as lists, tables, and editors expose one control-level Tab stop and retain their internal focus when revisited. Arrow keys move focus when the control does not consume them or confine them to internal navigation. Navigation is not spatial.
 
 ## Handle a Scoped Shortcut
 
@@ -32,11 +32,11 @@ A focused text field accepts input immediately. Enter invokes the nearest `.onSu
 
 The host displays the hardware cursor at an editing control's caret and hides it when appropriate. Reverse-video focus highlighting does not depend on that cursor.
 
-## Navigate Scroll Panes
+## Navigate Scrolling Content
 
-A ``ScrollView`` establishes a keyboard pane. Arrow navigation remains within the active pane, and moving focus reveals the newly focused control. Each pane remembers its focus and vertical offset. Tab and Shift-Tab switch between panes.
+A ``ScrollView`` controls its viewport, not keyboard grouping. Tab visits the controls inside it in the same way as controls outside it. Moving focus reveals the control through its enclosing viewports, each of which retains its own offset.
 
-A pane with no interactive descendants receives focus itself. Up and Down scroll one row, and Page Up and Page Down scroll by a viewport. Give the scroll view a bounded height, for example with `.frame(height: 8)`, to establish its visible area.
+A scroll view with no interactive descendants receives focus itself. Up and Down scroll one row, and Page Up and Page Down scroll by a viewport. Paging from a contained control uses its nearest enclosing viewport unless the control consumes the key. Give the scroll view a bounded height, for example with `.frame(height: 8)`, to establish its visible area.
 
 ## Request Focus Programmatically
 

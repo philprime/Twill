@@ -70,8 +70,8 @@ struct DocGenerator {
         These previews use a fixed date and a dark documentation theme. Terminal fonts and ANSI
         palettes vary. Reverse video indicates focus, and an underline represents the terminal caret.
         Each preview uses the content's natural size unless its description specifies a viewport.
-        Images show one state, rather than interactive behavior. Tab and Shift-Tab switch keyboard panes.
-        Up and Down generally move between controls within a pane, subject to the focused control's keys.
+        Images show one state, rather than interactive behavior. Tab and Shift-Tab move between controls.
+        Up and Down navigate according to the focused control's keyboard behavior.
 
         The gallery includes layout and composition types, controls, and modifier wrappers. Wrappers that
         add behavior without visual decoration show their underlying content. EmptyView is intentionally blank.

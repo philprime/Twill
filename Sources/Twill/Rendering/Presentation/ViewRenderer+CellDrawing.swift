@@ -41,8 +41,9 @@ extension ViewRenderer {
         var node: ViewRenderer? = self
         while let current = node {
             if case .listRow(_, let isSelected) = current.description { return isSelected }
-            // Focusing a scroll pane enables navigation without highlighting all its content.
+            // Viewers and keyboard scopes do not highlight all their static descendants.
             if case .scroll = current.description { return false }
+            if case .pane = current.description { return false }
             // The tab bar is its own focus target, not a container highlight or caret.
             if case .tabs = current.description { return false }
             if current === focused { return true }

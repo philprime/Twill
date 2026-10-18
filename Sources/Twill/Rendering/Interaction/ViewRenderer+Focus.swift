@@ -13,25 +13,30 @@ extension ViewRenderer {
     /// In particular, a still-active binding on the current path is not a new request,
     /// and inactive destinations cannot introduce requests into the active scope.
     func focusRequest() -> FocusRequest {
-        let panes = scrollPanes()
+        let panes = keyboardStops()
         let reason: FocusRequest.Reason
         let requested = requestedFocus(excluding: focusState.presentedFocus) ?? requestedFocus()
         if let requested {
             let targets = requested.focusableNodes()
-            let pane = panes.first { requested.contains($0) || $0.contains(requested) }
-            reason = .explicit(candidates: targets, remembered: (pane ?? self).focusState.focusedNode, pane: pane)
+            let remembered = requested.focusState.focusedNode
+            let target = remembered.flatMap { memory in targets.first { $0 === memory } } ?? targets.first
+            let pane = target.flatMap { target in panes.first { $0.ownsKeyboardFocus(target) } }
+            reason = .explicit(candidates: targets, remembered: remembered, pane: pane)
         } else if let cleared = clearedBinding(from: focusState.presentedFocus) ?? focusState.clearedFocusBinding {
             reason = .cleared(cleared)
-        } else if let remembered = rememberedFocus(outside: panes) {
+        } else if let remembered = rememberedFocus() {
             reason = .remembered(remembered)
         } else {
             let validPane = focusState.activePane.flatMap { candidate in
                 panes.contains { $0 === candidate } ? candidate : nil
             }
-            let pane = validPane ?? panes.first
+            let preferred = focusCandidates(in: focusableNodes()).preferred
+            let preferredPane = preferred.flatMap { target in panes.first { $0.ownsKeyboardFocus(target) } }
+            let pane = validPane ?? preferredPane ?? panes.first
             let owner = pane ?? self
             reason = .automatic(
-                candidates: owner.focusCandidates(in: owner.focusableNodes()), pane: pane, updatePane: validPane == nil)
+                candidates: owner.focusCandidates(in: owner.keyboardCandidates()), pane: pane,
+                updatePane: validPane == nil)
         }
         return FocusRequest(scope: self, presented: focusState.presentedFocus, reason: reason)
     }
@@ -45,10 +50,27 @@ extension ViewRenderer {
         return false
     }
 
-    func scrollPanes() -> [ViewRenderer] {
-        if case .scroll = description { return [self] }
-        if case .textEditor = description { return [self] }
-        return interactionChildren.flatMap { $0.scrollPanes() }
+    func keyboardStops() -> [ViewRenderer] {
+        switch description {
+        case .pane, .textEditor, .textField, .control, .focusable:
+            return [self]
+        case .tabs:
+            return hasTabBar ? [self] + interactionChildren.flatMap { $0.keyboardStops() } : []
+        default:
+            let descendants = interactionChildren.flatMap { $0.keyboardStops() }
+            if case .scroll = description, descendants.isEmpty { return [self] }
+            return descendants
+        }
+    }
+
+    func ownsKeyboardFocus(_ target: ViewRenderer) -> Bool {
+        if case .tabs = description { return self === target }
+        return contains(target)
+    }
+
+    func keyboardCandidates() -> [ViewRenderer] {
+        if case .tabs = description { return hasTabBar ? [self] : [] }
+        return focusableNodes()
     }
 
     func requestFocusPresentation() {
@@ -71,7 +93,7 @@ extension ViewRenderer {
         case .listSelection: return [self]
         case .tabs: return hasTabBar ? [self] + descendants : []
         case .focusable, .control, .textField, .textEditor: return [self] + descendants
-        case .scroll where descendants.isEmpty: return [self]
+        case .scroll where descendants.isEmpty, .pane where descendants.isEmpty: return [self]
         default: return descendants
         }
     }
@@ -112,10 +134,13 @@ extension ViewRenderer {
         return nil
     }
 
-    private func rememberedFocus(outside panes: [ViewRenderer]) -> ViewRenderer? {
-        guard let focusedNode = focusState.focusedNode,
-            focusableNodes().contains(where: { $0 === focusedNode })
-        else { return nil }
-        return panes.contains(where: { $0.contains(focusedNode) }) ? nil : focusedNode
+    private func rememberedFocus() -> ViewRenderer? {
+        let candidates = focusableNodes()
+        // A modal's retained base keeps its own memory while the enclosing scope
+        // presents a different target. Returning must not select the first control.
+        for memory in [focusState.focusedNode, sheetBranch?.focusState.focusedNode] {
+            if let memory, candidates.contains(where: { $0 === memory }) { return memory }
+        }
+        return nil
     }
 }

@@ -1,6 +1,6 @@
 import Foundation
 
-/// A single-selection table in one scrolling keyboard pane.
+/// A single-selection scrolling table with one control-level Tab stop.
 /// Sortable headers update the bound comparators; the caller sorts the data.
 /// Up from the first row reaches the headers. Left/Right navigate headers,
 /// Enter or Space changes sort order, and Down returns to the selected row.
@@ -124,7 +124,7 @@ extension Table: PrimitiveView {
                 .focused($focus, equals: .rows)
             }
         }
-        return .table(content, TableLayout(columnCount: descriptions.count))
+        return .table(content.keyboardPane(), TableLayout(columnCount: descriptions.count))
     }
 }
 

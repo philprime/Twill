@@ -182,7 +182,7 @@ extension DocumentationPreviewFixture {
             Self(
                 "TextEditor",
                 "A multiline editor. Enter inserts a newline; arrows move the "
-                    + "caret; Tab switches panes.",
+                    + "caret; Tab moves between controls.",
                 proposal: .init(width: 24, height: 3)
             ) {
                 TextEditor(text: binding("First line\nSecond line"))
@@ -271,7 +271,7 @@ extension DocumentationPreviewFixture {
                 "A tab declaration shown inside its required TabView container; "
                     + "the selected destination is visible."
             ) { tabs },
-            Self("ScrollView", "Content clipped to a two-row pane. Up/Down scroll; Tab switches panes.") {
+            Self("ScrollView", "Content clipped to a two-row viewport. Up/Down scroll; Tab moves between controls.") {
                 ScrollView {
                     VStack(alignment: .leading) {
                         Text("Visible row 1")

@@ -26,7 +26,7 @@ struct FocusTransition {
         case remember(scope: ViewRenderer, target: ViewRenderer?)
         case activatePane(scope: ViewRenderer, pane: ViewRenderer?)
         case clearedBinding(scope: ViewRenderer, binding: ViewRenderer?)
-        case followFocus(pane: ViewRenderer)
+        case followFocus(target: ViewRenderer?)
         case reveal(pane: ViewRenderer, target: ViewRenderer)
     }
 

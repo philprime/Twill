@@ -61,7 +61,7 @@ struct ActivityMonitorView: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
             Text(statusLine).foregroundStyle(Color.ansi(errorMessage.isEmpty ? .cyan : .red))
-            Text("Tab: pane · ↑/↓: select · ↑ at first row: headers · ←/→ Enter: sort · Ctrl-C: quit")
+            Text("Tab: focus · ↑/↓: select · ↑ at first row: headers · ←/→ Enter: sort · Ctrl-C: quit")
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .task { await monitor() }

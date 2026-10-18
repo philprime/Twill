@@ -36,12 +36,9 @@ struct NotesBrowserView: View {
                 .foregroundStyle(NotesPalette.background)
                 .backgroundStyle(NotesPalette.accent)
             GroupBox("Search") {
-                ScrollView {
-                    TextField("Search titles and bodies", text: $query)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                }
-                .frame(height: 1)
-                .foregroundStyle(NotesPalette.foreground)
+                TextField("Search titles and bodies", text: $query)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .foregroundStyle(NotesPalette.foreground)
             }
             .foregroundStyle(NotesPalette.border)
             HStack(spacing: 2) {
@@ -64,7 +61,7 @@ struct NotesBrowserView: View {
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-            Text(" Tab: pane  •  Arrows: scroll/select  •  e: edit  •  n: new  •  d: delete  •  ?: help ")
+            Text(" Tab: focus  •  Arrows: scroll/select  •  e: edit  •  n: new  •  d: delete  •  ?: help ")
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .foregroundStyle(NotesPalette.accent)
         }
