@@ -1,5 +1,3 @@
-import Foundation
-
 extension ViewRenderer {
     /// Layout and drawing never evaluate bodies or advance timeline deadlines.
     func drawFrame(proposal: ProposedCellSize, centeredInViewport: Bool = false) -> CellGrid? {
@@ -26,13 +24,4 @@ extension ViewRenderer {
         return context.grid
     }
 
-    var drawing: (any PrimitiveDrawing)? {
-        switch description {
-        case .drawing(let drawing): return drawing
-        case .canvas(_, let render):
-            return Canvas.Drawing(size: layoutState.size, date: schedule.canvasDate ?? .now, render: render)
-        case .textField(let field): return field.drawing
-        default: return nil
-        }
-    }
 }

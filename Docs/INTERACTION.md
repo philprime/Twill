@@ -41,4 +41,6 @@ The application handles reserved lifecycle keys first. Other keys are routed wit
 
 The terminal host alone positions and shows the hardware cursor at the editing caret. It hides the cursor when no text field is focused and restores inherited terminal settings and cursor visibility during shutdown. Views supply a caret position relative to their laid-out bounds; they do not emit terminal escape sequences. Presentation uses terminal cells, so the caret's column is measured in display cells rather than string indices.
 
+Focus resolution separates mounted queries, target selection, and transition application. Queries gather eligible candidates and binding requests without changing focus. Selection returns a synchronous transition rather than invoking callbacks. Navigation and branch restoration use the same application path for ordered memory updates, blur, and binding synchronization. Unchanged targets do not repeat blur or binding publication. Transition data is not retained across input or tree updates, and modal dismissal can reset the presentation marker while preserving the enclosing scope's remembered target.
+
 The runtime remains event-driven: input, state writes, and modal transitions request coalesced presentation without polling. Unrelated timeline deadlines remain unchanged by those updates.

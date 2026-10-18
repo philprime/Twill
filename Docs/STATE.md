@@ -8,6 +8,8 @@ Twill keeps view values as declarative descriptions. Mounted nodes own persisten
 
 Writing `@State` invalidates the affected content. The host coalesces multiple writes before presentation and writes nothing when the resulting frame is unchanged. Unrelated timeline deadlines remain intact. View bodies describe content and do not own timers or terminal output.
 
+Viewport memory belongs to mounted identity, independently of the bound content value and keyboard focus. Compatible parent updates retain it, while identity replacement creates fresh memory. Remembered focus references are weak so they cannot keep removed content alive. Frame caches retain only descendant placements and scalar layout summaries, not their owning node or pass-local measurement callbacks.
+
 `@Binding` provides read/write access to a value owned by another node. Writing through a binding updates that owner and triggers the same invalidation as a direct state write. Bindings do not extend the owner's lifetime or create independent storage. Shared mutable values use bindings; commands such as navigation use actions.
 
 ## Asynchronous view work

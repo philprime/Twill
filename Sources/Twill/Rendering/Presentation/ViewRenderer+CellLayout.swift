@@ -81,38 +81,33 @@ extension ViewRenderer {
     func measure(_ proposal: ProposedCellSize, tableContext inherited: TableLayoutContext? = nil) -> CellSize {
         let tableContext = resolveTableContext(proposal, inherited: inherited)
         if case .tabs = description { return measureTabs(proposal, tableContext: tableContext) }
-        if case .textEditor(let editor) = description {
-            return measureTextEditor(editor, proposal: proposal)
-        }
-        if let drawing {
-            layoutState.size = drawing.sizeThatFits(proposal)
-            return layoutState.size
-        }
-        if case .scroll = description {
-            let items = presentationChildren.flatMap(\.layoutItems)
-            let contentSize =
-                items.first?.measure(
-                    ProposedCellSize(width: proposal.width), tableContext: tableContext) ?? .zero
-            layoutState.size = proposal.constrain(contentSize)
-            scrollState.updateContent(
-                height: contentSize.height, viewportHeight: proposal.height.map { _ in layoutState.size.height })
-            layoutState.placements = items.map {
-                ($0, CellRect(column: 0, row: 0, width: contentSize.width, height: contentSize.height))
+        // Measure before mutating cached size: child callbacks may inspect the mounted
+        // tree, and must not run during an exclusive mutation of its layout storage.
+        let size = nodePresentation.sizeThatFits(proposal) { childProposal in
+            if case .scroll = description {
+                return measureScrollContent(childProposal, tableContext: tableContext)
             }
-            return layoutState.size
+            return measureChildren(childProposal, tableContext: tableContext)
         }
-        if case .border(_, _, _, let title) = description {
-            let inner = ProposedCellSize(
-                width: proposal.width.map { max(0, $0 - 2) },
-                height: proposal.height.map { max(0, $0 - 2) })
-            let size = measureChildren(inner, tableContext: tableContext)
-            let titleWidth = title.map { $0.sizeThatFits(.unspecified).width + 3 } ?? 0
-            layoutState.size = proposal.constrain(
-                CellSize(width: max(size.width + 2, titleWidth), height: size.height + 2))
-            return layoutState.size
+        layoutState.size = size
+        if case .scroll = description {
+            scrollState.updateContent(
+                height: scrollState.contentHeight, viewportHeight: proposal.height.map { _ in size.height })
         }
-        layoutState.size = measureChildren(proposal, tableContext: tableContext)
-        return layoutState.size
+        if case .textEditor(let editor) = description { updateEditorViewport(editor) }
+        return size
+    }
+
+    private func measureScrollContent(
+        _ proposal: ProposedCellSize, tableContext: TableLayoutContext?
+    ) -> CellSize {
+        let items = presentationChildren.flatMap(\.layoutItems)
+        let contentSize = items.first?.measure(proposal, tableContext: tableContext) ?? .zero
+        scrollState.updateContent(height: contentSize.height, viewportHeight: nil)
+        layoutState.placements = items.map {
+            ($0, CellRect(column: 0, row: 0, width: contentSize.width, height: contentSize.height))
+        }
+        return contentSize
     }
 
     private func measureChildren(_ proposal: ProposedCellSize, tableContext: TableLayoutContext?) -> CellSize {
