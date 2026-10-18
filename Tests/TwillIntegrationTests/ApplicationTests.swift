@@ -10,11 +10,16 @@ struct ApplicationTests {
         let clock = ContinuousClock()
         let start = clock.now
         var ticks: [ContinuousClock.Instant] = []
+        let (ready, continuation) = AsyncStream<Void>.makeStream()
         let runLoop = Twill.DefaultRunLoop()
         let terminal = try TestTerminal()
         let application = terminal.makeApplication(runLoop: runLoop)
         let timer = Twill.Timer(interval: .seconds(1), repeats: true) {
             ticks.append(clock.now)
+            if ticks.count == 2 {
+                continuation.yield(())
+                continuation.finish()
+            }
         }
         runLoop.add(timer)
 
@@ -23,7 +28,7 @@ struct ApplicationTests {
             try await application.run()
         }
         defer { task.cancel() }
-        try await clock.sleep(for: .milliseconds(2250))
+        for await _ in ready {}
         task.cancel()
         try await task.value
         let countAfterCancellation = ticks.count
@@ -32,11 +37,9 @@ struct ApplicationTests {
         // -- Assert --
         #expect(ticks.count >= 2)
         #expect(ticks.count == countAfterCancellation)
-        if let first = ticks.first {
-            #expect(start.duration(to: first) >= .seconds(1))
-        }
-        for (previous, next) in zip(ticks, ticks.dropFirst()) {
-            #expect(previous.duration(to: next) >= .milliseconds(900))
+        // Deadlines preserve phase, so delayed delivery can shorten the gap between callbacks.
+        for (index, tick) in ticks.enumerated() {
+            #expect(start.duration(to: tick) >= .seconds(index + 1))
         }
     }
 
