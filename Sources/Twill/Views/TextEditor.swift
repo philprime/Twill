@@ -1,7 +1,7 @@
 /// A bound multiline editor with a mounted caret and a scrolling viewport.
 ///
-/// Enter inserts a newline rather than submitting. Tab and Shift-Tab switch
-/// panes, and Escape and modified Enter route to enclosing handlers. Long
+/// Enter inserts a newline rather than submitting. Tab and Shift-Tab move
+/// between controls, and Escape and modified Enter route to enclosing handlers. Long
 /// lines scroll horizontally without soft wrapping. Focus changes retain the
 /// insertion point. The terminal host alone presents the hardware cursor.
 public struct TextEditor: View {

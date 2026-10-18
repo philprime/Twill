@@ -7,8 +7,8 @@ Explore terminal views through snapshots produced by real Twill renderer instanc
 These previews use a fixed date and a dark documentation theme. Terminal fonts and ANSI
 palettes vary. Reverse video indicates focus, and an underline represents the terminal caret.
 Each preview uses the content's natural size unless its description specifies a viewport.
-Images show one state, rather than interactive behavior. Tab and Shift-Tab switch keyboard panes.
-Up and Down generally move between controls within a pane, subject to the focused control's keys.
+Images show one state, rather than interactive behavior. Tab and Shift-Tab move between controls.
+Up and Down navigate according to the focused control's keyboard behavior.
 
 The gallery includes layout and composition types, controls, and modifier wrappers. Wrappers that
 add behavior without visual decoration show their underlying content. EmptyView is intentionally blank.
@@ -68,6 +68,14 @@ The view builder creates this heterogeneous child list; its enclosing stack supp
 The view builder selects the visible branch while preserving structural identity.
 
 ![ConditionalContent terminal preview](preview-ConditionalContent.svg)
+
+## IdentifiedView
+
+``IdentifiedView``
+
+Explicit identity retains mounted content until its ID changes.
+
+![IdentifiedView terminal preview](preview-IdentifiedView.svg)
 
 ## ForEach
 
@@ -153,7 +161,7 @@ A populated password field, masked with bullets. Editing and submission use the 
 
 ``TextEditor``
 
-A multiline editor. Enter inserts a newline; arrows move the caret; Tab switches panes.
+A multiline editor. Enter inserts a newline; arrows move the caret; Tab moves between controls.
 
 ![TextEditor terminal preview](preview-TextEditor.svg)
 
@@ -249,7 +257,7 @@ A tab declaration shown inside its required TabView container; the selected dest
 
 ``ScrollView``
 
-Content clipped to a two-row pane. Up/Down scroll; Tab switches panes.
+Content clipped to a two-row viewport. Up/Down scroll; Tab moves between controls.
 
 ![ScrollView terminal preview](preview-ScrollView.svg)
 

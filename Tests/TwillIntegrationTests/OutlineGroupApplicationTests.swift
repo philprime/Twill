@@ -76,7 +76,7 @@ private struct OutlineInputFixture: View {
             ) { Text("Node \($0.id)") }
             .frame(width: 20, height: 2)
             .onSubmit { record("select:\(selection ?? -1)") }
-            ScrollView { Button("Other") { record("other") } }
+            Button("Other") { record("other") }
         }
     }
 }

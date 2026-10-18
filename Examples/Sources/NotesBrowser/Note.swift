@@ -13,7 +13,7 @@ struct Note: Identifiable {
     static let examples: [Note] = [
         Note(
             id: "welcome", title: "Welcome to Notes",
-            body: "This notebook lives in memory. Search, switch panes, edit a note, or press n to create one."
+            body: "This notebook lives in memory. Search, move between controls, edit a note, or press n to create one."
         ),
         Note(
             id: "groceries", title: "Weekend groceries",
