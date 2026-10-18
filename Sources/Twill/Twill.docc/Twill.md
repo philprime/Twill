@@ -113,6 +113,7 @@ Start with <doc:GettingStarted>, then explore <doc:ViewGallery> to see rendered 
 
 - ``BorderView``
 - ``ConditionalContent``
+- ``DisabledView``
 - ``FocusableView``
 - ``FocusedView``
 - ``FrameView``

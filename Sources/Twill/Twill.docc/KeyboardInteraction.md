@@ -26,6 +26,19 @@ VStack {
 
 The focused control receives input before its ancestors. A focused text field consumes printable input and caret keys, so those keys do not trigger enclosing shortcuts. ``Application/onKeyEvent`` receives otherwise unhandled keys after view routing. Enabled lifecycle shortcuts, including Control-C by default, are handled by the application first.
 
+## Disable Controls
+
+Use `.disabled(_:)` on a control or container:
+
+```swift
+Button("Save", action: save)
+    .disabled(title.isEmpty)
+```
+
+The value is inherited, so a disabled ancestor cannot be re-enabled by a descendant. Disabled controls remain visible and mounted but are skipped by focus traversal and cannot edit, activate, or handle keys within their disabled scope. Disabling the focused control moves focus to an eligible target and hides its editing caret. State and schedules remain intact. The modifier does not change colors or layout.
+
+Enabled enclosing shortcuts and lifecycle commands remain available. Dialog dismissal does not invoke a disabled cancel action.
+
 ## Edit and Submit Text
 
 A focused text field accepts input immediately. Enter invokes the nearest `.onSubmit` action. Submission does not clear the text or move focus automatically. Escape remains available to enclosing handlers so the application can define dismissal or navigation.

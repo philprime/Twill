@@ -41,6 +41,7 @@ extension ViewRenderer {
         var node: ViewRenderer? = self
         while let current = node {
             if case .listRow(_, let isSelected) = current.description { return isSelected }
+            if case .disabled(_, true) = current.description { return false }
             // Viewers and keyboard scopes do not highlight all their static descendants.
             if case .scroll = current.description { return false }
             if case .pane = current.description { return false }
