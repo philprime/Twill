@@ -1,6 +1,14 @@
 struct PaddingLayout: PrimitiveLayout {
     let insets: EdgeInsets
 
+    @MainActor
+    func measureSubviews(_ proposal: ProposedCellSize, subviews: [LayoutSubview]) -> [CellSize] {
+        let inner = childProposal(proposal)
+        return subviews.count == 1
+            ? [subviews[0].sizeThatFits(inner)]
+            : HorizontalLayout(spacing: 0).measureSubviews(inner, subviews: subviews)
+    }
+
     func childProposal(_ proposal: ProposedCellSize) -> ProposedCellSize {
         ProposedCellSize(
             width: proposal.width.map { max(0, $0 - insets.leading - insets.trailing) },

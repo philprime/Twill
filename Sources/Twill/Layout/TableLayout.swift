@@ -3,6 +3,8 @@ struct TableLayout: PrimitiveLayout {
     let columnCount: Int
     static let spacing = 2
 
+    var behavior: LayoutBehavior { LayoutBehavior(width: .filling) }
+
     func columnWidths(in proposedWidth: Int?, subviews: [CellSize]) -> [Int] {
         let naturalGrid = GridLayout(
             columns: Array(repeating: GridItem(.flexible()), count: columnCount), spacing: Self.spacing)

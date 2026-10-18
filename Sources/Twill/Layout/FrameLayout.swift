@@ -5,14 +5,25 @@ struct FrameLayout: PrimitiveLayout {
     let maxHeight: FrameLimit?
     let alignment: Alignment
 
-    var fillsWidth: Bool {
-        if case .infinity = maxWidth { return true }
-        return false
+    var behavior: LayoutBehavior {
+        LayoutBehavior(
+            width: fillBehavior(fixed: width, maximum: maxWidth),
+            height: fillBehavior(fixed: height, maximum: maxHeight))
     }
 
-    var fillsHeight: Bool {
-        if case .infinity = maxHeight { return true }
-        return false
+    private func fillBehavior(fixed: Int?, maximum: FrameLimit?) -> LayoutBehavior.Fill {
+        if fixed != nil { return .intrinsic }
+        switch maximum {
+        case .cells: return .intrinsic
+        case .infinity: return .filling
+        case nil: return .inherited
+        }
+    }
+
+    @MainActor
+    func measureSubviews(_ proposal: ProposedCellSize, subviews: [LayoutSubview]) -> [CellSize] {
+        if subviews.count == 1 { return [subviews[0].sizeThatFits(childProposal(proposal))] }
+        return subviews.map { $0.sizeThatFits(.unspecified) }
     }
 
     func childProposal(_ proposal: ProposedCellSize) -> ProposedCellSize {
