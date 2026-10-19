@@ -66,6 +66,18 @@ VStack {
 
 The focused control receives input before its ancestors. A focused text field consumes printable input and caret keys, so those keys do not trigger enclosing shortcuts. Left/Right move one grapheme, Home/End move to the beginning/end of the value, Backspace removes the previous grapheme, and Delete removes the next one without advancing the caret. Boundary keys remain consumed without changing the binding. ``SecureField`` shares these keys while keeping rendered content and caret geometry masked. Non-text modified character chords remain available to scoped handlers and action shortcuts. ``Application/onKeyEvent`` receives otherwise unhandled keys after view routing. Enabled lifecycle shortcuts, including Control-C by default, are handled by the application first.
 
+## Navigate Words and Present Read-Only Values
+
+Alt or Control with Left/Right moves to the previous run's start or next run's end. The same modifiers with Backspace/Delete remove that range. Whitespace is skipped before a run; Unicode letters, numbers, and underscores group together, separately from punctuation and emoji. These operations preserve whole graphemes across all editing controls. Terminals must report the modifiers. Alt-Backspace also accepts the common Escape-prefixed encoding.
+
+Use an explicit editing mode when text should remain navigable without accepting edits:
+
+```swift
+TextEditor(text: $document, editingMode: .readOnly)
+```
+
+``TextField`` and ``SecureField`` accept the same option. Read-only controls retain focus, caret navigation, and scrolling. Attempts to insert or delete are consumed without changing the binding. Single-line submit actions and non-text modified character shortcuts retain their normal routing, while multiline Enter is consumed without insertion or submission. Application-owned updates remain visible. Editing mode changes preserve mounted state and schedules. Use `.disabled(_:)` when interaction and focus should be excluded entirely.
+
 ## Disable Controls
 
 Use `.disabled(_:)` on a control or container:
@@ -81,7 +93,7 @@ Enabled enclosing shortcuts and lifecycle commands remain available. Dialog dism
 
 ## Edit and Submit Text
 
-A focused text field accepts input immediately. Enter invokes the nearest `.onSubmit` action. Submission does not clear the text or move focus automatically. Escape remains available to enclosing handlers so the application can define dismissal or navigation.
+A focused editable text field accepts input immediately. Enter invokes the nearest `.onSubmit` action. Submission does not clear the text or move focus automatically. Escape remains available to enclosing handlers so the application can define dismissal or navigation.
 
 The host displays the hardware cursor at an editing control's caret and hides it when appropriate. Reverse-video focus highlighting does not depend on that cursor.
 

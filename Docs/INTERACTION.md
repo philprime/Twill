@@ -28,7 +28,7 @@ Menu shortcuts and direct dialog actions respect disabled state. Escape dismisse
 
 ## Text-field input
 
-A focused text field accepts input immediately. It consumes text and caret keys before screen or application shortcuts. Losing focus hides its caret; regaining focus places the insertion point at the end of the current text. Left/Right move one grapheme, Home/End move to the value's start/end, Backspace removes the preceding grapheme, and Delete removes the following grapheme without advancing the insertion point. These ordinary editing keys are consumed even at boundaries; no-op keys do not write the binding. Secure fields share this behavior while presenting only masked cells. Editing does not require a separate public state or activation key. Tab and Shift-Tab are not editing keys: they route through enclosing handlers and move between controls without wrapping. No scroll container or navigation wrapper is needed to leave a field.
+A focused editable text field accepts input immediately. It consumes text and caret keys before screen or application shortcuts. Losing focus hides its caret; regaining focus places the insertion point at the end of the current text. Left/Right move one grapheme, Home/End move to the value's start/end, Backspace removes the preceding grapheme, and Delete removes the following grapheme without advancing the insertion point. These ordinary editing keys are consumed even at boundaries; no-op keys do not write the binding. Secure fields share this behavior while presenting only masked cells. Editing does not require a separate public state or activation key. Tab and Shift-Tab are not editing keys: they route through enclosing handlers and move between controls without wrapping. No scroll container or navigation wrapper is needed to leave a field.
 
 Enter invokes the nearest enclosing `.onSubmit` action. Submission retains the text and does not implicitly move focus; the action can request another target. Escape routes to enclosing handlers, allowing the screen to choose whether to move focus, dismiss a sheet, or navigate back. Cancelling or reverting text is a separate action.
 
@@ -42,6 +42,14 @@ Enter invokes the nearest enclosing `.onSubmit` action. Submission retains the t
 | Printable keys  | Route to enclosing handlers                     | Insert text; do not invoke shortcuts         |
 
 Ctrl-C remains an application-owned orderly shutdown exception in every mode.
+
+## Word editing and read-only values
+
+Exact Alt or Control modifiers on Left/Right move to the start of the previous run or end of the next run. Backspace/Delete with either modifier remove the corresponding range. Intervening whitespace, including newlines, is skipped before finding a run. Unicode letters, numbers, and underscores form word runs; punctuation and emoji form separate runs. All offsets are grapheme boundaries, and these operations share one policy across single-line, masked, and multiline editing. Modified events must be forwarded by the terminal. Escape-prefixed Backspace is recognized as Alt-Backspace alongside primary CSI-u reports.
+
+`editingMode: .readOnly` retains focus, the visible caret, word/caret navigation, and editor viewport movement. It consumes attempted insertion, deletion, and editor newlines without writing the binding or leaking those keys into enclosing shortcuts. Ordinary single-line Enter still submits; multiline Enter stays consumed without an implicit submit. Non-text character chords and Escape retain their existing routing. This policy does not disable the control or change its appearance, and application-owned binding updates remain visible.
+
+Editing-mode updates retain mounted caret and viewport state and independent timeline deadlines. The default mode is `.editable`. Inherited disabled state still removes interaction and focus eligibility regardless of editing mode.
 
 ## Commands and key hints
 
