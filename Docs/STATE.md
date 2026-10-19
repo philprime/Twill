@@ -1,5 +1,7 @@
 # State and identity
 
+Collection selection IDs are application-owned values, distinct from effective visible selection. A selection policy resolves those IDs against current visible data without normalizing the binding. Nil, missing, hidden, and empty cases are resolved by `SelectionPolicy`; changing data or policy retains keyed row identity and unrelated schedules. Detail views can use the same pure resolver, including expansion-aware hierarchy resolution. Keyboard behavior is defined in [Interaction](INTERACTION.md).
+
 Twill keeps view values as declarative descriptions. Mounted nodes own persistent state, identity, and cached presentation. State changes remain on the UI actor and request presentation without exposing an invalidation method to callers.
 
 ## State ownership
