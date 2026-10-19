@@ -101,6 +101,14 @@ Cell drawing in an explicit eight-by-three viewport.
 
 ![Canvas terminal preview](preview-Canvas.svg)
 
+## PixelCanvas
+
+``PixelCanvas``
+
+A Swift-rasterized RGBA line and circle. Live output requires Kitty graphics.
+
+![PixelCanvas terminal preview](preview-PixelCanvas.svg)
+
 ## ImageView
 
 ``ImageView``

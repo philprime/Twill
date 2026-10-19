@@ -4,4 +4,5 @@ import Foundation
 struct ImagePlacement: Equatable {
     let data: Data
     let bounds: CellRect
+    var format: ImageFormat = .png
 }

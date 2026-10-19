@@ -42,6 +42,10 @@ enum DocumentationPreviewSVG {
         if let grid {
             appendCells(grid, to: &elements)
             for image in grid.images {
+                if case .rgba(let width, let height) = image.format {
+                    appendRGBA(image, width: width, height: height, to: &elements)
+                    continue
+                }
                 let rect = image.bounds
                 elements.append(
                     "<image x=\"\(inset + rect.column * cellWidth)\" y=\"\(inset + rect.row * cellHeight)\" "
@@ -57,6 +61,24 @@ enum DocumentationPreviewSVG {
         }
         elements.append("</svg>")
         return elements.joined(separator: "\n") + "\n"
+    }
+
+    private static func appendRGBA(_ image: ImagePlacement, width: Int, height: Int, to elements: inout [String]) {
+        let scaleX = Double(image.bounds.width * cellWidth) / Double(width)
+        let scaleY = Double(image.bounds.height * cellHeight) / Double(height)
+        let bytes = Array(image.data)
+        for row in 0..<height {
+            for column in 0..<width {
+                let index = (row * width + column) * 4
+                guard bytes[index + 3] > 0 else { continue }
+                let originX = Double(inset + image.bounds.column * cellWidth) + Double(column) * scaleX
+                let originY = Double(inset + image.bounds.row * cellHeight) + Double(row) * scaleY
+                let ink = String(format: "#%02x%02x%02x", bytes[index], bytes[index + 1], bytes[index + 2])
+                elements.append(
+                    "<rect x=\"\(originX)\" y=\"\(originY)\" width=\"\(scaleX)\" height=\"\(scaleY)\" "
+                        + "fill=\"\(ink)\" fill-opacity=\"\(Double(bytes[index + 3]) / 255)\"/>")
+            }
+        }
     }
 
     private static func appendCells(_ grid: CellGrid, to elements: inout [String]) {
