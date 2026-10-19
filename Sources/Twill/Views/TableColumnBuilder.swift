@@ -26,7 +26,9 @@ public struct TableColumns<RowValue, each Content: View> {
         var result: [TableColumnDescription<RowValue>] = []
         for column in repeat each columns {
             result.append(
-                TableColumnDescription(title: column.title, comparator: column.comparator, content: column.content))
+                TableColumnDescription(
+                    title: column.title, comparator: column.comparator, content: column.content,
+                    width: column.widthPolicy, alignment: column.alignment))
         }
         return result
     }

@@ -43,6 +43,21 @@ Use `.multilineTextAlignment(.leading)`, `.center`, or `.trailing` to position r
 
 These modifiers inherit through containers. The nearest setting to a text node takes precedence, including a local `.lineLimit(nil)` reset. They configure static text rather than editing-control viewports or single-line terminal chrome. Resize reflows cached descriptions without reevaluating view bodies or changing timeline deadlines.
 
+## Size and Align Table Columns
+
+```swift
+Table(records, id: \.code) {
+    TableColumn("Name", value: \.name).width(.flexible(minimum: 8, maximum: 32))
+    TableColumn("Count") { Text("\($0.count)") }.width(6).alignment(.trailing)
+}
+```
+
+Column width and alignment apply to headers and every body cell through one shared measurement pass. Unconfigured `.automatic` columns preserve intrinsic content and share surplus, shrinking when space is scarce. `.width(cells)` or `.width(.fixed(cells))` reserves an exact width. `.flexible(minimum:maximum:)` shares space within hard inclusive bounds, including minimum-only and maximum-only configurations using its defaults. Widths and minimums must be nonnegative, and maximums must not be smaller than minimums.
+
+Fixed widths and minimums are retained when their sum exceeds the offered viewport, with ordinary clipping rather than negative widths or inconsistent header geometry. Capped columns leave unusable surplus blank. Without a finite proposal, bounded intrinsic content determines widths. Empty automatic columns retain a minimum cell slot, while explicit zero widths are permitted.
+
+Per-column leading/center/trailing alignment places content within its cell at the top. Multiline cells retain their row height, with the tallest cell determining each row. Text wrapping and truncation remain ordinary text policies, so a wrapped header can add lines before the body. Wide glyphs remain atomic. Resize recomputes shared widths and placement from cached content without reevaluating bodies, remounting keyed rows, or shifting schedules.
+
 ## Apply Appearance
 
 Use `.foregroundStyle(...)` and `.backgroundStyle(...)` with a ``Style`` such as ``Color``. Styles propagate to descendants, and more local styling can override them. ANSI palette colors follow the terminal's theme. RGB colors request true color, whose appearance depends on terminal support.
