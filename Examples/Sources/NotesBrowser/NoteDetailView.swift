@@ -5,7 +5,7 @@ struct NoteDetailView: View {
 
     var body: some View {
         VStack(alignment: .leading) {
-            Text(note.title)
+            Text(note.title).bold()
                 .foregroundStyle(NotesPalette.accent)
             if note.body.allSatisfy(\.isWhitespace) {
                 Text("No body yet")
