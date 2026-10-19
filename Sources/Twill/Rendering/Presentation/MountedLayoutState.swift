@@ -8,12 +8,14 @@ struct MountedLayoutState {
         let hasContent: Bool
         let fillsWidth: Bool
         let fillsHeight: Bool
+        let containsSpacer: Bool
     }
 
     weak var controlOwner: ViewRenderer?
     var controlStyle: (any ControlStyle)?
     var controlKind: ControlKind?
     var controlSelected = false
+    var stackAxis: Axis?
     var attributes: TextAttributes = []
     var theme = Theme()
     var foreground: Color?

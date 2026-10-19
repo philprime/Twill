@@ -412,3 +412,19 @@ Attaches a mounted asynchronous action. The empty action here leaves the underly
 A modal sheet over the base page. It traps keys and focus, restoring focus when dismissed.
 
 ![SheetView terminal preview](preview-SheetView.svg)
+
+## Spacer
+
+``Spacer``
+
+Flexible space pushes siblings apart along the stack's axis.
+
+![Spacer terminal preview](preview-Spacer.svg)
+
+## Divider
+
+``Divider``
+
+A separator spans the stack's minor axis and inherits appearance.
+
+![Divider terminal preview](preview-Divider.svg)
