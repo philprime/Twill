@@ -42,6 +42,5 @@ let package = Package(
         .target(name: "TwillGraphs", dependencies: ["Twill"]),
         .testTarget(name: "TwillGraphsTests", dependencies: ["Twill", "TwillGraphs"]),
     ],
-    cLanguageStandard: .c99,
     cxxLanguageStandard: .cxx11
 )

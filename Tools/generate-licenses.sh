@@ -3,11 +3,6 @@ set -euo pipefail
 
 root="${1:?usage: generate-licenses.sh repository-root}"
 inputs=(
-    ThirdParty/FreeType/upstream/docs/FTL.TXT
-    ThirdParty/FreeType/upstream/src/bdf/README
-    ThirdParty/FreeType/upstream/src/pcf/README
-    ThirdParty/FreeType/upstream/src/base/fthash.c
-    ThirdParty/FreeType/upstream/src/gzip/zlib.h
     ThirdParty/HarfBuzz/upstream/COPYING
     ThirdParty/HarfBuzz/upstream/src/ms-use/COPYING
     ThirdParty/Font8x8/LICENSE.txt
@@ -24,42 +19,9 @@ temporary="$(mktemp "$root/.third-party-notices.XXXXXX")"
 trap 'rm -f "$temporary"' EXIT
 
 emit_license() {
-    local title="$1" path="$2" selection="${3:-full}"
+    local title="$1" path="$2"
     printf '\n## %s\n\nSource: `%s`\n\n```text\n' "$title" "$path" >> "$temporary"
-    case "$selection" in
-        full)
-            cat "$root/$path" >> "$temporary"
-            ;;
-        readme)
-            if ! awk '
-                $0 == "License" { heading = 1; next }
-                heading && /^\*+$/ { active = 1; heading = 0; next }
-                active && $0 == "Credits" { found = 1; exit }
-                active { print }
-                END { if (!found) exit 1 }
-            ' "$root/$path" >> "$temporary"; then
-                printf 'Could not find the complete license section in %s\n' "$path" >&2
-                exit 1
-            fi
-            ;;
-        comment)
-            if ! awk '
-                /^\/\*/ { block = ""; copyright = 0; active = 1 }
-                active {
-                    block = block $0 "\n"
-                    if ($0 ~ /Copyright/) copyright = 1
-                    if ($0 ~ /\*\//) {
-                        if (copyright) { printf "%s", block; found = 1; exit }
-                        active = 0
-                    }
-                }
-                END { if (!found) exit 1 }
-            ' "$root/$path" >> "$temporary"; then
-                printf 'Could not find a copyright and license comment in %s\n' "$path" >&2
-                exit 1
-            fi
-            ;;
-    esac
+    cat "$root/$path" >> "$temporary"
     printf '\n```\n' >> "$temporary"
 }
 
@@ -72,25 +34,18 @@ Twill's own code is licensed under [FSL-1.1-MIT](LICENSE.md).
 The third-party components below retain their respective licenses.
 Twill's FSL restrictions do not apply to these components independently.
 
-FreeType (https://github.com/freetype/freetype) is used under the FreeType License,
-not its alternative GPL license. This software is based in part on the work of
-the FreeType Team.
-
 HarfBuzz (https://github.com/harfbuzz/harfbuzz) is used under its Old MIT license.
-The source revisions are pinned by the repository's submodules. Original license
-files and source notices are preserved in those submodules. Twill's build
-integration files are outside the upstream source.
+Its source revision is pinned by the repository's submodule. Original license
+files and source notices are preserved there. Twill's build integration files
+are outside the upstream source.
+
+The font8x8 basic-Latin fallback data is in the public domain.
 
 Distributions containing these components must retain their applicable notices.
 HEADER
 
-emit_license 'FreeType License' "${inputs[0]}"
-emit_license 'FreeType BDF driver' "${inputs[1]}" readme
-emit_license 'FreeType PCF driver' "${inputs[2]}" readme
-emit_license 'FreeType hashing routines' "${inputs[3]}" comment
-emit_license 'FreeType bundled zlib' "${inputs[4]}" comment
-emit_license 'HarfBuzz license' "${inputs[5]}"
-emit_license 'HarfBuzz Microsoft Universal Shaping Engine data' "${inputs[6]}"
-emit_license 'Public-domain font8x8 basic-Latin fallback' "${inputs[7]}"
+emit_license 'HarfBuzz license' "${inputs[0]}"
+emit_license 'HarfBuzz Microsoft Universal Shaping Engine data' "${inputs[1]}"
+emit_license 'Public-domain font8x8 basic-Latin fallback' "${inputs[2]}"
 
 mv "$temporary" "$root/THIRD_PARTY_NOTICES.md"

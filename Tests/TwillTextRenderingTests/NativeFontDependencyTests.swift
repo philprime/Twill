@@ -17,7 +17,7 @@ struct NativeFontDependencyTests {
         #expect(combiningClass == HB_UNICODE_COMBINING_CLASS_ABOVE)
     }
 
-    @Test("The embedded raster module produces tightly placed alpha coverage without FreeType")
+    @Test("The embedded raster module produces tightly placed alpha coverage")
     func rasterization() throws {
         // -- Arrange --
         let draw = try #require(hb_raster_draw_create_or_fail())
