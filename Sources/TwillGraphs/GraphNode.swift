@@ -1,6 +1,7 @@
 import Twill
 
-/// An identified node and its bitmap appearance. Labels appear in the graph's selection caption.
+/// An identified node and its bitmap appearance. Names appear in the selection caption
+/// and in the pixel surface when graph labels are enabled.
 public struct GraphNode<ID: Hashable & Sendable>: Identifiable, Sendable, Equatable {
     /// Stable identity retained when the node's appearance changes.
     public let id: ID

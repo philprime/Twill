@@ -21,7 +21,7 @@ struct GraphViewTests {
             capture($selected)
             return GraphView(
                 graph, positions: ["a": .init(x: -20, y: 0), "b": .init(x: 20, y: 0)],
-                selection: $selected
+                selection: $selected, labels: .automatic
             ).frame(width: 20, height: 8)
         }
     }
@@ -43,6 +43,34 @@ struct GraphViewTests {
         #expect(image.format == .rgba(width: 160, height: 112))
         #expect(image.data.contains { $0 != 0 })
         #expect(frame.grid?.snapshotText.contains("Alpha") == true)
+        #expect(frame.nextUpdate == nil)
+    }
+
+    @Test("Opt-in graph labels render unselected node names into the bitmap")
+    func labels() throws {
+        // -- Arrange --
+        let graph = try GraphNetwork(nodes: [GraphNode(id: "a", label: "Alpha"), GraphNode(id: "b", label: "Beta")])
+        var renamed = graph
+        renamed.upsertNode(GraphNode(id: "b", label: "Gamma"))
+        let positions = ["a": PixelPoint(x: -20, y: 0), "b": PixelPoint(x: 20, y: 0)]
+        let hidden = ViewRenderer.make(GraphView(graph, positions: positions).frame(width: 20, height: 8))
+        let hiddenRenamed = ViewRenderer.make(GraphView(renamed, positions: positions).frame(width: 20, height: 8))
+        let labeled = ViewRenderer.make(
+            GraphView(graph, positions: positions, labels: .automatic).frame(width: 20, height: 8))
+        let labeledRenamed = ViewRenderer.make(
+            GraphView(renamed, positions: positions, labels: .automatic).frame(width: 20, height: 8))
+
+        // -- Act --
+        let hiddenImage = try #require(hidden.render(.now).grid?.images.first?.data)
+        let hiddenRenamedImage = try #require(hiddenRenamed.render(.now).grid?.images.first?.data)
+        let frame = labeled.render(.now)
+        let labeledImage = try #require(frame.grid?.images.first?.data)
+        let labeledRenamedImage = try #require(labeledRenamed.render(.now).grid?.images.first?.data)
+
+        // -- Assert --
+        #expect(hiddenImage == hiddenRenamedImage)
+        #expect(labeledImage != hiddenImage)
+        #expect(labeledImage != labeledRenamedImage)
         #expect(frame.nextUpdate == nil)
     }
 
