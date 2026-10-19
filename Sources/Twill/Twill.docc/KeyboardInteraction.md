@@ -64,7 +64,7 @@ VStack {
 }
 ```
 
-The focused control receives input before its ancestors. A focused text field consumes printable input and caret keys, so those keys do not trigger enclosing shortcuts. Non-text modified character chords remain available to scoped handlers and action shortcuts. ``Application/onKeyEvent`` receives otherwise unhandled keys after view routing. Enabled lifecycle shortcuts, including Control-C by default, are handled by the application first.
+The focused control receives input before its ancestors. A focused text field consumes printable input and caret keys, so those keys do not trigger enclosing shortcuts. Left/Right move one grapheme, Home/End move to the beginning/end of the value, Backspace removes the previous grapheme, and Delete removes the next one without advancing the caret. Boundary keys remain consumed without changing the binding. ``SecureField`` shares these keys while keeping rendered content and caret geometry masked. Non-text modified character chords remain available to scoped handlers and action shortcuts. ``Application/onKeyEvent`` receives otherwise unhandled keys after view routing. Enabled lifecycle shortcuts, including Control-C by default, are handled by the application first.
 
 ## Disable Controls
 
