@@ -1,24 +1,18 @@
 struct FrameLayout: PrimitiveLayout {
-    let width: Int?
-    let height: Int?
-    let maxWidth: FrameLimit?
-    let maxHeight: FrameLimit?
+    let horizontal: FrameAxisConstraints
+    let vertical: FrameAxisConstraints
     let alignment: Alignment
 
-    var behavior: LayoutBehavior {
-        LayoutBehavior(
-            width: fillBehavior(fixed: width, maximum: maxWidth),
-            height: fillBehavior(fixed: height, maximum: maxHeight))
+    init(
+        width: Int? = nil, height: Int? = nil, minWidth: Int? = nil, maxWidth: FrameLimit? = nil,
+        minHeight: Int? = nil, maxHeight: FrameLimit? = nil, alignment: Alignment
+    ) {
+        horizontal = FrameAxisConstraints(fixed: width, minimum: minWidth, maximum: maxWidth)
+        vertical = FrameAxisConstraints(fixed: height, minimum: minHeight, maximum: maxHeight)
+        self.alignment = alignment
     }
 
-    private func fillBehavior(fixed: Int?, maximum: FrameLimit?) -> LayoutBehavior.Fill {
-        if fixed != nil { return .intrinsic }
-        switch maximum {
-        case .cells: return .intrinsic
-        case .infinity: return .filling
-        case nil: return .inherited
-        }
-    }
+    var behavior: LayoutBehavior { LayoutBehavior(width: horizontal.fill, height: vertical.fill) }
 
     @MainActor
     func measureSubviews(_ proposal: ProposedCellSize, subviews: [LayoutSubview]) -> [CellSize] {
@@ -28,34 +22,15 @@ struct FrameLayout: PrimitiveLayout {
 
     func childProposal(_ proposal: ProposedCellSize) -> ProposedCellSize {
         ProposedCellSize(
-            width: constrained(proposal.width, fixed: width, maximum: maxWidth),
-            height: constrained(proposal.height, fixed: height, maximum: maxHeight))
-    }
-
-    private func constrained(_ proposed: Int?, fixed: Int?, maximum: FrameLimit?) -> Int? {
-        if let fixed { return min(fixed, proposed ?? fixed) }
-        if case .cells(let limit) = maximum { return min(limit, proposed ?? limit) }
-        return proposed
+            width: horizontal.childProposal(proposal.width),
+            height: vertical.childProposal(proposal.height))
     }
 
     func sizeThatFits(_ proposal: ProposedCellSize, subviews: [CellSize]) -> CellSize {
         let content = HorizontalLayout(spacing: 0).sizeThatFits(.unspecified, subviews: subviews)
         return CellSize(
-            width: min(
-                desired(content.width, proposed: proposal.width, fixed: width, maximum: maxWidth),
-                proposal.width ?? Int.max),
-            height: min(
-                desired(content.height, proposed: proposal.height, fixed: height, maximum: maxHeight),
-                proposal.height ?? Int.max))
-    }
-
-    private func desired(_ content: Int, proposed: Int?, fixed: Int?, maximum: FrameLimit?) -> Int {
-        if let fixed { return fixed }
-        switch maximum {
-        case .infinity: return proposed ?? content
-        case .cells(let limit): return min(max(content, proposed ?? content), limit)
-        case nil: return content
-        }
+            width: horizontal.dimension(content: content.width, proposed: proposal.width),
+            height: vertical.dimension(content: content.height, proposed: proposal.height))
     }
 
     func placeSubviews(_ subviews: [CellSize], in size: CellSize) -> [CellRect] {
