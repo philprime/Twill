@@ -85,6 +85,14 @@ Repeats keyed content inside a vertical stack.
 
 ![ForEach terminal preview](preview-ForEach.svg)
 
+## VGrid
+
+``VGrid``
+
+Eager fixed columns with independent row and column gaps.
+
+![VGrid terminal preview](preview-VGrid.svg)
+
 ## LazyVGrid
 
 ``LazyVGrid``

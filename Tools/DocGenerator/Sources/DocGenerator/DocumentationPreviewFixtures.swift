@@ -103,6 +103,7 @@ extension DocumentationPreviewFixture {
             Self("ForEach", "Repeats keyed content inside a vertical stack.") {
                 VStack(alignment: .leading) { ForEach(["Mercury", "Venus", "Earth"], id: \.self) { Text($0) } }
             },
+            eagerGrid,
             Self("LazyVGrid", "Two fixed-width columns. The current runtime mounts all children when evaluated.") {
                 LazyVGrid(columns: [
                     GridItem(.flexible(minimum: 10, maximum: 10)),

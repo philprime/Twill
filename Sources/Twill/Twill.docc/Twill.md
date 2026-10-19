@@ -27,6 +27,7 @@ Start with <doc:GettingStarted>, then explore <doc:ViewGallery> to see rendered 
 - ``Group``
 - ``ForEach``
 - ``LazyVGrid``
+- ``VGrid``
 - ``GridItem``
 - ``ScrollView``
 - ``ScrollViewReader``
