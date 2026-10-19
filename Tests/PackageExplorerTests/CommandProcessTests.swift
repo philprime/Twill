@@ -32,6 +32,22 @@ struct CommandProcessTests {
         #expect(try read(errors).isEmpty)
     }
 
+    @Test("Noninteractive children read stdin from the null device")
+    func standardInput() async throws {
+        // -- Arrange --
+        let logs = try workspace()
+        defer { try? FileManager.default.removeItem(at: logs) }
+        let process = try CommandProcess(
+            arguments: ["/bin/sh", "-c", "test /dev/null -ef /dev/stdin"],
+            output: logs.appendingPathComponent("stdout"), errors: logs.appendingPathComponent("stderr"))
+
+        // -- Act --
+        let status = try await process.waitForExit()
+
+        // -- Assert --
+        #expect(status == 0)
+    }
+
     @Test("Exit status and stderr remain separate from stdout")
     func failure() async throws {
         // -- Arrange --

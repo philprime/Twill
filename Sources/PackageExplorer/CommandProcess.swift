@@ -42,6 +42,9 @@ final class CommandProcess {
         #endif
         try Self.check(posix_spawnattr_setflags(&attributes, flags))
         try Self.check(posix_spawnattr_setpgroup(&attributes, 0))
+        // Background process groups must not read the controlling terminal,
+        // which would stop Linux children with SIGTTIN instead of completing.
+        try Self.check(posix_spawn_file_actions_addopen(&actions, STDIN_FILENO, "/dev/null", O_RDONLY, 0))
         try Self.check(
             posix_spawn_file_actions_addopen(
                 &actions, STDOUT_FILENO, output.path, O_WRONLY | O_CREAT | O_TRUNC, 0o600))
