@@ -2,11 +2,13 @@
 struct TextEditorContent {
     struct Line {
         let start: Int
+        let text: String
         let drawing: TextDrawing
         let columns: [Int]
 
         init(start: Int, text: String) {
             self.start = start
+            self.text = text
             drawing = TextDrawing(text)
             var columns = [0]
             for character in text {

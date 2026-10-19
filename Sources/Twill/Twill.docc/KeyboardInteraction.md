@@ -97,6 +97,17 @@ A focused editable text field accepts input immediately. Enter invokes the neare
 
 The host displays the hardware cursor at an editing control's caret and hides it when appropriate. Reverse-video focus highlighting does not depend on that cursor.
 
+## Wrap Editor Lines
+
+```swift
+TextEditor(text: $document, lineBreakMode: .wordWrapping)
+    .frame(width: 40, height: 8)
+```
+
+An editor's `lineBreakMode` is explicit: `.wordWrapping` and `.characterWrapping` reflow into visual rows, while the default `.clipping` retains unwrapped horizontal scrolling. Soft wraps preserve every model character and never insert newlines. Wrapped rows reserve the final viewport cell for the caret. A one-column viewport can show only the caret; oversized graphemes are omitted whole rather than split.
+
+Up/Down and Page keys follow visual rows and preserve a preferred cell column, including end-of-row affinity at shared wrap boundaries. Home/End still reach logical-line endpoints. Read-only and word-editing policies apply in either layout mode. Resize reflows cached descriptions, retains the logical insertion offset, and reveals the caret without reevaluating view bodies or altering sibling schedules. Wrapping-mode and external value updates preserve mounted editor state.
+
 ## Navigate Scrolling Content
 
 A ``ScrollView`` controls its viewport, not keyboard grouping. Tab visits the controls inside it in the same way as controls outside it. Moving focus reveals the control through its enclosing viewports, each of which retains its own offset.

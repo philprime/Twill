@@ -34,7 +34,7 @@ struct NoteEditorView: View {
                         .border(.single, color: NotesPalette.border)
                 }
                 FormField("Body") {
-                    TextEditor(text: $noteText)
+                    TextEditor(text: $noteText, lineBreakMode: .wordWrapping)
                         .frame(height: 6)
                         .border(.single, color: NotesPalette.border)
                 }
