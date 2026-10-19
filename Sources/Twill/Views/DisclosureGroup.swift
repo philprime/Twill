@@ -31,6 +31,7 @@ public struct DisclosureGroup<Label: View, Content: View>: View {
             isExpanded.wrappedValue.toggle()
             return .handled
         }
+        .controlPresentation(.disclosure, selected: isExpanded.wrappedValue)
     }
 
     private var expandedContent: some View {

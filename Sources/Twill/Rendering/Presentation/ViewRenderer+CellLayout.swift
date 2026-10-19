@@ -6,8 +6,10 @@ extension ViewRenderer {
     /// Resolve lexical flags and color declarations before flattening view lists.
     /// Drawing uses cached values without changing collection placement.
     func prepareLayout(
-        inheritedAttributes: TextAttributes = [], inheritedStyles: StyleEnvironment = StyleEnvironment()
+        inheritedAttributes: TextAttributes = [], inheritedStyles: StyleEnvironment = StyleEnvironment(),
+        inheritedControls: ControlEnvironment = ControlEnvironment()
     ) {
+        let controls = controlEnvironment(inheriting: inheritedControls)
         var styles = inheritedStyles
         switch description {
         case .tint(_, let color): styles.tint = color
@@ -28,9 +30,13 @@ extension ViewRenderer {
             attributes = inheritedAttributes
         }
         for child in retainedChildren {
-            child.prepareLayout(inheritedAttributes: attributes, inheritedStyles: styles)
+            child.prepareLayout(inheritedAttributes: attributes, inheritedStyles: styles, inheritedControls: controls)
         }
         layoutState.beginFrame()
+        layoutState.controlOwner = controls.owner
+        layoutState.controlStyle = controls.style
+        layoutState.controlKind = controls.kind
+        layoutState.controlSelected = controls.selected
         let foreground = styles.resolvedForeground
         layoutState.attributes = attributes.union(foreground.attributes.subtracting(styles.attributeOverrides))
         layoutState.styleContext = styles.context

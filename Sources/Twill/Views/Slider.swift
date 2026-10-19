@@ -7,14 +7,16 @@ public struct Slider<Value: BinaryFloatingPoint, Label: View>: View where Value.
     private let bounds: ClosedRange<Value>
     private let step: Value
     private let label: Label
+    private let format: @MainActor (Value) -> String
     private static var keyboardSteps: Value { 100 }
 
     /// Bounds must be finite with a finite span, and an explicit step must be
     /// positive and finite. External values are shown unchanged beside a clamped
     /// track and are only written back when the user adjusts the control.
+    /// The formatter receives that actual external value and changes only its label.
     public init(
         value: Binding<Value>, in bounds: ClosedRange<Value> = 0...1, step: Value.Stride? = nil,
-        @ViewBuilder label: () -> Label
+        format: @escaping @MainActor (Value) -> String = { String(describing: $0) }, @ViewBuilder label: () -> Label
     ) {
         let span = bounds.upperBound - bounds.lowerBound
         precondition(
@@ -26,6 +28,7 @@ public struct Slider<Value: BinaryFloatingPoint, Label: View>: View where Value.
         self.bounds = bounds
         self.step = increment
         self.label = label()
+        self.format = format
     }
 
     private var boundedValue: Value {
@@ -40,12 +43,13 @@ public struct Slider<Value: BinaryFloatingPoint, Label: View>: View where Value.
         return VStack(alignment: .leading, spacing: 0) {
             HStack {
                 label
-                Text("\(value.wrappedValue)").frame(height: 1)
+                Text(format(value.wrappedValue)).frame(height: 1)
             }
             SliderTrack(fraction: fraction).frame(maxWidth: .infinity)
         }
         .focusable()
         .onKeyPress(handle)
+        .controlPresentation(.slider)
     }
 
     private func handle(_ key: KeyEvent) -> KeyPressResult {
@@ -65,17 +69,21 @@ public struct Slider<Value: BinaryFloatingPoint, Label: View>: View where Value.
 
 extension Slider where Label == EmptyView {
     /// Creates an unlabeled slider with finite bounds and an optional positive, finite step.
-    public init(value: Binding<Value>, in bounds: ClosedRange<Value> = 0...1, step: Value.Stride? = nil) {
-        self.init(value: value, in: bounds, step: step) { return EmptyView() }
+    public init(
+        value: Binding<Value>, in bounds: ClosedRange<Value> = 0...1, step: Value.Stride? = nil,
+        format: @escaping @MainActor (Value) -> String = { String(describing: $0) }
+    ) {
+        self.init(value: value, in: bounds, step: step, format: format) { return EmptyView() }
     }
 }
 
 extension Slider where Label == Text {
     /// Creates a text-labeled slider with finite bounds and an optional positive, finite step.
     public init(
-        _ title: String, value: Binding<Value>, in bounds: ClosedRange<Value> = 0...1, step: Value.Stride? = nil
+        _ title: String, value: Binding<Value>, in bounds: ClosedRange<Value> = 0...1, step: Value.Stride? = nil,
+        format: @escaping @MainActor (Value) -> String = { String(describing: $0) }
     ) {
-        self.init(value: value, in: bounds, step: step) { return Text(title) }
+        self.init(value: value, in: bounds, step: step, format: format) { return Text(title) }
     }
 }
 
