@@ -28,7 +28,7 @@ Modifier order matters. Padding inside a border creates interior space. Padding 
 
 ``VGrid`` eagerly mounts its children and uses ``GridItem`` descriptions to choose column widths. Fixed columns reserve exact nonnegative cell widths, while flexible columns share space within nonnegative bounds. Row and column spacing are independently configurable. An adaptive description must be the sole column description; it repeats positive-minimum columns to fit the resolved width. Without a finite proposal, intrinsic content determines that width. Fixed widths and minimums remain intact under viewport clipping.
 
-``LazyVGrid`` uses a shared `spacing:` parameter for both axes. Its current implementation mounts all children when evaluated, as documented on that type. ``ScrollView`` clips content to a visible height while preserving mounted state outside the visible area. Use ``ScrollViewReader`` to obtain a proxy for scrolling to keyed children.
+``LazyVGrid`` uses a shared `spacing:` parameter for both axes. Its current implementation mounts all children when evaluated, as documented on that type. ``ScrollView`` clips content to a visible height while preserving mounted state outside the visible area. Use ``ScrollViewReader`` to obtain a proxy for scrolling to keyed children or explicit `.id(...)` targets.
 
 ## Distribute Space and Separate Content
 

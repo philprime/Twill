@@ -58,7 +58,8 @@ struct FilePreviewView: View {
                 default: return .ignored
                 }
                 line = min(max(0, line), max(0, lines.count - 1))
-                proxy.scrollTo(line)
+                let anchor: ScrollViewProxy.Anchor = key == .home || key == .end ? .nearest : .top
+                proxy.scrollTo(line, anchor: anchor)
                 return .handled
             }
         }
