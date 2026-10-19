@@ -47,6 +47,23 @@ These modifiers inherit through containers. The nearest setting to a text node t
 
 Use `.foregroundStyle(...)` and `.backgroundStyle(...)` with a ``Style`` such as ``Color``. Styles propagate to descendants, and more local styling can override them. ANSI palette colors follow the terminal's theme. RGB colors request true color, whose appearance depends on terminal support.
 
+## Apply Terminal Text Attributes
+
+```swift
+VStack {
+    Text("Heading").bold().underline()
+    Text("Secondary detail").dim().italic()
+    Text("Normal weight").bold(false)
+}
+.bold()
+```
+
+`.bold(_:)`, `.dim(_:)`, `.italic(_:)`, and `.underline(_:)` inherit through view composition, with local false values clearing an ancestor's flag. `.textAttributes(_:)` replaces the inherited set, and an empty set clears all supported flags. Modifiers preserve layout and mounted identity. Attributes remain separate from colors and reverse-video focus styling.
+
+``Canvas/Context/draw(_:column:row:foreground:background:attributes:)`` and ``Canvas/Cell`` accept optional attribute overrides. Nil inherits the drawing context, while an empty set clears its flags. Wide graphemes carry the same attributes across their cells. Attribute-only changes participate in frame differences, and unchanged frames remain unwritten.
+
+The host encodes and resets attributes at write boundaries. Bold and dim share the terminal intensity reset, so transitions preserve either flag when the other turns off. Italic, underline, colors, and focus reset independently. Terminal/font support determines appearance, especially for italic and dim. Views describe flags rather than emitting escape sequences.
+
 ## Draw Cells with Canvas
 
 A ``Canvas`` receives a short-lived context and its assigned size. Constrain its size through layout and draw only during the rendering closure:
