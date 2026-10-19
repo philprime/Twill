@@ -72,17 +72,17 @@ struct ActivityMonitorView: View {
         Table(processes, id: \.id, selection: $selectedID, sortOrder: $sortOrder) {
             TableColumn("PID", value: \ProcessSample.id) { process in
                 Text(String(process.id))
-            }
+            }.width(.flexible(minimum: 4, maximum: 8)).alignment(.trailing)
             TableColumn("CPU %", value: \ProcessSample.cpuPercent) { process in
                 Text(String(format: "%.1f", process.cpuPercent))
-            }
+            }.width(6).alignment(.trailing)
             TableColumn("RSS", value: \ProcessSample.residentBytes) { process in
                 Text(MemorySample.format(process.residentBytes))
-            }
-            TableColumn("State", value: \ProcessSample.status)
+            }.width(9).alignment(.trailing)
+            TableColumn("State", value: \ProcessSample.status).width(5)
             TableColumn("Command", value: \ProcessSample.command) { process in
-                Text(String(process.name.prefix(32)))
-            }
+                Text(process.name).lineBreakMode(.clipping).lineLimit(1)
+            }.width(.flexible(minimum: 8, maximum: 32))
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
     }
