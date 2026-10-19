@@ -21,7 +21,7 @@ struct PackageExplorerView: View {
                 Text($0)
             }
             HStack(alignment: .top, spacing: 1) {
-                GraphView(graph, positions: package.positions, selection: $selected)
+                GraphView(graph, positions: package.positions, selection: $selected, labels: .automatic)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                 PackageTypeInspector(graph: package.graph, selected: selectedID).frame(width: 36)
             }.frame(maxWidth: .infinity, maxHeight: .infinity)

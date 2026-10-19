@@ -1,13 +1,15 @@
 import Twill
 
 /// A keyboard-selectable network rendered through PixelCanvas, with the selected
-/// node's label in a terminal-text caption. Requires Kitty graphics support.
+/// node's label in a terminal-text caption and optional collision-aware pixel labels.
+/// Requires Kitty graphics support.
 /// Arrows select in insertion order, +/- zoom, WASD pan, and 0 fits the graph.
 /// Tab remains available to leave the graph. Layout is supplied, never simulated while drawing.
 public struct GraphView<ID: Hashable & Sendable>: View {
     private let graph: GraphNetwork<ID>
     private let positions: [ID: PixelPoint]
     private let selection: Binding<ID?>?
+    private let labels: GraphLabelVisibility
     @State private var localSelection: ID?
     @State private var zoom: Double = 1
     @State private var offset = PixelPoint(x: 0, y: 0)
@@ -15,12 +17,17 @@ public struct GraphView<ID: Hashable & Sendable>: View {
     /// Creates a graph with positions for every node. Use ForceDirectedLayout to
     /// compute positions, optionally seeding it with a previous layout after mutations.
     /// Without a binding, keyboard selection is retained in mounted local state.
-    public init(_ graph: GraphNetwork<ID>, positions: [ID: PixelPoint], selection: Binding<ID?>? = nil) {
+    /// Pixel labels are opt-in and retain a fixed font size while zooming.
+    public init(
+        _ graph: GraphNetwork<ID>, positions: [ID: PixelPoint], selection: Binding<ID?>? = nil,
+        labels: GraphLabelVisibility = .hidden
+    ) {
         precondition(graph.nodes.allSatisfy { positions[$0.id] != nil })
         precondition(positions.values.allSatisfy { $0.horizontal.isFinite && $0.vertical.isFinite })
         self.graph = graph
         self.positions = positions
         self.selection = selection
+        self.labels = labels
     }
 
     private var selectedIndex: Int? {
@@ -38,7 +45,7 @@ public struct GraphView<ID: Hashable & Sendable>: View {
                     padding: (graph.nodes.map(\.radius).max() ?? 5) * 3 + 4)
                 GraphRasterizer.draw(
                     graph, positions: positions, selected: selected?.id,
-                    context: context, projection: projection)
+                    context: context, projection: projection, labels: labels)
             }
             Text(selected?.label ?? "No nodes")
         }

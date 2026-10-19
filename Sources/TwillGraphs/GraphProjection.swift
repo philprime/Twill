@@ -6,9 +6,11 @@ struct GraphProjection {
     let origin: PixelPoint
     let scale: Double
     let zoom: Double
+    let size: PixelSize
 
     init(points: [PixelPoint], size: PixelSize, zoom: Double, offset: PixelPoint, padding: Double) {
         self.zoom = zoom
+        self.size = size
         let minimumX = points.map(\.horizontal).min() ?? 0
         let maximumX = points.map(\.horizontal).max() ?? 0
         let minimumY = points.map(\.vertical).min() ?? 0

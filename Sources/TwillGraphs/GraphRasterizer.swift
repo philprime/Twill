@@ -3,9 +3,11 @@ import Twill
 
 @MainActor
 enum GraphRasterizer {
+    static let selectionRingWidth = 3.0
+
     static func draw<ID>(
         _ graph: GraphNetwork<ID>, positions: [ID: PixelPoint], selected: ID?,
-        context: PixelCanvas.Context, projection: GraphProjection
+        context: PixelCanvas.Context, projection: GraphProjection, labels: GraphLabelVisibility = .hidden
     ) {
         let zoom = projection.zoom
         let points = positions.mapValues { projection.project($0) }
@@ -32,10 +34,22 @@ enum GraphRasterizer {
             guard let center = points[node.id] else { continue }
             if node.id == selected {
                 context.fill(
-                    circle(at: center, radius: (node.radius + 3) * zoom),
+                    circle(at: center, radius: (node.radius + selectionRingWidth) * zoom),
                     with: PixelColor(red: 255, green: 255, blue: 255))
             }
             context.fill(circle(at: center, radius: node.radius * zoom), with: node.color)
+        }
+        if labels == .automatic {
+            let placements = GraphLabelLayout(measure: context.measure).place(
+                graph, points: points, selected: selected, zoom: zoom, size: projection.size)
+            for label in placements.reversed() {
+                context.draw(
+                    label.text,
+                    at: PixelPoint(
+                        x: label.bounds.origin.horizontal + label.bounds.width / 2,
+                        y: label.bounds.origin.vertical),
+                    anchor: .top)
+            }
         }
     }
 
