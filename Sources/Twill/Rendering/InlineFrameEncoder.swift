@@ -80,11 +80,13 @@ enum InlineFrameEncoder {
             || next.isFocused(column: column, row: row) != (previous?.isFocused(column: column, row: row) ?? false)
             || next.foreground(column: column, row: row) != previous?.foreground(column: column, row: row)
             || next.background(column: column, row: row) != previous?.background(column: column, row: row)
+            || next.attributes(column: column, row: row) != (previous?.attributes(column: column, row: row) ?? [])
     }
 
     private static func text(_ grid: CellGrid, row: Int, columns: Range<Int>) -> String {
         var result = ""
         var inverted = false
+        var attributes: TextAttributes = []
         var foreground: Color?
         var background: Color?
         for column in columns {
@@ -96,6 +98,9 @@ enum InlineFrameEncoder {
             result += colorTransition(to: nextBackground, from: background, code: 48)
             foreground = nextForeground
             background = nextBackground
+            let nextAttributes = grid.attributes(column: column, row: row)
+            result += TextAttributeEncoder.transition(to: nextAttributes, from: attributes)
+            attributes = nextAttributes
             let focused = grid.isFocused(column: column, row: row)
             if focused != inverted {
                 result += focused ? "\u{1B}[7m" : "\u{1B}[27m"
@@ -109,6 +114,7 @@ enum InlineFrameEncoder {
         }
         // Never leave a borrowed terminal in reverse-video mode between writes.
         if inverted { result += "\u{1B}[27m" }
+        result += TextAttributeEncoder.transition(to: [], from: attributes)
         if foreground != nil { result += "\u{1B}[39m" }
         if background != nil { result += "\u{1B}[49m" }
         return result

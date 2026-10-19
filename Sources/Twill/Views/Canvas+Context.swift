@@ -17,7 +17,7 @@ extension Canvas {
         /// Control and format characters become spaces; leading combining marks gain a dotted-circle base.
         public func draw(
             _ character: Character, column: Int, row: Int,
-            foreground: Color? = nil, background: Color? = nil
+            foreground: Color? = nil, background: Color? = nil, attributes: TextAttributes? = nil
         ) {
             let first = character.unicodeScalars.first!
             let category = first.properties.generalCategory
@@ -31,7 +31,7 @@ extension Canvas {
             }
             drawing.draw(
                 safe, width: TerminalCharacterWidth.columns(for: safe), column: column, row: row,
-                foreground: foreground, background: background)
+                foreground: foreground, background: background, attributes: attributes)
         }
 
         /// Draws the set cells of a buffer at the given origin, leaving unset cells untouched.
@@ -45,7 +45,7 @@ extension Canvas {
                     }
                     draw(
                         cell.character, column: column + bufferColumn, row: row + bufferRow,
-                        foreground: cell.foreground, background: cell.background)
+                        foreground: cell.foreground, background: cell.background, attributes: cell.attributes)
                 }
             }
         }

@@ -39,6 +39,7 @@ enum ViewDescription {
     case pane(any View)
     case scrollReader(any View, ScrollViewProxy)
     case styled(any View, foreground: Color?, background: Color?)
+    case attributes(any View, TextAttributes, mask: TextAttributes)
     case border(any View, glyphs: Border.Glyphs, color: Color?, title: TextDrawing? = nil)
     case keyPress(any View, @MainActor (KeyEvent) -> KeyPressResult)
     case keyboardShortcut(any View, [KeyboardShortcut])
