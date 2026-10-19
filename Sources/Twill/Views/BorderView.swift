@@ -16,6 +16,6 @@ extension View {
 
 extension BorderView: PrimitiveView {
     func makeDescription() -> ViewDescription {
-        .border(content, glyphs: border.glyphs, color: color.color)
+        .border(content, glyphs: border.glyphs, color: color)
     }
 }

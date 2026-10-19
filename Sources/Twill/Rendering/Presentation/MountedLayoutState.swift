@@ -11,6 +11,10 @@ struct MountedLayoutState {
     }
 
     var attributes: TextAttributes = []
+    var theme = Theme()
+    var foreground: Color?
+    var background: Color?
+    var hasBackgroundStyle = false
     var size = CellSize.zero
     var placements: [(node: ViewRenderer, bounds: CellRect)] = []
     var traits: Traits?

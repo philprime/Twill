@@ -11,6 +11,8 @@ struct DrawingContext {
     private var focused = false
     private var foreground: Color?
     private var background: Color?
+    // Explicit terminal default must not fall back to an ancestor's painted color.
+    private var usesTerminalBackground = false
     private var textAttributes: TextAttributes = []
 
     init(size: CellSize) {
@@ -37,25 +39,37 @@ struct DrawingContext {
         regionSize = previousSize
     }
 
-    mutating func withStyle(
-        foreground: Color?, background: Color?, size: CellSize, draw: (inout DrawingContext) -> Void
+    mutating func withColors(
+        foreground: Color?, background: Color?, usesTerminalBackground: Bool,
+        draw: (inout DrawingContext) -> Void
     ) {
         let oldForeground = self.foreground
         let oldBackground = self.background
-        self.foreground = foreground ?? oldForeground
-        self.background = background ?? oldBackground
-        if let background {
-            let area = clip.intersection(
-                CellRect(column: originX, row: originY, width: size.width, height: size.height))
-            for row in area.row..<(area.row + area.height) {
-                for column in area.column..<(area.column + area.width) {
-                    grid.fillBackground(background, column: column, row: row)
-                }
-            }
-        }
+        let oldTerminalBackground = self.usesTerminalBackground
+        self.foreground = foreground
+        self.background = background
+        self.usesTerminalBackground = usesTerminalBackground
         draw(&self)
         self.foreground = oldForeground
         self.background = oldBackground
+        self.usesTerminalBackground = oldTerminalBackground
+    }
+
+    mutating func withForeground(_ color: Color?, draw: (inout DrawingContext) -> Void) {
+        let previous = foreground
+        foreground = color
+        draw(&self)
+        foreground = previous
+    }
+
+    mutating func fillBackground(_ color: Color?, size: CellSize) {
+        let area = clip.intersection(
+            CellRect(column: originX, row: originY, width: size.width, height: size.height))
+        for row in area.row..<(area.row + area.height) {
+            for column in area.column..<(area.column + area.width) {
+                grid.fillBackground(color, column: column, row: row)
+            }
+        }
     }
 
     mutating func withAttributes(
@@ -103,7 +117,8 @@ struct DrawingContext {
         grid.put(
             character, width: width, column: column, row: row, focused: focused,
             foreground: cellForeground ?? foreground,
-            background: cellBackground ?? background ?? grid.background(column: column, row: row),
+            background: cellBackground ?? background
+                ?? (usesTerminalBackground ? nil : grid.background(column: column, row: row)),
             attributes: cellAttributes ?? textAttributes)
     }
 }

@@ -6,7 +6,7 @@ struct HelpView: View {
     var body: some View {
         VStack {
             Text("Help").bold().underline()
-                .foregroundStyle(NotesPalette.accent)
+                .foregroundStyle(.accent)
             Text("Tab / Shift-Tab: switch search, list, and detail")
             Text("Arrows: navigate list or scroll the preview")
             Text("Enter: select a note or start/finish editing a field")
@@ -18,7 +18,7 @@ struct HelpView: View {
             Text("Changes are in memory only and disappear when you quit").dim().italic()
         }
         .multilineTextAlignment(.center)
-        .foregroundStyle(NotesPalette.foreground)
+        .foregroundStyle(.foreground)
         .border(.single, color: NotesPalette.border)
         .focusable()
         .onKeyPress { key in
