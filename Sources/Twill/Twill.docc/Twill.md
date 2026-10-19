@@ -61,6 +61,7 @@ Start with <doc:GettingStarted>, then explore <doc:ViewGallery> to see rendered 
 - ``Toggle``
 - ``TextField``
 - ``SecureField``
+- ``TextEditingMode``
 - ``TextEditor``
 - ``Slider``
 - ``Stepper``
