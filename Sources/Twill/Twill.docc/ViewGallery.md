@@ -225,7 +225,7 @@ An expanded section. Enter or Space on the header toggles its content.
 
 ``List``
 
-Keyed rows with the first row selected. Up/Down and Home/End change selection; Enter submits.
+Nonselectable keyed rows. Static content scrolls; embedded controls keep ordinary keyboard behavior.
 
 ![List terminal preview](preview-List.svg)
 

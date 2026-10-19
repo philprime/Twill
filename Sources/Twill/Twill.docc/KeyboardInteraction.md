@@ -108,6 +108,21 @@ An editor's `lineBreakMode` is explicit: `.wordWrapping` and `.characterWrapping
 
 Up/Down and Page keys follow visual rows and preserve a preferred cell column, including end-of-row affinity at shared wrap boundaries. Home/End still reach logical-line endpoints. Read-only and word-editing policies apply in either layout mode. Resize reflows cached descriptions, retains the logical insertion offset, and reveals the caret without reevaluating view bodies or altering sibling schedules. Wrapping-mode and external value updates preserve mounted editor state.
 
+## Display Collections Without Selection
+
+```swift
+List(items) { item in
+    Button(item.title) { open(item) }
+}
+Table(records, id: \.code) {
+    TableColumn("Name", value: \.name)
+}
+```
+
+Omitting the selection binding creates nonselectable content. Embedded controls participate in ordinary focus traversal, and sortable table headers retain their actions. Static content can scroll without row selection. Collection-level `.onActivate` is inactive, while row controls keep their own activation and submission behavior. A constant nil binding instead constructs a selectable collection and applies its selection policy.
+
+Explicit table IDs support non-Identifiable elements and stable reconciliation on reorder, insertion, and removal. The concrete type is `Table<Data, ID, each Content>`; inferred Identifiable construction remains available without `id:`. Public column composition remains typed.
+
 ## Choose Collection Selection Behavior
 
 ```swift
