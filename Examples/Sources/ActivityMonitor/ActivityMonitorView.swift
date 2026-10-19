@@ -58,8 +58,7 @@ struct ActivityMonitorView: View {
                 ScrollView {
                     processDetails
                 }
-                .frame(height: 3)
-                .frame(maxWidth: .infinity, alignment: .leading)
+                .frame(height: 3, maxWidth: .infinity, alignment: .leading)
             }
             Text(statusLine).foregroundStyle(Color.ansi(errorMessage.isEmpty ? .cyan : .red))
             Text("Tab: focus · ↑/↓: select · ↑ at first row: headers · ←/→ Enter: sort · Ctrl-C: quit")

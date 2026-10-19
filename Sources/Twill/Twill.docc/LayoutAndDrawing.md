@@ -10,7 +10,9 @@ Twill measures width in terminal columns and height in rows. These are not pixel
 
 ``VStack`` places children vertically at their intrinsic heights. ``HStack`` places children horizontally at their intrinsic widths. Their spacing and alignment apply between and across children. Vertical stacks and single-child composition forward finite proposals so text can reflow. Multiple intrinsic-width horizontal siblings keep their natural widths; bound an individual child's width or use a filling frame to give it a wrapping proposal. Bounds clip content that exceeds the allocated height.
 
-Use `.frame(width:height:alignment:)` for fixed dimensions and `.frame(maxWidth:maxHeight:alignment:)` to limit dimensions or fill a parent's proposed space with ``FrameLimit/infinity``. A frame can align a smaller child within its allocated bounds.
+Use `.frame(width:height:minWidth:maxWidth:minHeight:maxHeight:alignment:)` to combine fixed dimensions, minimums, and flexible limits in one modifier. For example, `.frame(width: 26, maxHeight: .infinity, alignment: .top)` fixes width while filling offered height. Fixed/minimum values are runtime integers in terminal cells. Use `.cells(runtimeValue)` for finite maximums or ``FrameLimit/infinity`` to fill an offered dimension.
+
+Dimensions must be nonnegative, minimums cannot exceed finite maximums, and a fixed dimension must lie inside any same-axis bounds. Contradictory constraints fail a precondition. A minimum pads smaller intrinsic content without making an intrinsic child demand all available space. Unbounded infinity retains intrinsic sizing, augmented by minimums. Parent proposals remain clipping boundaries even below minimum or fixed sizes. Alignment positions smaller content inside the allocated bounds, and resizing uses cached layout without reevaluating bodies.
 
 ```swift
 VStack(spacing: 1) {
