@@ -205,6 +205,14 @@ An open menu, including a shortcut and disabled action. Enter opens or activates
 
 ![Menu terminal preview](preview-Menu.svg)
 
+## KeyHints
+
+``KeyHints``
+
+Available commands share their current titles and shortcut hints with controls.
+
+![KeyHints terminal preview](preview-KeyHints.svg)
+
 ## DisclosureGroup
 
 ``DisclosureGroup``

@@ -43,6 +43,14 @@ Enter invokes the nearest enclosing `.onSubmit` action. Submission retains the t
 
 Ctrl-C remains an application-owned orderly shutdown exception in every mode.
 
+## Commands and key hints
+
+`Command<ID>` is an immutable snapshot of application-owned action identity, title, availability, role, shortcut alternatives, and a UI-actor action. `perform()` respects the snapshot's availability. Derive command values from mounted state when describing a screen, and share those values through `Button(command)`, `MenuItem(command)`, and `KeyHints(commands)`.
+
+Command identity is logical metadata. It does not establish mounted view identity or register an action globally. Only mounted eligible controls supply shortcut actions. Buttons and menu items use the command's current title, role, availability, and alternatives. Inherited disabled state can further restrict a control without mutating the shared command snapshot.
+
+`KeyHints` displays available commands with shortcuts, omitting unavailable commands and commands without shortcuts. It honors its own inherited disabled scope and contributes no layout when no hints remain. Extra control-local disabled modifiers do not change a command value elsewhere; use the shared command's availability for conditions that must also govern its hints. Hints are presentation only and do not install handlers, register work, or change focus. Metadata updates retain mounted state and independent scheduling deadlines.
+
 ## Action shortcuts
 
 `.keyboardShortcut(_:)` associates one key or an array of `KeyboardShortcut` alternatives with a button's existing action. Apply it to a button or its surrounding modifiers, not to a container of independent actions. A matching event invokes the action once, even when alternatives repeat. Labels and focus are unchanged. `KeyboardShortcut` supplies generated display hints and accepts explicit hint overrides for menus and help text.
