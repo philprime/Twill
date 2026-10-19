@@ -17,7 +17,7 @@ final class PixelSurface {
 
     func paint(
         bounds: PixelPathBounds, color: PixelColor, opacity: Double,
-        contains: (PixelPoint) -> Bool
+        coverage coverageAt: (PixelPoint) -> Double
     ) {
         guard color.alpha > 0 && opacity > 0 else { return }
         let left = Int(max(0, min(Double(size.width), floor(bounds.minimumX))))
@@ -28,16 +28,16 @@ final class PixelSurface {
         let samples = Self.samplesPerAxis
         for row in top..<bottom {
             for column in left..<right {
-                var covered = 0
+                var covered = 0.0
                 for sampleRow in 0..<samples {
                     for sampleColumn in 0..<samples {
                         let point = PixelPoint(
                             x: Double(column) + (Double(sampleColumn) + 0.5) / Double(samples),
                             y: Double(row) + (Double(sampleRow) + 0.5) / Double(samples))
-                        if contains(point) { covered += 1 }
+                        covered += coverageAt(point)
                     }
                 }
-                let coverage = Double(covered) / Double(samples * samples)
+                let coverage = covered / Double(samples * samples)
                 composite(
                     color, alpha: Double(color.alpha) / 255 * opacity * coverage,
                     offset: (row * size.width + column) * 4)

@@ -20,6 +20,13 @@ setup:
     brew bundle
     swift package resolve
 
+# Regenerate checked-in generated artifacts.
+generate: generate-licenses
+
+# Combine the selected upstream licenses into the distribution notices.
+generate-licenses:
+    bash "{{root}}/Tools/generate-licenses.sh" "{{root}}"
+
 # Build on the host. Supports --linux, --container, and SwiftPM arguments such as -c release.
 build *args:
     just _swift batch build --disable-index-store --explicit-target-dependency-import-check warn -Xswiftc -warnings-as-errors "$@"
