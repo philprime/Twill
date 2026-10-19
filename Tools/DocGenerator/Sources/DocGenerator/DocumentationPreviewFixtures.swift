@@ -45,7 +45,7 @@ struct DocumentationPreviewFixture {
     }
 
     static var all: [Self] {
-        basic + controls + collections + wrappers + spacingPrimitives
+        basic + controls + collections + wrappers + spacingPrimitives + paneFixtures
     }
 
 }

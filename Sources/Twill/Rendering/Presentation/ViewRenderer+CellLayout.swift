@@ -82,7 +82,7 @@ extension ViewRenderer {
             return hasLayoutContent ? [self] : []
         case .tableRow:
             return [self]
-        case .group(_, .some), .table, .control, .styled, .border, .scroll, .dialog, .disclosure:
+        case .group(_, .some), .table, .split, .control, .styled, .border, .scroll, .dialog, .disclosure:
             return hasLayoutContent ? [self] : []
         case .tabs:
             return hasTabBar ? [self] : []
@@ -99,6 +99,7 @@ extension ViewRenderer {
         switch description {
         case .group(_, let layout?): return layout.behavior
         case .table(_, let layout): return layout.behavior
+        case .split(_, let layout): return layout.behavior
         default: return nil
         }
     }
@@ -187,6 +188,8 @@ extension ViewRenderer {
             layout = groupLayout
         case .table(_, let tableLayout):
             layout = tableLayout
+        case .split(_, let splitLayout):
+            layout = splitLayout
         case .tableRow:
             guard let tableContext else { preconditionFailure("A table row must be mounted inside a table") }
             layout = TableRowLayout(context: tableContext)
@@ -195,17 +198,17 @@ extension ViewRenderer {
         default:
             layout = HorizontalLayout(spacing: 0)
         }
-        // Every table cell occupies a slot, including cells whose content is empty.
+        // Preserve structural slots so table columns and pane policies stay matched
+        // to their content even when one slot is empty.
         let items: [ViewRenderer]
-        if case .tableRow = description {
-            items = retainedChildren
-        } else {
-            items = presentationChildren.flatMap(\.layoutItems)
+        switch description {
+        case .tableRow, .split: items = retainedChildren
+        default: items = presentationChildren.flatMap(\.layoutItems)
         }
         let subviews = items.map { node in
             LayoutSubview(
                 fillsWidth: node.wantsFillWidth, fillsHeight: node.wantsFillHeight,
-                preservesIntrinsicMinimum: node.containsSpacer,
+                preservesIntrinsicMinimum: node.containsSpacer, hasContent: node.hasLayoutContent,
                 measure: { node.measure($0, tableContext: tableContext) })
         }
         let result = layout.layout(proposal, subviews: subviews)
