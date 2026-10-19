@@ -58,6 +58,16 @@ Fixed widths and minimums are retained when their sum exceeds the offered viewpo
 
 Per-column leading/center/trailing alignment places content within its cell at the top. Multiline cells retain their row height, with the tallest cell determining each row. Text wrapping and truncation remain ordinary text policies, so a wrapped header can add lines before the body. Wide glyphs remain atomic. Resize recomputes shared widths and placement from cached content without reevaluating bodies, remounting keyed rows, or shifting schedules.
 
+## Format Table Values
+
+```swift
+TableColumn("Count", value: \.count, format: { "\($0) items" })
+    .width(12)
+    .alignment(.trailing)
+```
+
+Formatted-value columns take a typed comparable key path and a value-to-string closure. Their comparator continues to use the source value, not the resulting text, so numeric values retain numeric order regardless of units or formatting. Sorting remains caller-owned. Format changes update presentation without changing stable row IDs, activation payloads, column policies, or timeline phases. Output is ordinary `Text`, with the same sanitization and text-layout contracts.
+
 ## Apply Appearance
 
 Use `.foregroundStyle(...)` and `.backgroundStyle(...)` with a ``Style`` such as ``Color``. Styles propagate to descendants, and more local styling can override them. ANSI palette colors follow the terminal's theme. RGB colors request true color, whose appearance depends on terminal support.
