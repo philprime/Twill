@@ -1,5 +1,6 @@
 /// A field that accepts text whenever focused. The binding owns its value;
-/// the mounted control retains its insertion point.
+/// the mounted control retains its insertion point. Home/End reach the endpoints,
+/// and Delete removes the next complete character without moving the caret.
 public struct TextField: View {
     /// Primitive content rendered directly by the runtime rather than through a composed body.
     public typealias Body = Never
@@ -37,16 +38,34 @@ public struct TextField: View {
                 text.wrappedValue = updated
                 caret = offset - 1
             }
-        case .arrowLeft:
-            if key.modifiers.isEmpty, offset > 0 { caret = offset - 1 }
-        case .arrowRight:
-            if key.modifiers.isEmpty, offset < value.count { caret = offset + 1 }
-        case .arrowUp, .arrowDown, .pageUp, .pageDown, .home, .end, .insert, .delete, .function:
+        case .delete:
+            if key.modifiers.isEmpty, offset < value.count {
+                var updated = value
+                updated.remove(at: updated.index(updated.startIndex, offsetBy: offset))
+                text.wrappedValue = updated
+                caret = offset
+            }
+        case .arrowLeft, .arrowRight, .home, .end:
+            move(key, offset: offset, count: value.count)
+        case .arrowUp, .arrowDown, .pageUp, .pageDown, .insert, .function:
             break
         default:
             return .ignored
         }
         return .handled
+    }
+
+    private func move(_ key: KeyEvent, offset: Int, count: Int) {
+        guard key.modifiers.isEmpty else { return }
+        let destination: Int
+        switch key.key {
+        case .arrowLeft: destination = max(0, offset - 1)
+        case .arrowRight: destination = min(count, offset + 1)
+        case .home: destination = 0
+        case .end: destination = count
+        default: return
+        }
+        if destination != offset { caret = destination }
     }
 }
 
