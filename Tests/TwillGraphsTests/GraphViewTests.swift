@@ -69,6 +69,35 @@ struct GraphViewTests {
         #expect(renderer.handle(.tab) == false)
     }
 
+    @Test("Uppercase terminal pan keys move the viewport like lowercase keys", arguments: ["w", "a", "s", "d"])
+    func panLetterCase(_ letter: String) throws {
+        // -- Arrange --
+        let graph = try GraphNetwork(nodes: [GraphNode(id: "a"), GraphNode(id: "b")], edges: [])
+        let view = GraphView(graph, positions: ["a": .init(x: -20, y: 0), "b": .init(x: 20, y: 0)])
+            .frame(width: 20, height: 8)
+        let lowercase = ViewRenderer.make(view)
+        let uppercase = ViewRenderer.make(view)
+        let initial = try #require(lowercase.render(.now).grid?.images.first?.data)
+        _ = uppercase.render(.now)
+        var parser = InputParser()
+        let lowerKey = try #require(parser.parse(Array(letter.utf8)).first)
+        let upperKey = try #require(parser.parse(Array(letter.uppercased().utf8)).first)
+
+        // -- Act --
+        let lowerHandled = lowercase.handle(lowerKey)
+        let upperHandled = uppercase.handle(upperKey)
+        let lowerImage = try #require(lowercase.render(.now).grid?.images.first?.data)
+        let upperImage = try #require(uppercase.render(.now).grid?.images.first?.data)
+
+        // -- Assert --
+        #expect(lowerKey.modifiers.isEmpty)
+        #expect(upperKey.modifiers.isEmpty)
+        #expect(lowerHandled)
+        #expect(upperHandled)
+        #expect(lowerImage != initial)
+        #expect(upperImage == lowerImage)
+    }
+
     @Test("A missing selected node falls back visually without rewriting the binding")
     func staleSelection() throws {
         // -- Arrange --

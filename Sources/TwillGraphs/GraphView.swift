@@ -63,10 +63,10 @@ public struct GraphView<ID: Hashable & Sendable>: View {
         switch key.key {
         case .character("+"), .character("="): zoom = min(16, zoom * 1.25)
         case .character("-"): zoom = max(0.125, zoom / 1.25)
-        case .character("a"): offset.horizontal += 16
-        case .character("d"): offset.horizontal -= 16
-        case .character("w"): offset.vertical += 16
-        case .character("s"): offset.vertical -= 16
+        case .character("a"), .character("A"): offset.horizontal += 16
+        case .character("d"), .character("D"): offset.horizontal -= 16
+        case .character("w"), .character("W"): offset.vertical += 16
+        case .character("s"), .character("S"): offset.vertical -= 16
         case .character("0"):
             zoom = 1
             offset = PixelPoint(x: 0, y: 0)
