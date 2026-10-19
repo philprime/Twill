@@ -46,6 +46,35 @@ Coordinates are relative to the canvas. Drawing is clipped by its bounds and enc
 
 For animated drawing, use the interval initializer and derive the frame from the context's date. See <doc:ScheduledWork> for scheduling semantics.
 
+## Draw Pixels with Paths
+
+A ``PixelCanvas`` supplies a drawing context and a bitmap size in pixels. Its frame still uses terminal cells. Pixel sampling resolution is configured through `pixelsPerCell`, and the terminal scales the RGBA bitmap into the allocated cell rectangle. Pixel presentation requires a Kitty graphics-compatible terminal.
+
+Build reusable ``Path`` values and supply a solid ``PixelColor`` to each fill or stroke:
+
+```swift
+PixelCanvas { context, size in
+    let bounds = PixelRect(x: 8, y: 8, width: 100, height: 40)
+    let ellipse = Path(ellipseIn: bounds)
+    context.fill(
+        ellipse,
+        with: PixelColor(red: 86, green: 182, blue: 194)
+    )
+    context.stroke(
+        ellipse,
+        with: PixelColor(red: 230, green: 230, blue: 240),
+        lineWidth: 2
+    )
+}
+.frame(width: 20, height: 6)
+```
+
+Paths describe line contours, rectangles, and ellipses. Filling implicitly closes open contours and uses nonzero winding. Strokes use round caps and joins and leave open contours open.
+
+The context references a fixed bitmap destination. Copy it into a local variable before changing opacity, transforms, or clipping when those changes should not affect later operations through the original context. All copies draw into the same bitmap, but each has independent drawing state. Clips capture the transform at the time they are applied.
+
+Draw only during the callback, and do not retain contexts for later use. Each presentation starts with a transparent bitmap. State changes request presentation; use a ``TimelineView`` for scheduled animation.
+
 ## Display Raster Images
 
 ``Image`` holds immutable PNG data. Load it outside view evaluation, then pass it to ``ImageView`` with dimensions in terminal cells. Image presentation uses the Kitty graphics protocol and requires a compatible terminal. Terminal emulators without that protocol cannot display the raster content. Text-based view previews in <doc:ViewGallery> are independent of terminal raster-image support.

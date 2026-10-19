@@ -72,12 +72,12 @@ struct DrawingContext {
         caret = position
     }
 
-    mutating func drawImage(_ data: Data, size: CellSize) {
+    mutating func drawImage(_ data: Data, size: CellSize, format: ImageFormat = .png) {
         let bounds = CellRect(column: originX, row: originY, width: size.width, height: size.height)
         // Partial placements are omitted rather than rescaled into the clip. Cropping
         // requires pixel-to-cell metrics that this cell-only renderer does not own.
         guard size.width > 0, size.height > 0, clip.intersection(bounds) == bounds else { return }
-        grid.images.append(ImagePlacement(data: data, bounds: bounds))
+        grid.images.append(ImagePlacement(data: data, bounds: bounds, format: format))
     }
 
     mutating func draw(

@@ -20,7 +20,8 @@ enum KittyImageEncoder {
         while index < payload.endIndex {
             let next = payload.index(index, offsetBy: payloadLimit, limitedBy: payload.endIndex) ?? payload.endIndex
             let more = next < payload.endIndex ? 1 : 0
-            let control = first ? "a=T,t=d,f=100,q=2,C=1,i=\(id),c=\(bounds.width),r=\(bounds.height)," : ""
+            let control =
+                first ? "a=T,t=d,\(image.format.control),q=2,C=1,i=\(id),c=\(bounds.width),r=\(bounds.height)," : ""
             output += "\(start)\(control)m=\(more);\(payload[index..<next])\(end)"
             first = false
             index = next
