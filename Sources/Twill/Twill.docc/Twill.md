@@ -76,7 +76,7 @@ Start with <doc:GettingStarted>, then explore <doc:ViewGallery> to see rendered 
 - ``Tab``
 - ``Menu``
 - ``MenuItem``
-- ``MenuShortcut``
+- ``KeyboardShortcut``
 
 ### Modal Presentation
 
@@ -124,6 +124,7 @@ Start with <doc:GettingStarted>, then explore <doc:ViewGallery> to see rendered 
 - ``FocusedView``
 - ``FrameView``
 - ``KeyPressView``
+- ``KeyboardShortcutView``
 - ``PaddingView``
 - ``SheetView``
 - ``StyledView``

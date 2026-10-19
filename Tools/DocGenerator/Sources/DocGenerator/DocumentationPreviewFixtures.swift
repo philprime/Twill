@@ -215,7 +215,7 @@ extension DocumentationPreviewFixture {
                 Menu(
                     "Actions",
                     items: [
-                        MenuItem("Save", shortcut: MenuShortcut(.s, hint: "s")) {},
+                        MenuItem("Save", shortcut: KeyboardShortcut(.s)) {},
                         MenuItem("Delete", isEnabled: false) {},
                     ])
             },
@@ -351,6 +351,9 @@ extension DocumentationPreviewFixture {
                     + "visual treatment of its own."
             ) {
                 FocusExample()
+            },
+            Self("KeyboardShortcutView", "A shortcut reuses the button action without changing its label.") {
+                Button("Save") {}.keyboardShortcut(.s)
             },
             Self(
                 "KeyPressView",

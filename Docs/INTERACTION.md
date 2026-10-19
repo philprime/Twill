@@ -43,11 +43,21 @@ Enter invokes the nearest enclosing `.onSubmit` action. Submission retains the t
 
 Ctrl-C remains an application-owned orderly shutdown exception in every mode.
 
+## Action shortcuts
+
+`.keyboardShortcut(_:)` associates one key or an array of `KeyboardShortcut` alternatives with a button's existing action. Apply it to a button or its surrounding modifiers, not to a container of independent actions. A matching event invokes the action once, even when alternatives repeat. Labels and focus are unchanged. `KeyboardShortcut` supplies generated display hints and accepts explicit hint overrides for menus and help text.
+
+Focused controls and existing scoped handlers receive input first. Unhandled shortcuts run before default focus navigation. Search starts at the focused subtree and expands through its enclosing mounted content, stopping at the current screen or topmost modal boundary. The nearest matching enabled action wins; ties within a subtree follow composition order. Without focus, search uses the active scope. Inactive destinations and disabled actions do not participate. Dialog shortcuts preserve action-before-dismissal ordering, and inner sheets own their own dismissal.
+
+Matching uses the decoded key identity, character case, and reported modifier flags. Legacy control bytes are distinct from modified character events. Named control chords represent the legacy decoder's values, including ambiguities with special keys. Modifier composition supports any key without enumerating every chord. Super corresponds to Command on macOS when the terminal forwards that modifier.
+
+The decoder accepts primary CSI-u Unicode key reports with the supported modifier flags, in addition to legacy input and modified navigation/function sequences. Unsupported extended or functional CSI-u reports remain atomic unknown events. Decoding does not negotiate a keyboard protocol or override shortcuts reserved by the terminal. See the [keyboard protocol](https://sw.kovidgoyal.net/kitty/keyboard-protocol/) for terminal reporting requirements.
+
 ## Key routing
 
-The application handles reserved lifecycle keys first. Other keys are routed within the topmost modal scope, or the active screen when no modal is present. A focused text field consumes its editing keys. Otherwise the focused control receives the key first, followed by enclosing view handlers when a handler returns `.ignored`, then application-level handlers if still unhandled. `.handled` stops propagation. Returning `.ignored` never crosses a modal boundary.
+The application handles reserved lifecycle keys first, recognizing enabled Control-C and Control-D shutdown policy in both legacy control-byte and primary CSI-u encodings. Other keys are routed within the topmost modal scope, or the active screen when no modal is present. A focused text field consumes its editing keys. Otherwise the focused control receives the key first, followed by enclosing view handlers when a handler returns `.ignored`, then application-level handlers if still unhandled. `.handled` stops propagation. Returning `.ignored` never crosses a modal boundary.
 
-`.onKeyPress` is scoped to its view. A parent can provide screen-level shortcuts for keys ignored by its focused descendants. A focused text field consumes printable characters and navigation keys, including characters that would otherwise trigger shortcuts. Application-level shortcuts are not a substitute for focus-scoped interaction.
+`.onKeyPress` is scoped to its view. A parent can provide screen-level shortcuts for keys ignored by its focused descendants. A focused text field consumes printable characters and navigation keys, including unmodified characters that would otherwise trigger shortcuts. Non-text Control, Alt, Super, Hyper, and Meta character chords route to enclosing handlers and action shortcuts. Application-level shortcuts are not a substitute for focus-scoped interaction.
 
 The terminal host alone positions and shows the hardware cursor at the editing caret. It hides the cursor when no text field is focused and restores inherited terminal settings and cursor visibility during shutdown. Views supply a caret position relative to their laid-out bounds; they do not emit terminal escape sequences. Presentation uses terminal cells, so the caret's column is measured in display cells rather than string indices.
 
