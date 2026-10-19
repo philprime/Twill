@@ -11,7 +11,7 @@ enum NodePresentation {
     case styled(foreground: Color?, background: Color?)
     case border(glyphs: Border.Glyphs, color: Color?, title: TextDrawing?)
     case scroll(offset: Int, contentHeight: Int)
-    case editor(content: TextEditorContent, caret: CellPosition, offset: CellPosition)
+    case editor(snapshot: TextEditorSnapshot, offset: CellPosition)
     case tabs(bar: TextDrawing)
 
     // Containers delegate child appearance. Only leaves and editors need the mounted
@@ -30,8 +30,9 @@ enum NodePresentation {
         switch self {
         case .drawing(let drawing, _):
             return drawing.sizeThatFits(proposal)
-        case .editor(let editor, _, _):
-            return CellSize(width: proposal.width ?? editor.width, height: proposal.height ?? editor.lines.count)
+        case .editor(let snapshot, _):
+            let layout = snapshot.layout(width: proposal.width)
+            return CellSize(width: proposal.width ?? layout.width, height: proposal.height ?? layout.lines.count)
         case .border(_, _, let title):
             let inner = ProposedCellSize(
                 width: proposal.width.map { max(0, $0 - 2) },

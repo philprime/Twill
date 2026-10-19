@@ -161,7 +161,7 @@ A populated password field, masked with bullets. Editing and submission use the 
 
 ``TextEditor``
 
-A multiline editor. Enter inserts a newline; arrows move the caret; Tab moves between controls.
+A wrapped editor with logical lines and a visual-row caret.
 
 ![TextEditor terminal preview](preview-TextEditor.svg)
 

@@ -15,7 +15,7 @@ extension ViewRenderer {
             return .border(glyphs: glyphs, color: color, title: title)
         case .scroll: return .scroll(offset: scrollState.offset, contentHeight: scrollState.contentHeight)
         case .textEditor(let editor):
-            return .editor(content: editor.content, caret: editor.caret, offset: editorState.offset)
+            return .editor(snapshot: editor.snapshot, offset: editorState.offset)
         case .drawing(let drawing): return .drawing(drawing, caretColumn: nil)
         case .text(let drawing): return .drawing(drawing.configured(textLayout), caretColumn: nil)
         case .canvas(_, let render):
