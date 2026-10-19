@@ -83,12 +83,6 @@ public struct KeyEvent: Sendable, Equatable {
     public static let pageUp = Self(.pageUp)
     /// The Page Down key without modifier flags.
     public static let pageDown = Self(.pageDown)
-
-    /// Ctrl-C, usually used to request orderly shutdown.
-    public static let controlC = Self.control(0x03)
-
-    /// Ctrl-D, conventionally associated with end-of-input.
-    public static let controlD = Self.control(0x04)
 }
 
 // Named values for printable ASCII. Other Unicode characters remain available through .character(_:).

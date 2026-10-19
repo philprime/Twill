@@ -133,7 +133,10 @@ public final class Application {
 
     private func handle(_ key: KeyEvent) {
         guard !isStopping else { return }
-        if (key == .controlC && options.exitOnControlC) || (key == .controlD && options.exitOnControlD) {
+        // Lifecycle policy applies to both legacy control bytes and CSI-u character reports.
+        let exitOnControlC = options.exitOnControlC && (key == .controlC || key == .c.withModifiers(.control))
+        let exitOnControlD = options.exitOnControlD && (key == .controlD || key == .d.withModifiers(.control))
+        if exitOnControlC || exitOnControlD {
             stop()
         } else if !viewHost.handle(key) {
             onKeyEvent?(key)

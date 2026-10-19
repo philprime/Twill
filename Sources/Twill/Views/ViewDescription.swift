@@ -38,6 +38,7 @@ enum ViewDescription {
     case styled(any View, foreground: Color?, background: Color?)
     case border(any View, glyphs: Border.Glyphs, color: Color?, title: TextDrawing? = nil)
     case keyPress(any View, @MainActor (KeyEvent) -> KeyPressResult)
+    case keyboardShortcut(any View, [KeyboardShortcut])
     case task(any View, priority: TaskPriority, action: @MainActor @Sendable () async -> Void)
     case sheet(base: any View, isPresented: Binding<Bool>, content: @MainActor () -> any View)
     case conditional(first: Bool, content: any View)

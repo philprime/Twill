@@ -8,6 +8,8 @@ struct NoteEditorView: View {
     let saveLabel: String
     let onSave: @MainActor () -> Void
     let onCancel: @MainActor () -> Void
+    private let saveShortcut = KeyboardShortcut(.controlS)
+    private let superSaveShortcut = KeyboardShortcut(.superS)
 
     private var isTitleEmpty: Bool {
         title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
@@ -33,18 +35,15 @@ struct NoteEditorView: View {
                 Button(saveLabel, action: onSave)
                     .foregroundStyle(NotesPalette.accent)
                     .disabled(isTitleEmpty)
+                    .keyboardShortcut([saveShortcut, superSaveShortcut])
                 Button("Cancel", action: onCancel)
+                    .keyboardShortcut(.escape)
             }
-            Text("Tab: focus  •  Enter: newline/choose  •  Esc: cancel")
+            Text("\(saveShortcut.hint)/\(superSaveShortcut.hint): save  •  Tab: focus  •  Esc: cancel")
                 .foregroundStyle(NotesPalette.muted)
         }
         .foregroundStyle(NotesPalette.foreground)
         .frame(width: 58, alignment: .topLeading)
         .border(.single, color: NotesPalette.border)
-        .onKeyPress { key in
-            guard key == .escape else { return .ignored }
-            onCancel()
-            return .handled
-        }
     }
 }

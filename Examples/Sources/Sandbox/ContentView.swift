@@ -33,11 +33,11 @@ struct ContentView: View {
                 "Gallery actions",
                 items: [
                     MenuItem(
-                        "Expand all", shortcut: MenuShortcut(.e, hint: "e"),
+                        "Expand all", shortcut: KeyboardShortcut(.e, hint: "e"),
                         isEnabled: galleries.contains { !$0.isExpanded }
                     ) { setExpanded(true) },
                     MenuItem(
-                        "Collapse all", shortcut: MenuShortcut(.c, hint: "c"),
+                        "Collapse all", shortcut: KeyboardShortcut(.c, hint: "c"),
                         isEnabled: galleries.contains { $0.isExpanded }
                     ) { setExpanded(false) },
                 ])

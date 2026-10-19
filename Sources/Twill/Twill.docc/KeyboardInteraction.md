@@ -8,6 +8,25 @@ Twill manages focus independently of selection, scroll position, and the termina
 
 The first eligible control receives initial focus. Tab and Shift-Tab move between controls in composition order, without wrapping. This works automatically, with no navigation wrappers. Compound controls such as lists, tables, and editors expose one control-level Tab stop and retain their internal focus when revisited. Arrow keys move focus when the control does not consume them or confine them to internal navigation. Navigation is not spatial.
 
+## Attach Action Shortcuts
+
+Use `.keyboardShortcut(_:)` to reuse a button's action and disabled state:
+
+```swift
+let saveShortcut = KeyboardShortcut(.controlS)
+let superSaveShortcut = KeyboardShortcut(.superS)
+
+Button("Save", action: save)
+    .disabled(title.isEmpty)
+    .keyboardShortcut([saveShortcut, superSaveShortcut])
+```
+
+Pass one `KeyboardShortcut`, an array of alternatives, or a `KeyEvent` directly. A matching event invokes the action once without moving focus. The modifier leaves the label unchanged. Reuse `saveShortcut.hint` in help text, or supply a custom hint with `KeyboardShortcut(.controlS, hint: "Save")`.
+
+Focused editing and existing scoped handlers take priority. Otherwise the nearest enclosing content with a matching enabled action wins, with composition order resolving ties. Inactive destinations and underlying modal content cannot supply shortcuts. Apply the modifier to a button or its modifiers, rather than a container of independent actions.
+
+``KeyEvent`` includes named control chords, Super-letter chords, and function keys. Compose other combinations with `.s.withModifiers([.superKey, .shift])` or `.arrowUp.withModifiers(.alt)`. Super corresponds to Command on macOS only when the terminal reports it. Twill decodes primary CSI-u character reports but does not enable a reporting mode or bypass the terminal's own key bindings. Keys match their decoded identity and modifiers, so legacy control-byte events and enhanced modified-character events remain distinct.
+
 ## Handle a Scoped Shortcut
 
 Attach `.onKeyPress` to the smallest appropriate container. Return ``KeyPressResult/handled`` to stop propagation or ``KeyPressResult/ignored`` to allow an enclosing handler to receive the key:
@@ -24,7 +43,7 @@ VStack {
 }
 ```
 
-The focused control receives input before its ancestors. A focused text field consumes printable input and caret keys, so those keys do not trigger enclosing shortcuts. ``Application/onKeyEvent`` receives otherwise unhandled keys after view routing. Enabled lifecycle shortcuts, including Control-C by default, are handled by the application first.
+The focused control receives input before its ancestors. A focused text field consumes printable input and caret keys, so those keys do not trigger enclosing shortcuts. Non-text modified character chords remain available to scoped handlers and action shortcuts. ``Application/onKeyEvent`` receives otherwise unhandled keys after view routing. Enabled lifecycle shortcuts, including Control-C by default, are handled by the application first.
 
 ## Disable Controls
 

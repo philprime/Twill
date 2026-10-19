@@ -27,10 +27,10 @@ struct InputParserTests {
         var parser = InputParser()
 
         // -- Act --
-        let keys = parser.parse([0x03, 0x04])
+        let keys = parser.parse([0x03, 0x04, 0x13])
 
         // -- Assert --
-        #expect(keys == [.controlC, .controlD])
+        #expect(keys == [.controlC, .controlD, .controlS])
     }
 
     @Test("Chunk boundaries do not change UTF-8 or arrow decoding", arguments: 0...17)
