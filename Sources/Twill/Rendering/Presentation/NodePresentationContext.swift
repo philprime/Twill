@@ -12,5 +12,7 @@ struct NodePresentationContext {
     let size: CellSize
     let isFocused: Bool
     let isDirectlyFocused: Bool
+    // Control appearance can replace reverse video without suppressing caret ownership.
+    var focusHighlight: Bool?
     let drawChildren: @MainActor (inout DrawingContext) -> Void
 }
