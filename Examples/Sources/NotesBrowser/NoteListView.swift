@@ -10,10 +10,10 @@ struct NoteListView: View {
             List(notes, selection: $selectedNoteID) { note in
                 VStack(alignment: .leading) {
                     Text(note.title)
-                        .foregroundStyle(NotesPalette.foreground)
+                        .foregroundStyle(.foreground)
                     Text(note.summary)
                         .frame(width: 22, alignment: .leading)
-                        .foregroundStyle(NotesPalette.muted)
+                        .foregroundStyle(.muted)
                 }
             }
             .onKeyPress { key in
@@ -25,7 +25,7 @@ struct NoteListView: View {
             }
             if notes.isEmpty {
                 Text("No matching notes")
-                    .foregroundStyle(NotesPalette.muted)
+                    .foregroundStyle(.muted)
             }
         }
     }

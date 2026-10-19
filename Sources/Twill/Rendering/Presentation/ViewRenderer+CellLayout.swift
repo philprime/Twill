@@ -3,18 +3,36 @@
 extension ViewRenderer {
     /// Rebuild once per frame, after content and active branches have settled. These
     /// scalar summaries never retain nodes or schedule work between presentations.
-    /// Resolve lexical flags before flattening transparent view lists. Drawing
-    /// can then use cached scalar flags without changing collection placement.
-    func prepareLayout(inheritedAttributes: TextAttributes = []) {
+    /// Resolve lexical flags and color declarations before flattening view lists.
+    /// Drawing uses cached values without changing collection placement.
+    func prepareLayout(
+        inheritedAttributes: TextAttributes = [], inheritedColors: ColorEnvironment = ColorEnvironment()
+    ) {
+        var colors = inheritedColors
+        switch description {
+        case .theme(_, let theme): colors.theme = theme
+        case .styled(_, let foreground, let background):
+            if let foreground { colors.foreground = foreground }
+            if let background { colors.background = background }
+        case .button(let button) where button.role == .destructive:
+            colors.foreground = SemanticColor.validation
+        default: break
+        }
         let attributes: TextAttributes
         if case .attributes(_, let values, let mask) = description {
             attributes = inheritedAttributes.subtracting(mask).union(values.intersection(mask))
         } else {
             attributes = inheritedAttributes
         }
-        for child in retainedChildren { child.prepareLayout(inheritedAttributes: attributes) }
+        for child in retainedChildren {
+            child.prepareLayout(inheritedAttributes: attributes, inheritedColors: colors)
+        }
         layoutState.beginFrame()
         layoutState.attributes = attributes
+        layoutState.theme = colors.theme
+        layoutState.foreground = colors.foreground?.resolve(in: colors.theme)
+        layoutState.background = colors.background?.resolve(in: colors.theme)
+        layoutState.hasBackgroundStyle = colors.background != nil
         layoutState.traits = MountedLayoutState.Traits(
             hasContent: hasLayoutContent, fillsWidth: wantsFillWidth, fillsHeight: wantsFillHeight)
     }

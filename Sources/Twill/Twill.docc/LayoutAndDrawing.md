@@ -47,6 +47,24 @@ These modifiers inherit through containers. The nearest setting to a text node t
 
 Use `.foregroundStyle(...)` and `.backgroundStyle(...)` with a ``Style`` such as ``Color``. Styles propagate to descendants, and more local styling can override them. ANSI palette colors follow the terminal's theme. RGB colors request true color, whose appearance depends on terminal support.
 
+## Resolve Semantic Colors
+
+```swift
+VStack {
+    Text("Primary").foregroundStyle(.foreground)
+    Text("Action").foregroundStyle(.accent)
+    Text("Detail").foregroundStyle(.muted)
+}
+.backgroundStyle(.background)
+.theme(Theme(foreground: .white, background: .black, accent: .cyan))
+```
+
+``SemanticColor`` supplies foreground, background, accent, muted, and validation roles. ``Theme`` maps each role to a concrete color or nil for the terminal default. A palette alone does not paint content; semantic styles select the roles to use. Concrete ``Color`` values remain available and independent of the palette. Destructive buttons use the validation role, which defaults to red.
+
+Theme boundaries replace the palette for their subtree. Semantic declarations inherited from outside a boundary resolve again against the nearer palette, while local style declarations and concrete colors retain precedence. Explicit terminal-default roles clear inherited colors rather than acting as missing overrides. Background styles paint their bounds; foreground styles do not. Theme updates preserve layout, mounted state, and independent schedules.
+
+Custom ``Style`` implementations resolve with `resolve(in:)`, returning a concrete color or nil for terminal default. Style values remain concrete in public composition and resolve only at the mounted presentation boundary.
+
 ## Apply Terminal Text Attributes
 
 ```swift
