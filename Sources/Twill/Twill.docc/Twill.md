@@ -87,6 +87,12 @@ Start with <doc:GettingStarted>, then explore <doc:ViewGallery> to see rendered 
 ### Drawing and Appearance
 
 - ``Canvas``
+- ``PixelCanvas``
+- ``Path``
+- ``PixelPoint``
+- ``PixelRect``
+- ``PixelSize``
+- ``PixelColor``
 - ``Image``
 - ``ImageView``
 - ``Style``

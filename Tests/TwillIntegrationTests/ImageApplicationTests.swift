@@ -29,7 +29,9 @@ struct ImageApplicationTests {
             rootView: Group {
                 if rawPixels {
                     PixelCanvas(pixelsPerCell: .init(width: 1, height: 1)) { context, _ in
-                        context.fill(.init(red: 255, green: 0, blue: 0))
+                        context.fill(
+                            Path(PixelRect(x: 0, y: 0, width: 2, height: 1)),
+                            with: .init(red: 255, green: 0, blue: 0))
                     }.frame(width: 2, height: 1)
                 } else {
                     ImageView(image, width: 4, height: 2)
