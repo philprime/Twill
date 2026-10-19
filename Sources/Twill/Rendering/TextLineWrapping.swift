@@ -3,27 +3,38 @@
 struct TextLineWrapping {
     private typealias Glyph = TextDrawing.Glyph
 
-    func ranges(for glyphs: [TextDrawing.Glyph], width: Int?, mode: Text.LineBreakMode) -> [Range<Int>] {
+    /// Editing callers retain separators so every model offset stays navigable.
+    func ranges(
+        for glyphs: [TextDrawing.Glyph], width: Int?, mode: Text.LineBreakMode, preservesSpaces: Bool = false
+    ) -> [Range<Int>] {
         guard let width, mode != .clipping else { return [glyphs.indices] }
         guard width > 0 else { return [] }
         guard !glyphs.isEmpty else { return [glyphs.indices] }
         var result: [Range<Int>] = []
         var start = 0
         while start < glyphs.count {
-            let range = rowRange(glyphs, from: start, width: width, words: mode == .wordWrapping)
+            let range = rowRange(
+                glyphs, from: start, width: width, words: mode == .wordWrapping,
+                preservesSpaces: preservesSpaces)
             result.append(start..<range.end)
             start = range.next
         }
         return result
     }
 
-    private func rowRange(_ glyphs: [Glyph], from start: Int, width: Int, words: Bool) -> (end: Int, next: Int) {
+    private func rowRange(
+        _ glyphs: [Glyph], from start: Int, width: Int, words: Bool, preservesSpaces: Bool
+    ) -> (end: Int, next: Int) {
         var end = start
         var columns = 0
         var wordBoundary: Int?
         while end < glyphs.count, columns + glyphs[end].width <= width {
-            if words, glyphs[end].character == " ", end > start, glyphs[end - 1].character != " " {
-                wordBoundary = end
+            if words, glyphs[end].character == " " {
+                if preservesSpaces {
+                    wordBoundary = end + 1
+                } else if end > start, glyphs[end - 1].character != " " {
+                    wordBoundary = end
+                }
             }
             columns += glyphs[end].width
             end += 1
@@ -31,10 +42,12 @@ struct TextLineWrapping {
         if end == glyphs.count { return (end, end) }
         // Oversized graphemes occupy one clipped row, never partial cells.
         if end == start { return (start + 1, start + 1) }
-        if words, glyphs[end].character == " " {
+        if words, !preservesSpaces, glyphs[end].character == " " {
             return (trimmedEnd(glyphs, from: start, to: end), afterSpaces(glyphs, from: end))
         }
-        if let boundary = wordBoundary { return (boundary, afterSpaces(glyphs, from: boundary)) }
+        if let boundary = wordBoundary {
+            return (boundary, preservesSpaces ? boundary : afterSpaces(glyphs, from: boundary))
+        }
         return (end, end)
     }
 

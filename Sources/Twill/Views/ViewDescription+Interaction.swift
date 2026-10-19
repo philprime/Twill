@@ -11,7 +11,7 @@ extension ViewDescription {
                 blur: field.blur, submitsOnEnter: true)
         case .textEditor(let editor):
             let handle: @MainActor (KeyEvent, CellSize) -> KeyPressResult = { key, size in
-                editor.handle(key, size.height)
+                editor.handle(key, size)
             }
             return ControlInteraction(handleFocusedKey: handle, handleDescendantKey: handle)
         case .listSelection(_, _, let handle):
