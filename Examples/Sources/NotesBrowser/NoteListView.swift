@@ -7,7 +7,7 @@ struct NoteListView: View {
 
     var body: some View {
         VStack(alignment: .leading) {
-            List(notes, selection: $selectedNoteID) { note in
+            List(notes, selection: $selectedNoteID, selectionPolicy: .firstVisible) { note in
                 VStack(alignment: .leading) {
                     Text(note.title)
                         .foregroundStyle(NotesPalette.foreground)
@@ -18,7 +18,7 @@ struct NoteListView: View {
             }
             .onKeyPress { key in
                 guard key == .d,
-                    let note = notes.first(where: { $0.id == selectedNoteID }) ?? notes.first
+                    let note = SelectionPolicy.firstVisible.resolve(in: notes, selection: selectedNoteID)
                 else { return .ignored }
                 onDelete(note.id)
                 return .handled

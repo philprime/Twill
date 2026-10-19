@@ -4,8 +4,8 @@
 /// invokes the nearest `.onSubmit` action. Selection remains visible without focus.
 /// IDs must be stable and unique across the entire hierarchy. A nil children
 /// collection identifies a leaf, while an empty collection is an expandable branch.
-/// Hidden or missing selections fall back visually to the first visible row
-/// without changing the binding. Collapsed rows are unmounted, so keep values
+/// The selection policy resolves nil, hidden, and missing IDs without changing
+/// the binding. Its default is the first visible row. Collapsed rows are unmounted, so keep values
 /// that must survive collapse in an ancestor.
 public struct OutlineGroup<Data: RandomAccessCollection, ID: Hashable, RowContent: View>: View {
     private let data: Data
@@ -13,13 +13,14 @@ public struct OutlineGroup<Data: RandomAccessCollection, ID: Hashable, RowConten
     private let children: KeyPath<Data.Element, Data?>
     private let selection: Binding<ID?>
     private let expandedIDs: Binding<Set<ID>>
+    private let selectionPolicy: SelectionPolicy
     private let rowContent: @MainActor (Data.Element) -> RowContent
 
     /// Creates a hierarchy with explicit stable identities, child collections, and bound selection and expansion.
     /// IDs must be unique throughout the hierarchy; nil children mark a leaf.
     public init(
         _ data: Data, id: KeyPath<Data.Element, ID>, children: KeyPath<Data.Element, Data?>,
-        selection: Binding<ID?>, expandedIDs: Binding<Set<ID>>,
+        selection: Binding<ID?>, expandedIDs: Binding<Set<ID>>, selectionPolicy: SelectionPolicy = .firstVisible,
         @ViewBuilder rowContent: @escaping @MainActor (Data.Element) -> RowContent
     ) {
         self.data = data
@@ -27,13 +28,14 @@ public struct OutlineGroup<Data: RandomAccessCollection, ID: Hashable, RowConten
         self.children = children
         self.selection = selection
         self.expandedIDs = expandedIDs
+        self.selectionPolicy = selectionPolicy
         self.rowContent = rowContent
     }
 
     /// The visible hierarchy flattened into indented selectable rows with expansion-key handling.
     public var body: some View {
         let rows = visibleRows
-        return List(rows, id: \.id, selection: selection) { row in
+        return List(rows, id: \.id, selection: selection, selectionPolicy: selectionPolicy) { row in
             HStack(spacing: 1) {
                 Text(row.marker)
                 rowContent(row.element)
@@ -44,30 +46,13 @@ public struct OutlineGroup<Data: RandomAccessCollection, ID: Hashable, RowConten
     }
 
     private var visibleRows: [OutlineRow<Data.Element, ID>] {
-        var rows: [OutlineRow<Data.Element, ID>] = []
-        let expanded = expandedIDs.wrappedValue
-        func append(_ data: Data, parentID: ID?, depth: Int) {
-            for element in data {
-                let rowID = element[keyPath: id]
-                let descendants = element[keyPath: children]
-                let isExpanded = descendants != nil && expanded.contains(rowID)
-                rows.append(
-                    OutlineRow(
-                        id: rowID, element: element, parentID: parentID, depth: depth,
-                        isBranch: descendants != nil, isExpanded: isExpanded))
-                if isExpanded, let descendants {
-                    append(descendants, parentID: rowID, depth: depth + 1)
-                }
-            }
-        }
-        append(data, parentID: nil, depth: 0)
-        return rows
+        OutlineRow.visibleRows(in: data, id: id, children: children, expandedIDs: expandedIDs.wrappedValue)
     }
 
     private func handle(_ key: KeyEvent, rows: [OutlineRow<Data.Element, ID>]) -> KeyPressResult {
         guard key == .arrowLeft || key == .arrowRight else { return .ignored }
-        guard !rows.isEmpty else { return .handled }
-        let index = rows.firstIndex { $0.id == selection.wrappedValue } ?? rows.startIndex
+        guard let index = selectionPolicy.index(in: rows, selection: selection.wrappedValue, id: { $0.id })
+        else { return .handled }
         let row = rows[index]
         var selectedID = row.id
         if key == .arrowLeft {
@@ -93,10 +78,11 @@ extension OutlineGroup where Data.Element: Identifiable, ID == Data.Element.ID {
     /// Creates a hierarchy using each element's `id`, with externally owned selection and expansion state.
     public init(
         _ data: Data, children: KeyPath<Data.Element, Data?>,
-        selection: Binding<ID?>, expandedIDs: Binding<Set<ID>>,
+        selection: Binding<ID?>, expandedIDs: Binding<Set<ID>>, selectionPolicy: SelectionPolicy = .firstVisible,
         @ViewBuilder rowContent: @escaping @MainActor (Data.Element) -> RowContent
     ) {
         self.init(
-            data, id: \.id, children: children, selection: selection, expandedIDs: expandedIDs, rowContent: rowContent)
+            data, id: \.id, children: children, selection: selection, expandedIDs: expandedIDs,
+            selectionPolicy: selectionPolicy, rowContent: rowContent)
     }
 }
