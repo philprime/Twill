@@ -16,6 +16,7 @@ struct MountedLayoutState {
     var controlKind: ControlKind?
     var controlSelected = false
     var stackAxis: Axis?
+    var scrollIndicators = ScrollIndicatorVisibility.hidden
     var attributes: TextAttributes = []
     var theme = Theme()
     var foreground: Color?

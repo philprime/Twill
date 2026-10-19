@@ -17,7 +17,10 @@ extension ViewRenderer {
             let color: Color?
             if let style { color = style.resolve(in: layoutState.theme) } else { color = layoutState.foreground }
             return .border(glyphs: glyphs, color: color, title: title)
-        case .scroll: return .scroll(offset: scrollState.offset, contentHeight: scrollState.contentHeight)
+        case .scroll:
+            return .scroll(
+                offset: scrollState.offset, contentHeight: scrollState.contentHeight,
+                indicators: layoutState.scrollIndicators)
         case .textEditor(let editor):
             return .editor(snapshot: editor.snapshot, offset: editorState.offset)
         case .drawing(let drawing): return .drawing(drawing, caretColumn: nil)

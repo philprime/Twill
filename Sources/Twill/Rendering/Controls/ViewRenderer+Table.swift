@@ -9,7 +9,8 @@ extension ViewRenderer {
         let sizes = retainedChildren.flatMap { $0.tableRows() }.flatMap { row in
             row.retainedChildren.map { $0.measure(.unspecified) }
         }
-        return TableLayoutContext(columnWidths: layout.columnWidths(in: proposal.width, subviews: sizes))
+        let width = proposal.width.map { max(0, $0 - layoutState.scrollIndicators.reservedColumns) }
+        return TableLayoutContext(columnWidths: layout.columnWidths(in: width, subviews: sizes))
     }
 
     private func tableRows() -> [ViewRenderer] {

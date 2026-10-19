@@ -38,7 +38,7 @@ struct NodePresentationTests {
     @Test("Scroll presentation measures unconstrained content and clips it at the mounted offset")
     func scrollContext() {
         // -- Arrange --
-        let presentation = NodePresentation.scroll(offset: 1, contentHeight: 3)
+        let presentation = NodePresentation.scroll(offset: 1, contentHeight: 3, indicators: .hidden)
         var proposedHeight: Int? = -1
 
         // -- Act --
