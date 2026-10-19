@@ -1,10 +1,11 @@
 import Foundation
 import Twill
 
+@MainActor
 enum GraphRasterizer {
     static func draw<ID>(
         _ graph: GraphNetwork<ID>, positions: [ID: PixelPoint], selected: ID?,
-        context: inout PixelCanvas.Context, projection: GraphProjection
+        context: PixelCanvas.Context, projection: GraphProjection
     ) {
         let zoom = projection.zoom
         let points = positions.mapValues { projection.project($0) }
@@ -12,51 +13,59 @@ enum GraphRasterizer {
         for edge in graph.edges {
             guard let start = points[edge.source], let end = points[edge.target] else { continue }
             if edge.source == edge.target {
-                drawLoop(at: start, radius: nodes[edge.source]!.radius * zoom, edge: edge, context: &context)
+                drawLoop(at: start, radius: nodes[edge.source]!.radius * zoom, edge: edge, zoom: zoom, context: context)
             } else {
-                context.strokeLine(from: start, to: end, color: edge.color, width: edge.width * zoom)
+                let line = Path { path in
+                    path.move(to: start)
+                    path.addLine(to: end)
+                }
+                context.stroke(line, with: edge.color, lineWidth: edge.width * zoom)
                 if edge.directed {
                     let radius = nodes[edge.target]!.radius * zoom
-                    arrow(from: start, to: end, radius: radius, edge: edge, context: &context)
+                    context.stroke(
+                        arrow(from: start, to: end, radius: radius, length: 7 * zoom),
+                        with: edge.color, lineWidth: edge.width * zoom)
                 }
             }
         }
         for node in graph.nodes {
             guard let center = points[node.id] else { continue }
             if node.id == selected {
-                context.fillCircle(
-                    center: center, radius: (node.radius + 3) * zoom,
-                    color: PixelColor(red: 255, green: 255, blue: 255))
+                context.fill(
+                    circle(at: center, radius: (node.radius + 3) * zoom),
+                    with: PixelColor(red: 255, green: 255, blue: 255))
             }
-            context.fillCircle(center: center, radius: node.radius * zoom, color: node.color)
+            context.fill(circle(at: center, radius: node.radius * zoom), with: node.color)
         }
     }
 
-    private static func arrow<ID>(
-        from start: PixelPoint, to end: PixelPoint, radius: Double, edge: GraphEdge<ID>,
-        context: inout PixelCanvas.Context
-    ) {
+    private static func arrow(
+        from start: PixelPoint, to end: PixelPoint, radius: Double, length: Double
+    ) -> Path {
         let angle = atan2(end.vertical - start.vertical, end.horizontal - start.horizontal)
         let tip = PixelPoint(x: end.horizontal - cos(angle) * radius, y: end.vertical - sin(angle) * radius)
-        for side in [-1.0, 1.0] {
-            let tail = PixelPoint(
-                x: tip.horizontal - cos(angle + side * 0.5) * 7,
-                y: tip.vertical - sin(angle + side * 0.5) * 7)
-            context.strokeLine(from: tail, to: tip, color: edge.color, width: edge.width)
+        return Path { path in
+            for side in [-1.0, 1.0] {
+                let tail = PixelPoint(
+                    x: tip.horizontal - cos(angle + side * 0.5) * length,
+                    y: tip.vertical - sin(angle + side * 0.5) * length)
+                path.move(to: tail)
+                path.addLine(to: tip)
+            }
         }
     }
 
     private static func drawLoop<ID>(
-        at point: PixelPoint, radius: Double, edge: GraphEdge<ID>, context: inout PixelCanvas.Context
+        at point: PixelPoint, radius: Double, edge: GraphEdge<ID>, zoom: Double, context: PixelCanvas.Context
     ) {
         let center = PixelPoint(x: point.horizontal, y: point.vertical - radius * 1.8)
-        var previous = PixelPoint(x: center.horizontal + radius, y: center.vertical)
-        for step in 1...32 {
-            let angle = Double(step) * 2 * Double.pi / 32
-            let next = PixelPoint(
-                x: center.horizontal + cos(angle) * radius, y: center.vertical + sin(angle) * radius)
-            context.strokeLine(from: previous, to: next, color: edge.color, width: edge.width)
-            previous = next
-        }
+        context.stroke(circle(at: center, radius: radius), with: edge.color, lineWidth: edge.width * zoom)
+    }
+
+    private static func circle(at center: PixelPoint, radius: Double) -> Path {
+        Path(
+            ellipseIn: PixelRect(
+                x: center.horizontal - radius, y: center.vertical - radius,
+                width: radius * 2, height: radius * 2))
     }
 }

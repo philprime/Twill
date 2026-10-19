@@ -125,12 +125,14 @@ extension DocumentationPreviewFixture {
             },
             Self("PixelCanvas", "A Swift-rasterized RGBA line and circle. Live output requires Kitty graphics.") {
                 PixelCanvas(pixelsPerCell: .init(width: 4, height: 4)) { context, _ in
-                    context.strokeLine(
-                        from: .init(x: 2, y: 14), to: .init(x: 29, y: 2),
-                        color: .init(red: 86, green: 182, blue: 194), width: 2)
-                    context.fillCircle(
-                        center: .init(x: 16, y: 8), radius: 5,
-                        color: .init(red: 198, green: 120, blue: 221))
+                    let line = Path { path in
+                        path.move(to: .init(x: 2, y: 14))
+                        path.addLine(to: .init(x: 29, y: 2))
+                    }
+                    context.stroke(line, with: .init(red: 86, green: 182, blue: 194), lineWidth: 2)
+                    context.fill(
+                        Path(ellipseIn: PixelRect(x: 11, y: 3, width: 10, height: 10)),
+                        with: .init(red: 198, green: 120, blue: 221))
                 }.frame(width: 8, height: 4)
             },
             Self(

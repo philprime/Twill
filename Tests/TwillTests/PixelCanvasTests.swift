@@ -12,7 +12,9 @@ struct PixelCanvasTests {
         let renderer = ViewRenderer.make(
             PixelCanvas(pixelsPerCell: .init(width: 2, height: 3)) { context, size in
                 #expect(size == PixelSize(width: 4, height: 3))
-                context.fill(.init(red: 255, green: 0, blue: 0))
+                context.fill(
+                    Path(PixelRect(x: 0, y: 0, width: 4, height: 3)),
+                    with: .init(red: 255, green: 0, blue: 0))
             }.frame(width: 2, height: 1).padding(1))
 
         // -- Act --
@@ -28,64 +30,78 @@ struct PixelCanvasTests {
         #expect(!encoded.contains("o=z"))
     }
 
-    @Test("Pixel writes clip and composite straight alpha rather than replacing the destination")
-    func blending() {
+    @Test("Filled paths clip and composite straight alpha")
+    func blending() throws {
         // -- Arrange --
-        var context = PixelCanvas.Context(size: .init(width: 2, height: 1))
-        context.fill(.init(red: 0, green: 0, blue: 255))
+        let row = Path(PixelRect(x: 0, y: 0, width: 2, height: 1))
+        let pixel = Path(PixelRect(x: 0, y: 0, width: 1, height: 1))
 
         // -- Act --
-        context.draw(.init(red: 255, green: 0, blue: 0, alpha: 128), x: 0, y: 0)
-        context.draw(.init(red: 0, green: 255, blue: 0), x: -1, y: 0)
-        context.draw(.init(red: 0, green: 255, blue: 0), x: 2, y: 0)
+        let data = try render(width: 2, height: 1) { context in
+            context.fill(row, with: .init(red: 0, green: 0, blue: 255))
+            context.fill(pixel, with: .init(red: 255, green: 0, blue: 0, alpha: 128))
+            context.fill(
+                Path(PixelRect(x: -1, y: 0, width: 1, height: 1)),
+                with: .init(red: 0, green: 255, blue: 0))
+            context.fill(
+                Path(PixelRect(x: 2, y: 0, width: 1, height: 1)),
+                with: .init(red: 0, green: 255, blue: 0))
+        }
 
         // -- Assert --
-        #expect(context.rgbaData == Data([128, 0, 127, 255, 0, 0, 255, 255]))
+        #expect(data == Data([128, 0, 127, 255, 0, 0, 255, 255]))
     }
 
-    @Test("Transparent destinations retain straight RGB and clearing resets the bitmap")
-    func transparency() {
+    @Test("Transparent fills preserve destination pixels and retain straight RGB")
+    func transparency() throws {
         // -- Arrange --
-        var context = PixelCanvas.Context(size: .init(width: 1, height: 1))
+        let pixel = Path(PixelRect(x: 0, y: 0, width: 1, height: 1))
 
         // -- Act --
-        context.draw(.init(red: 200, green: 100, blue: 50, alpha: 128), x: 0, y: 0)
-        let drawn = context.rgbaData
-        context.fill(.clear)
+        let data = try render(width: 1, height: 1) { context in
+            context.fill(pixel, with: .init(red: 200, green: 100, blue: 50, alpha: 128))
+            context.fill(pixel, with: .clear)
+        }
 
         // -- Assert --
-        #expect(drawn == Data([200, 100, 50, 128]))
-        #expect(context.rgbaData == Data([0, 0, 0, 0]))
+        #expect(data == Data([200, 100, 50, 128]))
     }
 
-    @Test("Lines and circles rasterize into clipped antialiased pixels")
-    func shapes() {
+    @Test("Lines and ellipses rasterize into clipped antialiased pixels")
+    func shapes() throws {
         // -- Arrange --
-        var context = PixelCanvas.Context(size: .init(width: 5, height: 5))
         let red = PixelColor(red: 255, green: 0, blue: 0)
+        let line = Path { path in
+            path.move(to: .init(x: -10, y: 2.5))
+            path.addLine(to: .init(x: 10, y: 2.5))
+        }
 
         // -- Act --
-        context.strokeLine(from: .init(x: -10, y: 2.5), to: .init(x: 10, y: 2.5), color: red)
-        context.fillCircle(center: .init(x: 2.5, y: 2.5), radius: 1, color: red)
+        let data = try render(width: 5, height: 5) { context in
+            context.stroke(line, with: red)
+            context.fill(Path(ellipseIn: PixelRect(x: 1.5, y: 1.5, width: 2, height: 2)), with: red)
+        }
 
         // -- Assert --
-        #expect(context.rgbaData[4 * (2 * 5 + 2) + 3] == 255)
-        #expect(context.rgbaData[4 * (2 * 5) + 3] == 255)
-        #expect(context.rgbaData[3] == 0)
-        #expect(context.rgbaData.contains { $0 > 0 && $0 < 255 })
+        #expect(data[4 * (2 * 5 + 2) + 3] == 255)
+        #expect(data[4 * (2 * 5) + 3] == 255)
+        #expect(data[3] == 0)
+        #expect(data.contains { $0 > 0 && $0 < 255 })
     }
 
     @Test("Rectangles clip to the bitmap and preserve pixels outside the rectangle")
-    func rectangles() {
+    func rectangles() throws {
         // -- Arrange --
-        var context = PixelCanvas.Context(size: .init(width: 3, height: 2))
+        let path = Path(PixelRect(x: -1, y: 0, width: 3, height: 1))
 
         // -- Act --
-        context.fillRectangle(x: -1, y: 0, width: 3, height: 1, color: .init(red: 0, green: 255, blue: 0))
+        let data = try render(width: 3, height: 2) { context in
+            context.fill(path, with: .init(red: 0, green: 255, blue: 0))
+        }
 
         // -- Assert --
         #expect(
-            context.rgbaData
+            data
                 == Data([
                     0, 255, 0, 255, 0, 255, 0, 255, 0, 0, 0, 0,
                     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -97,7 +113,11 @@ struct PixelCanvasTests {
         // -- Arrange --
         let model = PixelModel()
         let renderer = ViewRenderer.make(
-            PixelCanvas { context, _ in context.fill(model.color) }.frame(width: 1, height: 1))
+            PixelCanvas { context, size in
+                context.fill(
+                    Path(PixelRect(x: 0, y: 0, width: Double(size.width), height: Double(size.height))),
+                    with: model.color)
+            }.frame(width: 1, height: 1))
         let output = RecordingTerminalOutput()
         let presenter = TerminalPresenter(output: output, mode: .fullscreen)
         let first = renderer.render(.now)
@@ -150,7 +170,11 @@ struct PixelCanvasTests {
         // -- Arrange --
         let renderer = ViewRenderer.make(
             VStack(spacing: 0) {
-                PixelCanvas { context, _ in context.fill(.init(red: 255, green: 0, blue: 0)) }
+                PixelCanvas { context, size in
+                    context.fill(
+                        Path(PixelRect(x: 0, y: 0, width: Double(size.width), height: Double(size.height))),
+                        with: .init(red: 255, green: 0, blue: 0))
+                }
                 Text("Caption")
             }.frame(width: 10, height: 4))
 
@@ -179,5 +203,14 @@ struct PixelCanvasTests {
         #expect(frame?.images.count == 1)
         #expect(empty?.images.isEmpty != false)
         #expect(renderer.render(.now, proposal: .init(width: 1, height: 1)).nextUpdate == nil)
+    }
+
+    private func render(
+        width: Int, height: Int, draw: @escaping @MainActor (PixelCanvas.Context) -> Void
+    ) throws -> Data {
+        let renderer = ViewRenderer.make(
+            PixelCanvas(pixelsPerCell: .init(width: 1, height: 1)) { context, _ in draw(context) }
+                .frame(width: width, height: height))
+        return try #require(renderer.render(.now).grid?.images.first?.data)
     }
 }

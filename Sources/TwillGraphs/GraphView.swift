@@ -38,7 +38,7 @@ public struct GraphView<ID: Hashable & Sendable>: View {
                     padding: (graph.nodes.map(\.radius).max() ?? 5) * 3 + 4)
                 GraphRasterizer.draw(
                     graph, positions: positions, selected: selected?.id,
-                    context: &context, projection: projection)
+                    context: context, projection: projection)
             }
             Text(selected?.label ?? "No nodes")
         }
