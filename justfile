@@ -63,6 +63,10 @@ test-sanitize *args:
 benchmark *args:
     just _swift batch run -c release -Xswiftc -enable-testing -Xswiftc -DBENCHMARKING TwillBenchmarks "$@"
 
+# Explore the types in a trusted Swift package. Pass its Package.swift path or --help.
+package-explorer *args:
+    just _swift interactive run --disable-index-store --explicit-target-dependency-import-check warn -Xswiftc -warnings-as-errors -- PackageExplorer "$@"
+
 # Profile SDK benchmark cases in debug. Choose a new output path for each recording.
 profile-benchmark output="/tmp/twill-benchmarks.trace" *args:
     #!/usr/bin/env bash
