@@ -127,7 +127,8 @@ struct TerminalViewportTests {
 
         // -- Assert --
         #expect(requestedResize)
-        #expect(output.hasPrefix("\u{1B}[?25l\r\u{1B}[2KABC"))
+        #expect(output.hasPrefix("\u{1B}[?25l\r\r\n\r\u{1B}[1A\r\u{1B}[2KABC"))
+        #expect(output.contains("\r\u{1B}[2KDEF"))
         #expect(output.contains("\r\u{1B}[2KABCDEF"))
         #expect(try terminal.snapshot() == original)
     }

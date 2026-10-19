@@ -10,6 +10,8 @@ protocol PrimitiveView {
 enum ViewDescription {
     case empty
     case drawing(any PrimitiveDrawing)
+    case text(MultilineTextDrawing)
+    case textLayout(any View, TextLayoutChange)
     case canvas(interval: TimeInterval?, render: @MainActor (Canvas.Context, Canvas.Size) -> Void)
     case textField(TextFieldDescription)
     case textEditor(TextEditorDescription)

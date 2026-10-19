@@ -17,7 +17,7 @@ add behavior without visual decoration show their underlying content. EmptyView 
 
 ``Text``
 
-Terminal text, including a wide glyph, with an explicit foreground color.
+Text preserves line breaks and wraps words within terminal-cell width.
 
 ![Text terminal preview](preview-Text.svg)
 
@@ -316,6 +316,14 @@ The border modifier encloses content in rounded terminal glyphs.
 Disabled controls stay visible but do not receive focus or activate.
 
 ![DisabledView terminal preview](preview-DisabledView.svg)
+
+## TextLayoutView
+
+``TextLayoutView``
+
+Inherited line limits and truncation keep a terminal title within its viewport.
+
+![TextLayoutView terminal preview](preview-TextLayoutView.svg)
 
 ## PaddingView
 
