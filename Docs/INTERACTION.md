@@ -18,6 +18,12 @@ Retained inactive destinations do not participate in focus discovery, key routin
 
 A `.sheet` establishes a modal focus scope. Its content replaces the active inline frame while the underlying view remains mounted and retains its timeline deadlines. Presentation remembers the underlying focus and activates the sheet's first control. While presented, keys cannot reach the underlying screen, even when a handler returns `.ignored`. Dismissal restores the remembered control if it remains mounted, otherwise focus falls back to the active screen's first control. Explicit `@FocusState` and `.focused(...)` are for programmatic focus changes when automatic focus behavior is insufficient. A Boolean binding identifies a single focus target; an optional hashable value identifies one of several targets with `.focused(_:equals:)`. Bindings follow automatic focus traversal. Focusing a container restores its remembered focusable descendant when available, otherwise its first descendant. Programmatic focus can reach controls elsewhere in the active screen. Setting a binding to `false` or `nil` removes focus until another target is requested.
 
+## Nonselectable collections
+
+Omitting a collection's selection binding constructs nonselectable rows, rather than a selectable control with an empty value. Such a collection does not mark or activate rows, and its `.onActivate` callback is inactive. Embedded controls participate in ordinary Tab traversal and keep their own actions and submission routing. Sortable table headers remain interactive without adding a synthetic row-focus target. A static viewport receives scrolling keys when it has no interactive descendants.
+
+Supply stable unique IDs for reconciliation, including an explicit `Table(..., id:)` when elements are not `Identifiable`. Reorder and insertion retain keyed row state; removal unmounts it. A constant nil selection binding still constructs a selectable collection governed by its selection policy. Layout and viewport clipping remain independent of these interaction choices.
+
 ## Collection selection policies
 
 Selection resolution is independent of keyboard focus. The default `selectionPolicy: .firstVisible` displays the first visible row for nil, missing, or hidden IDs. `.allowEmpty` displays no selection for those IDs. Empty collections have no effective selection under either policy. Outline visibility follows bound expansion, and a hidden stored ID can become selected again when it reappears.
