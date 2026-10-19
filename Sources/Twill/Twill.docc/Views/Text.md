@@ -2,8 +2,8 @@
 
 ## Preview
 
-Terminal text, including a wide glyph, with an explicit foreground color.
+Text preserves line breaks and wraps words within terminal-cell width.
 
-![Text terminal preview: Terminal text, including a wide glyph, with an explicit foreground color.](preview-Text)
+![Text terminal preview: Text preserves line breaks and wraps words within terminal-cell width.](preview-Text)
 
 Explore related views in <doc:ViewGallery>.

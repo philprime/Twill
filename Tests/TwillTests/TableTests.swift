@@ -144,7 +144,7 @@ struct TableTests {
         #expect(emptyGrid.snapshotText == "Name")
     }
 
-    @Test("Constrained columns stay aligned and clip wide text in terminal cells")
+    @Test("Constrained columns stay aligned while wide text wraps in terminal cells")
     func constrainedColumns() throws {
         // -- Arrange --
         let rows = [Item(id: 0, name: "界界界", count: 12), Item(id: 1, name: "A", count: 3)]
@@ -158,8 +158,8 @@ struct TableTests {
         let grid = try #require(renderer.render(.now, proposal: ProposedCellSize(width: 8)).grid)
 
         // -- Assert --
-        #expect(grid.size == CellSize(width: 8, height: 3))
-        #expect(grid.snapshotText == "Name  N \n界界  12\nA     3 ")
+        #expect(grid.size == CellSize(width: 8, height: 4))
+        #expect(grid.snapshotText == "Name  N \n界界  12\n界      \nA     3 ")
     }
 
     @Test("Empty cells retain their column slots and empty rows retain their height")
