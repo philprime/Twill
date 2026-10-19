@@ -13,6 +13,7 @@ public struct Table<Data: RandomAccessCollection, each Content: View>: View wher
     private let selectionPolicy: SelectionPolicy
     private let sortOrder: Binding<[KeyPathComparator<Data.Element>]>?
     private let columns: TableColumns<Data.Element, repeat each Content>
+    private var activation: (@MainActor (Data.Element) -> Void)?
 
     /// Creates a table with bound row selection and typed columns.
     /// Supplying sort order enables sortable headers; the caller must apply the comparators to the data.
@@ -29,6 +30,14 @@ public struct Table<Data: RandomAccessCollection, each Content: View>: View wher
         self.columns = columns()
     }
 
+    /// Activates an effective row on Enter instead of invoking `.onSubmit`.
+    /// Header activation continues to sort without calling this action.
+    public func onActivate(_ action: @escaping @MainActor (Data.Element) -> Void) -> Self {
+        var view = self
+        view.activation = action
+        return view
+    }
+
     private var selectedIndex: Data.Index? {
         selectionPolicy.index(in: data, selection: selection.wrappedValue, id: { $0.id })
     }
@@ -42,7 +51,12 @@ public struct Table<Data: RandomAccessCollection, each Content: View>: View wher
             let index = selectionPolicy.navigationIndex(
                 for: key, in: data, selection: selection.wrappedValue, id: { $0.id })
         else { return .handled }
-        selection.wrappedValue = data[index].id
+        let element = data[index]
+        selection.wrappedValue = element.id
+        if key == .enter, let activation {
+            activation(element)
+            return .handled
+        }
         return key == .enter ? .ignored : .handled
     }
 
