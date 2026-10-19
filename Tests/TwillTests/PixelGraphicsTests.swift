@@ -228,6 +228,59 @@ struct PixelGraphicsTests {
         #expect(data == Data([0, 0, 0, 0, 255, 0, 0, 255, 0, 0, 0, 0]))
     }
 
+    @Test("An ellipse retains its starting point for a following line")
+    func ellipseContinuation() throws {
+        // -- Arrange --
+        let ellipse = Path(ellipseIn: PixelRect(x: 0, y: 0, width: 4, height: 4))
+        var continued = ellipse
+        continued.addLine(to: .init(x: 8, y: 2))
+
+        // -- Act --
+        let original = try render(width: 10, height: 6) { $0.stroke(ellipse, with: red) }
+        let extended = try render(width: 10, height: 6) { $0.stroke(continued, with: red) }
+
+        // -- Assert --
+        #expect(original[4 * (2 * 10 + 6) + 3] == 0)
+        #expect(extended[4 * (2 * 10 + 6) + 3] > 0)
+    }
+
+    @Test("Large finite ellipses can fill and clip a small canvas", arguments: [false, true], [1e40, 5e307])
+    func largeEllipse(clipped: Bool, radius: Double) throws {
+        // -- Arrange --
+        let ellipse = Path(ellipseIn: PixelRect(x: -radius, y: -radius, width: radius * 2, height: radius * 2))
+        let rectangle = Path(PixelRect(x: 0, y: 0, width: 3, height: 3))
+
+        // -- Act --
+        let data = try render(width: 3, height: 3) { context in
+            if clipped {
+                var copy = context
+                copy.clip(to: ellipse)
+                copy.fill(rectangle, with: red)
+            } else {
+                context.fill(ellipse, with: red)
+            }
+        }
+
+        // -- Assert --
+        #expect(data == Data(Array(repeating: [UInt8(255), 0, 0, 255], count: 9).flatMap { $0 }))
+    }
+
+    @Test("Large ellipse strokes and offscreen fills leave a small canvas untouched")
+    func largeEllipseOutsideCanvas() throws {
+        // -- Arrange --
+        let enclosing = Path(ellipseIn: PixelRect(x: -1e40, y: -1e40, width: 2e40, height: 2e40))
+        let offscreen = Path(ellipseIn: PixelRect(x: 1e40, y: 1e40, width: 2e40, height: 2e40))
+
+        // -- Act --
+        let data = try render(width: 3, height: 3) { context in
+            context.stroke(enclosing, with: red)
+            context.fill(offscreen, with: red)
+        }
+
+        // -- Assert --
+        #expect(data == Data(repeating: 0, count: 36))
+    }
+
     @Test("Paths remain independent values and empty paths and zero width draw nothing")
     func valuesAndEmptyPaths() throws {
         // -- Arrange --

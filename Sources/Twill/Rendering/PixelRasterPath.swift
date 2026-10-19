@@ -1,8 +1,11 @@
 import Foundation
 
-/// Tessellation is local to one drawing operation. Curved contour resolution
-/// follows the current transform so magnification does not magnify fixed polygon facets.
+/// Tessellation is local to one drawing operation. Ellipse resolution follows
+/// the current transform up to a fixed subdivision budget.
 struct PixelRasterPath {
+    // Vertex generation precedes clipping. Bound its work independently of the
+    // requested geometry so offscreen or highly magnified ellipses stay finite.
+    private static let maximumEllipseSegments = 4096
     struct Contour {
         let points: [PixelPoint]
         let closed: Bool
@@ -25,8 +28,9 @@ struct PixelRasterPath {
                 points = points.first.map { [$0] } ?? []
             case .ellipse(let rectangle):
                 if points.count > 1 { result.append(Contour(points: points, closed: false)) }
-                result.append(Contour(points: Self.ellipse(rectangle, scale: resolutionScale), closed: true))
-                points = []
+                let ellipse = Self.ellipse(rectangle, scale: resolutionScale)
+                result.append(Contour(points: ellipse, closed: true))
+                points = [ellipse[0]]
             }
         }
         if points.count > 1 { result.append(Contour(points: points, closed: false)) }
@@ -107,7 +111,10 @@ struct PixelRasterPath {
         let verticalRadius = rectangle.height / 2
         let pixelRadius = max(horizontalRadius, verticalRadius) * scale
         let maximumChordError = 0.125
-        let segments = max(12, Int(ceil(Double.pi * sqrt(max(1, pixelRadius) / maximumChordError))))
+        let requested = ceil(Double.pi * sqrt(max(1, pixelRadius) / maximumChordError))
+        let bounded =
+            requested.isFinite ? min(Double(maximumEllipseSegments), requested) : Double(maximumEllipseSegments)
+        let segments = max(12, Int(bounded))
         return (0..<segments).map { index in
             let angle = Double(index) * 2 * Double.pi / Double(segments)
             return PixelPoint(

@@ -60,7 +60,9 @@ public struct Path: Sendable, Equatable {
         closeSubpath()
     }
 
-    /// Appends a clockwise ellipse. Empty rectangles add no contour.
+    /// Appends a clockwise ellipse starting at the midpoint of its right edge.
+    /// This starting point remains current for subsequent segments.
+    /// Empty rectangles add no contour.
     public mutating func addEllipse(in rectangle: PixelRect) {
         guard rectangle.width > 0 && rectangle.height > 0 else { return }
         elements.append(.ellipse(rectangle))
