@@ -61,6 +61,13 @@ struct InputParser {
 
     private mutating func consumeEscape(into events: inout [KeyEvent]) -> Bool {
         guard pending.count >= Self.sequencePrefixLength else { return false }
+        // Terminals commonly encode Alt-Backspace as Escape plus either legacy
+        // Backspace byte. Other non-CSI Escape combinations retain their routing.
+        if pending[1] == Byte.backspace || pending[1] == Byte.delete {
+            pending.removeFirst(Self.sequencePrefixLength)
+            events.append(.backspace.withModifiers(.alt))
+            return true
+        }
         guard pending[1] == Byte.controlSequenceIntroducer || pending[1] == Byte.singleShiftThree else {
             pending.removeFirst()
             events.append(.escape)
