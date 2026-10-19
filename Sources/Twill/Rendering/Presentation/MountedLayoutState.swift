@@ -10,6 +10,10 @@ struct MountedLayoutState {
         let fillsHeight: Bool
     }
 
+    weak var controlOwner: ViewRenderer?
+    var controlStyle: (any ControlStyle)?
+    var controlKind: ControlKind?
+    var controlSelected = false
     var attributes: TextAttributes = []
     var theme = Theme()
     var foreground: Color?

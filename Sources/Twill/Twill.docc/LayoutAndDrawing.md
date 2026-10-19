@@ -65,6 +65,34 @@ Theme boundaries replace the palette for their subtree. Semantic declarations in
 
 Custom ``Style`` implementations resolve with `resolve(in:)`, returning a concrete color or nil for terminal default. Style values remain concrete in public composition and resolve only at the mounted presentation boundary.
 
+## Style Control State
+
+``ControlStyle`` resolves an immutable ``ControlAppearance`` from ``ControlState`` and the nearest theme. It is separate from color-only ``Style``. Apply a concrete implementation with `.controlStyle(...)` to one control or a subtree; a nearer declaration replaces it, and ordinary text outside controls is unchanged.
+
+```swift
+struct AccentControls: ControlStyle {
+    func resolve(_ state: ControlState, in theme: Theme) -> ControlAppearance {
+        ControlAppearance(
+            foreground: state.isEnabled ? SemanticColor.accent : .muted,
+            attributes: state.isFocused ? [.bold] : [],
+            focusEffect: .none)
+    }
+}
+```
+
+State identifies the control family and its effective availability and focus owner. Toggle selection means on, picker options expose their own selection, and disclosure headers expose expansion without styling expanded content. Other controls can inherit enclosing row selection. Nested controls have independent owners, so their focus and value selection do not leak into one another. Progress participates in styling without becoming a focus stop.
+
+Appearance overrides ordinary inherited colors and attributes without changing layout, binding values, actions, or eligibility. Nil fields retain inherited presentation. A supplied semantic color can explicitly select terminal default; an empty attribute set clears inherited flags. ``ControlFocusEffect`` controls only reverse video, independently of logical focus and the hardware caret. Default appearance retains existing styling and focus highlighting.
+
+Slider and stepper initializers accept `format:` closures for their displayed values:
+
+```swift
+Stepper("Files", value: $count, in: 0...100, format: { "\($0) items" })
+Slider("Level", value: $level, format: { "\(Int($0 * 100))%" })
+```
+
+Formatting receives the actual external value, not its clamped track representation, and does not change adjustment behavior. Default formatting retains the ordinary numeric representation. Styles and formatting run during presentation/body evaluation and must not perform terminal output or register work.
+
 ## Apply Terminal Text Attributes
 
 ```swift

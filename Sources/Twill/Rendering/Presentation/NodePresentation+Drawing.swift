@@ -4,7 +4,7 @@ extension NodePresentation {
         case .content:
             context.drawChildren(&drawing)
         case .drawing(let primitive, let caretColumn):
-            drawing.withFocus(context.isFocused) { region in
+            drawing.withFocus(context.focusHighlight ?? context.isFocused) { region in
                 primitive.draw(in: &region)
                 if context.isFocused, let caretColumn { region.placeCaret(column: caretColumn, row: 0) }
             }
@@ -71,7 +71,7 @@ extension NodePresentation {
         let content = snapshot.layout(width: size.width)
         let caret = content.position(at: snapshot.caret, upstream: snapshot.upstream)
         drawing.withRegion(CellRect(origin: .zero, size: size)) { viewport in
-            viewport.withFocus(context.isFocused) { region in
+            viewport.withFocus(context.focusHighlight ?? context.isFocused) { region in
                 let end = min(content.lines.count, offset.row + size.height)
                 for row in offset.row..<end {
                     region.withRegion(

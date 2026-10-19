@@ -58,6 +58,11 @@ Start with <doc:GettingStarted>, then explore <doc:ViewGallery> to see rendered 
 
 - ``Button``
 - ``ButtonRole``
+- ``ControlStyle``
+- ``ControlAppearance``
+- ``ControlState``
+- ``ControlKind``
+- ``ControlFocusEffect``
 - ``Toggle``
 - ``TextField``
 - ``SecureField``
