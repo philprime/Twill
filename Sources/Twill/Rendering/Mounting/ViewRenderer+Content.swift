@@ -15,12 +15,12 @@ extension ViewRenderer {
         let updated = Self.describe(view)
         description = updated
         switch updated {
-        case .empty, .drawing, .textField, .textEditor:
+        case .empty, .drawing, .textField, .textEditor, .keyHints:
             removeChildren()
         case .canvas(let interval, _):
             removeChildren()
             schedule.updateCanvas(interval: interval, at: date)
-        case .body(let body), .button(let body, _, _), .table(let body, _):
+        case .body(let body), .table(let body, _):
             reconcile([body], at: date)
         case .dialog(let actions, _, let kind):
             updateDialog(actions, kind: kind, at: date)
@@ -39,15 +39,17 @@ extension ViewRenderer {
             .keyPress(let content, _), .styled(let content, _, _),
             .border(let content, _, _, _):
             reconcile([content], at: date)
-        case .task, .tabs, .sheet, .conditional, .timeline, .disclosure:
-            updateDynamicContent(updated, previous: previous, at: date)
+        case .button, .task, .tabs, .sheet, .conditional, .timeline, .disclosure:
+            updateSpecializedContent(updated, previous: previous, at: date)
         }
         updateTabState()
         schedule.collectDeadlines(retainedChildren.lazy.map(\.nextUpdate))
     }
 
-    private func updateDynamicContent(_ description: ViewDescription, previous: ViewDescription?, at date: Date) {
+    private func updateSpecializedContent(_ description: ViewDescription, previous: ViewDescription?, at date: Date) {
         switch description {
+        case .button(let button):
+            reconcile([button.content], at: date)
         case .tabs(let content, _):
             reconcile([content], at: date)
         case .task(let content, let priority, let action):

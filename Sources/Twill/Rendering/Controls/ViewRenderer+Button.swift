@@ -2,8 +2,8 @@
 extension ViewRenderer {
     /// Direct dialog activation and shortcuts share action-before-dismissal ordering.
     func activateButton() {
-        guard isEnabled, case .button(_, _, let action) = description else { return }
-        action()
+        guard isEnabled, case .button(let button) = description else { return }
+        button.action()
         var ancestor = parent
         while let node = ancestor {
             if case .dialog(_, let isPresented, _) = node.description {

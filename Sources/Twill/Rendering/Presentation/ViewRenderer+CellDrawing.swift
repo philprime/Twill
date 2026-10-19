@@ -4,7 +4,11 @@ import Foundation
 extension ViewRenderer {
     var nodePresentation: NodePresentation {
         switch description {
-        case .button(_, .destructive, _): return .styled(foreground: .red, background: nil)
+        case .button(let button) where button.role == .destructive:
+            return .styled(foreground: .red, background: nil)
+        case .keyHints(let hints):
+            let text = isEnabled ? hints.compactMap(\.text).joined(separator: "  •  ") : ""
+            return .drawing(TextDrawing(text), caretColumn: nil)
         case .styled(_, let foreground, let background):
             return .styled(foreground: foreground, background: background)
         case .border(_, let glyphs, let color, let title):
@@ -42,6 +46,7 @@ extension ViewRenderer {
         while let current = node {
             if case .listRow(_, let isSelected) = current.description { return isSelected }
             if case .disabled(_, true) = current.description { return false }
+            if case .button(let button) = current.description, !button.isEnabled { return false }
             // Viewers and keyboard scopes do not highlight all their static descendants.
             if case .scroll = current.description { return false }
             if case .pane = current.description { return false }
