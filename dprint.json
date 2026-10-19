@@ -11,6 +11,8 @@
     "**/*.docc/**/*.md",
     "**/dist",
     "**/build",
+    "ThirdParty/**",
+    "THIRD_PARTY_NOTICES.md",
     "tmp"
   ],
   "plugins": [

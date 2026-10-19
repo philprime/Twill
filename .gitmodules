@@ -1,0 +1,6 @@
+[submodule "freetype"]
+	path = ThirdParty/FreeType/upstream
+	url = https://github.com/freetype/freetype.git
+[submodule "harfbuzz"]
+	path = ThirdParty/HarfBuzz/upstream
+	url = https://github.com/harfbuzz/harfbuzz.git
