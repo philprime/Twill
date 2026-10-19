@@ -8,6 +8,27 @@ Twill manages focus independently of selection, scroll position, and the termina
 
 The first eligible control receives initial focus. Tab and Shift-Tab move between controls in composition order, without wrapping. This works automatically, with no navigation wrappers. Compound controls such as lists, tables, and editors expose one control-level Tab stop and retain their internal focus when revisited. Arrow keys move focus when the control does not consume them or confine them to internal navigation. Navigation is not spatial.
 
+## Share Commands and Hints
+
+Describe an action once and share its current metadata between controls and help text:
+
+```swift
+let save = Command("save", title: "Save", isEnabled: !title.isEmpty,
+    shortcuts: [KeyboardShortcut(.controlS), KeyboardShortcut(.superS)],
+    action: saveChanges)
+
+VStack {
+    Button(save)
+    KeyHints([save])
+}
+```
+
+Create command snapshots from mounted state in the view body so titles, availability, shortcuts, and hints update together. ``MenuItem`` also accepts a command. Its shortcut alternatives remain scoped to the open menu. A command's role participates in dialog policy, and `perform()` skips an unavailable snapshot.
+
+``KeyHints`` shows available commands with shortcuts, using each shortcut's generated or overridden hint. It respects its inherited disabled scope and omits empty content. Hints alone do not activate shortcuts. Use shared command availability for conditions that must also hide hints, rather than a separate disabled modifier on a particular control.
+
+Command IDs are application metadata. Use `.id(_:)` separately when explicit mounted identity is needed.
+
 ## Attach Action Shortcuts
 
 Use `.keyboardShortcut(_:)` to reuse a button's action and disabled state:
