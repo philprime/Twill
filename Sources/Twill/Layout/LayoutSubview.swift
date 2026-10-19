@@ -8,14 +8,16 @@
 struct LayoutSubview {
     let fillsWidth: Bool
     let fillsHeight: Bool
+    let preservesIntrinsicMinimum: Bool
     private let measure: @MainActor (ProposedCellSize) -> CellSize
 
     init(
-        fillsWidth: Bool, fillsHeight: Bool,
+        fillsWidth: Bool, fillsHeight: Bool, preservesIntrinsicMinimum: Bool = false,
         measure: @escaping @MainActor (ProposedCellSize) -> CellSize
     ) {
         self.fillsWidth = fillsWidth
         self.fillsHeight = fillsHeight
+        self.preservesIntrinsicMinimum = preservesIntrinsicMinimum
         self.measure = measure
     }
 

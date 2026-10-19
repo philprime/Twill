@@ -3,26 +3,36 @@
 struct HorizontalLayout: PrimitiveLayout {
     let spacing: Int
     var alignment: VerticalAlignment = .top
+    var behavior: LayoutBehavior { LayoutBehavior(stackAxis: .horizontal) }
 
     @MainActor
     func measureSubviews(_ proposal: ProposedCellSize, subviews: [LayoutSubview]) -> [CellSize] {
         if let size = singleSubviewSize(proposal, subviews: subviews) { return [size] }
-        // Flexible children have a known final width after sibling space is
-        // deducted. Their natural width is unused and can require a full tree walk.
+        // Only spacer-containing flexible children need intrinsic minimums;
+        // ordinary filling content still avoids an unused natural-size tree walk.
         let natural = subviews.map {
-            proposal.width != nil && $0.fillsWidth ? .zero : $0.sizeThatFits(.unspecified)
+            proposal.width != nil && $0.fillsWidth && !$0.preservesIntrinsicMinimum
+                ? .zero : $0.sizeThatFits(.unspecified)
         }
         let flexible = subviews.indices.filter { subviews[$0].fillsWidth }
-        let occupied = subviews.indices.filter { !subviews[$0].fillsWidth }.reduce(0) { $0 + natural[$1].width }
+        let occupied = natural.reduce(0) { $0 + $1.width }
         let remaining = max(0, (proposal.width ?? 0) - occupied - max(0, subviews.count - 1) * spacing)
-        return subviews.indices.map { index in
+        let measured = subviews.indices.map { index in
             let width =
                 proposal.width != nil && subviews[index].fillsWidth
-                ? remaining / max(1, flexible.count) + (index == flexible.last ? remaining % flexible.count : 0)
-                : nil
-            let height = subviews[index].fillsHeight ? proposal.height : nil
+                ? natural[index].width + remaining / max(1, flexible.count)
+                    + (index == flexible.last ? remaining % flexible.count : 0) : nil
+            let height =
+                subviews[index].fillsHeight || subviews[index].preservesIntrinsicMinimum ? proposal.height : nil
             return width != nil || height != nil
                 ? subviews[index].sizeThatFits(ProposedCellSize(width: width, height: height)) : natural[index]
+        }
+        guard proposal.height == nil else { return measured }
+        let height = measured.map(\.height).max() ?? 0
+        return subviews.indices.map { index in
+            subviews[index].fillsHeight || subviews[index].preservesIntrinsicMinimum
+                ? subviews[index].sizeThatFits(ProposedCellSize(width: measured[index].width, height: height))
+                : measured[index]
         }
     }
 
