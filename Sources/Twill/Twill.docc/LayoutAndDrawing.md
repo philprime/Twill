@@ -30,6 +30,21 @@ Modifier order matters. Padding inside a border creates interior space. Padding 
 
 ``LazyVGrid`` uses a shared `spacing:` parameter for both axes. Its current implementation mounts all children when evaluated, as documented on that type. ``ScrollView`` clips content to a visible height while preserving mounted state outside the visible area. Use ``ScrollViewReader`` to obtain a proxy for scrolling to keyed children.
 
+## Distribute Space and Separate Content
+
+```swift
+HStack {
+    Text("Status")
+    Spacer(minLength: 1)
+    Divider()
+    Text("Ready")
+}
+```
+
+`Spacer` expands along the nearest horizontal or vertical stack's main axis, including through composition and appearance modifiers. Outside a stack it expands on both axes. Its nonnegative `minLength` defaults to zero. Stacks reserve spacer minimums and ordinary stack gaps before sharing surplus among flexible children, assigning any remainder to the last flexible child. With no finite proposal, a spacer uses its minimum. Insufficient space clips the resulting layout rather than shrinking intrinsic sibling content or spacer minimums.
+
+`Divider()` spans the stack's minor axis, or horizontally outside a stack. `Divider(.horizontal)` and `Divider(.vertical)` choose an explicit line direction. Separators are one terminal cell thick, inherit colors and text attributes, and span intrinsic multiline neighbors even without a finite cross-axis proposal. Neither primitive adds focus stops or scheduled work. Cached resize changes placement and extent without reevaluating bodies.
+
 ## Control Text Breaks and Overflow
 
 Use `.lineBreakMode(.wordWrapping)` for word boundaries, `.lineBreakMode(.characterWrapping)` for complete grapheme boundaries, or `.lineBreakMode(.clipping)` to preserve logical lines without wrapping. Unspecified width keeps natural line widths. Whitespace that fits is preserved, while word-wrapping separators at a break are omitted. Oversized words split only between graphemes. A grapheme wider than the viewport occupies a clipped row and is never partially drawn.

@@ -15,7 +15,7 @@ extension ViewRenderer {
         let updated = Self.describe(view)
         description = updated
         switch updated {
-        case .empty, .drawing, .text, .textField, .textEditor, .keyHints:
+        case .empty, .spacer, .divider, .drawing, .text, .textField, .textEditor, .keyHints:
             removeChildren()
         case .canvas(let interval, _):
             removeChildren()

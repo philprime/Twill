@@ -4,6 +4,10 @@ import Foundation
 extension ViewRenderer {
     var nodePresentation: NodePresentation {
         switch description {
+        case .spacer(let minimum):
+            return .drawing(SpacerDrawing(axis: layoutState.stackAxis, minimum: minimum), caretColumn: nil)
+        case .divider:
+            return .drawing(DividerDrawing(axis: dividerAxis), caretColumn: nil)
         case .keyHints(let hints):
             let text = isEnabled ? hints.compactMap(\.text).joined(separator: "  •  ") : ""
             return .drawing(TextDrawing(text), caretColumn: nil)

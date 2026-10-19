@@ -12,4 +12,5 @@ struct LayoutBehavior {
 
     var width: Fill = .inherited
     var height: Fill = .inherited
+    var stackAxis: Axis?
 }
