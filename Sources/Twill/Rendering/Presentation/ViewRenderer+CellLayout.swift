@@ -7,8 +7,15 @@ extension ViewRenderer {
     /// Drawing uses cached values without changing collection placement.
     func prepareLayout(
         inheritedAttributes: TextAttributes = [], inheritedStyles: StyleEnvironment = StyleEnvironment(),
-        inheritedControls: ControlEnvironment = ControlEnvironment(), inheritedStackAxis: Axis? = nil
+        inheritedControls: ControlEnvironment = ControlEnvironment(), inheritedStackAxis: Axis? = nil,
+        inheritedIndicators: ScrollIndicatorVisibility = .hidden
     ) {
+        let indicators: ScrollIndicatorVisibility
+        if case .scrollIndicators(_, let visibility) = description {
+            indicators = visibility
+        } else {
+            indicators = inheritedIndicators
+        }
         let stackAxis = containerBehavior?.stackAxis ?? inheritedStackAxis
         let controls = controlEnvironment(inheriting: inheritedControls)
         var styles = inheritedStyles
@@ -33,10 +40,11 @@ extension ViewRenderer {
         for child in retainedChildren {
             child.prepareLayout(
                 inheritedAttributes: attributes, inheritedStyles: styles, inheritedControls: controls,
-                inheritedStackAxis: stackAxis)
+                inheritedStackAxis: stackAxis, inheritedIndicators: indicators)
         }
         layoutState.beginFrame()
         layoutState.stackAxis = stackAxis
+        layoutState.scrollIndicators = indicators
         layoutState.controlOwner = controls.owner
         layoutState.controlStyle = controls.style
         layoutState.controlKind = controls.kind
@@ -58,6 +66,7 @@ extension ViewRenderer {
         case .spacer, .divider, .drawing, .text, .canvas, .textField, .textEditor: return true
         case .keyHints(let hints): return isEnabled && hints.contains(where: \.hasContent)
         case .tableRow: return true
+        case .scroll where layoutState.scrollIndicators == .visible: return true
         case .tabs: return hasTabBar
         case .tab where !tabState.isActive: return false
         case .sheet: return sheetBranch?.hasLayoutContent ?? false
@@ -109,6 +118,7 @@ extension ViewRenderer {
         if let traits = layoutState.traits { return traits.fillsWidth }
         if case .spacer = description { return layoutState.stackAxis != .vertical }
         if case .divider = description { return dividerAxis == .horizontal }
+        if case .scroll = description, layoutState.scrollIndicators == .visible { return true }
         if case .canvas = description { return true }
         if case .textEditor = description { return true }
         if let behavior = containerBehavior {

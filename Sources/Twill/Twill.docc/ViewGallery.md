@@ -277,6 +277,14 @@ A tab declaration shown inside its required TabView container; the selected dest
 
 ![Tab terminal preview](preview-Tab.svg)
 
+## ScrollIndicatorView
+
+``ScrollIndicatorView``
+
+Visible indicators reserve one right-hand terminal column.
+
+![ScrollIndicatorView terminal preview](preview-ScrollIndicatorView.svg)
+
 ## ScrollView
 
 ``ScrollView``

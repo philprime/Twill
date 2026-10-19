@@ -10,7 +10,7 @@ enum NodePresentation {
     case drawing(any PrimitiveDrawing, caretColumn: Int?)
     case background(Color?)
     case border(glyphs: Border.Glyphs, style: ResolvedStyle, title: TextDrawing?)
-    case scroll(offset: Int, contentHeight: Int)
+    case scroll(offset: Int, contentHeight: Int, indicators: ScrollIndicatorVisibility)
     case editor(snapshot: TextEditorSnapshot, offset: CellPosition)
     case tabs(bar: TextDrawing)
 
@@ -40,8 +40,15 @@ enum NodePresentation {
             let size = content(inner)
             let titleWidth = title.map { $0.sizeThatFits(.unspecified).width + 3 } ?? 0
             return proposal.constrain(CellSize(width: max(size.width + 2, titleWidth), height: size.height + 2))
-        case .scroll:
-            return proposal.constrain(content(ProposedCellSize(width: proposal.width)))
+        case .scroll(_, _, let indicators):
+            let innerWidth = proposal.width.map { max(0, $0 - indicators.reservedColumns) }
+            let measured = content(ProposedCellSize(width: innerWidth))
+            if indicators == .visible {
+                return CellSize(
+                    width: proposal.width ?? measured.width + indicators.reservedColumns,
+                    height: proposal.height ?? measured.height)
+            }
+            return proposal.constrain(measured)
         case .tabs(let bar):
             let barSize = bar.sizeThatFits(.unspecified)
             let size = content(

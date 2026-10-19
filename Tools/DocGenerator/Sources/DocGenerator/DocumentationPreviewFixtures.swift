@@ -275,6 +275,7 @@ extension DocumentationPreviewFixture {
                 "A tab declaration shown inside its required TabView container; "
                     + "the selected destination is visible."
             ) { tabs },
+            indicatedScroll,
             Self("ScrollView", "Content clipped to a two-row viewport. Up/Down scroll; Tab moves between controls.") {
                 ScrollView {
                     VStack(alignment: .leading) {

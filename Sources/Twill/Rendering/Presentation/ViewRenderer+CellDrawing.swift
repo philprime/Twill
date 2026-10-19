@@ -16,7 +16,10 @@ extension ViewRenderer {
         case .border(_, let glyphs, let style, let title):
             let resolved = style?.resolve(in: layoutState.styleContext) ?? ResolvedStyle(color: layoutState.foreground)
             return .border(glyphs: glyphs, style: resolved, title: title)
-        case .scroll: return .scroll(offset: scrollState.offset, contentHeight: scrollState.contentHeight)
+        case .scroll:
+            return .scroll(
+                offset: scrollState.offset, contentHeight: scrollState.contentHeight,
+                indicators: layoutState.scrollIndicators)
         case .textEditor(let editor):
             return .editor(snapshot: editor.snapshot, offset: editorState.offset)
         case .drawing(let drawing): return .drawing(drawing, caretColumn: nil)
