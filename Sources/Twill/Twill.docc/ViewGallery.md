@@ -444,3 +444,11 @@ Flexible space pushes siblings apart along the stack's axis.
 A separator spans the stack's minor axis and inherits appearance.
 
 ![Divider terminal preview](preview-Divider.svg)
+
+## SplitView
+
+``SplitView``
+
+Fixed and flexible panes share width without changing keyboard traversal.
+
+![SplitView terminal preview](preview-SplitView.svg)
