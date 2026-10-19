@@ -2,8 +2,6 @@
 /// Requires a Kitty graphics-compatible terminal. No PNG encoding is performed.
 /// State changes request presentation; use a TimelineView for explicit animation.
 public struct PixelCanvas: View {
-    /// Primitive content is rendered without evaluating a body.
-    public typealias Body = Never
     private let pixelsPerCell: PixelSize
     private let render: @MainActor (inout Context, PixelSize) -> Void
 
@@ -18,10 +16,21 @@ public struct PixelCanvas: View {
         self.pixelsPerCell = pixelsPerCell
         self.render = render
     }
+    /// The bitmap surface fills the remaining space offered by enclosing stacks.
+    public var body: some View {
+        Surface(pixelsPerCell: pixelsPerCell, render: render)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
 }
 
-extension PixelCanvas: PrimitiveView {
-    func makeDescription() -> ViewDescription {
-        .drawing(Drawing(pixelsPerCell: pixelsPerCell, render: render))
+extension PixelCanvas {
+    struct Surface: View, PrimitiveView {
+        typealias Body = Never
+        let pixelsPerCell: PixelSize
+        let render: @MainActor (inout Context, PixelSize) -> Void
+
+        func makeDescription() -> ViewDescription {
+            .drawing(Drawing(pixelsPerCell: pixelsPerCell, render: render))
+        }
     }
 }

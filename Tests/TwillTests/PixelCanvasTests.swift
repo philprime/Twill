@@ -145,6 +145,25 @@ struct PixelCanvasTests {
         var color = PixelColor(red: 255, green: 0, blue: 0)
     }
 
+    @Test("Pixel canvas shares remaining stack space with intrinsic siblings")
+    func stackLayout() throws {
+        // -- Arrange --
+        let renderer = ViewRenderer.make(
+            VStack(spacing: 0) {
+                PixelCanvas { context, _ in context.fill(.init(red: 255, green: 0, blue: 0)) }
+                Text("Caption")
+            }.frame(width: 10, height: 4))
+
+        // -- Act --
+        let frame = renderer.render(.now).grid
+        let image = try #require(frame?.images.first)
+
+        // -- Assert --
+        #expect(image.bounds == CellRect(column: 0, row: 0, width: 10, height: 3))
+        #expect(image.format == .rgba(width: 80, height: 48))
+        #expect(frame?.snapshotText.contains("Caption") == true)
+    }
+
     @Test("Constrained geometry determines resolution and empty regions skip drawing")
     func geometry() {
         // -- Arrange --
