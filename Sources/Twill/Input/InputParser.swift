@@ -11,6 +11,7 @@ struct InputParser {
         static let backspace: UInt8 = 0x08
         static let delete: UInt8 = 0x7F
         static let shiftTab: UInt8 = 0x5A
+        static let unicodeKeyReport: UInt8 = 0x75
 
         static let ascii: ClosedRange<UInt8> = 0x00...0x7F
         static let controls: ClosedRange<UInt8> = 0x00...0x1F
@@ -148,6 +149,9 @@ struct InputParser {
         }
         guard numbers.count != 2 || (1...64).contains(numbers[1]) else { return nil }
         let modifiers = numbers.count == 2 ? KeyModifiers(rawValue: UInt8(numbers[1] - 1)) : []
+        if csi, final == Byte.unicodeKeyReport, let code = numbers.first, numbers.count == 1 || numbers.count == 2 {
+            return decodeUnicodeKey(code, modifiers: modifiers)
+        }
         let isUnnumberedKey = numbers.isEmpty || (csi && numbers.count == 2 && numbers[0] == 1)
         if isUnnumberedKey, let key = specialSequenceKeys[final] {
             return KeyEvent(key, modifiers: modifiers)

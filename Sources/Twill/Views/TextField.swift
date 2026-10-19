@@ -24,7 +24,8 @@ public struct TextField: View {
         let offset = min(caret ?? value.count, value.count)
         switch key.key {
         case .character(let character):
-            guard key.modifiers.isDisjoint(with: [.control, .alt, .superKey, .hyper, .meta]) else { return .handled }
+            // Command chords are not text insertion and must remain available to scoped actions.
+            guard key.modifiers.isDisjoint(with: [.control, .alt, .superKey, .hyper, .meta]) else { return .ignored }
             var updated = value
             updated.insert(character, at: updated.index(updated.startIndex, offsetBy: offset))
             text.wrappedValue = updated

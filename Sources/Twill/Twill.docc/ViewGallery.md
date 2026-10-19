@@ -349,6 +349,14 @@ Associates a focus binding with a control. The binding adds no visual treatment 
 
 ![FocusedView terminal preview](preview-FocusedView.svg)
 
+## KeyboardShortcutView
+
+``KeyboardShortcutView``
+
+A shortcut reuses the button action without changing its label.
+
+![KeyboardShortcutView terminal preview](preview-KeyboardShortcutView.svg)
+
 ## KeyPressView
 
 ``KeyPressView``
