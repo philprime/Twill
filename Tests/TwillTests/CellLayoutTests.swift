@@ -167,7 +167,7 @@ struct CellLayoutTests {
         #expect(expanded.nextUpdate == initial.nextUpdate)
     }
 
-    @Test("A capped main pane leaves room for a neighboring detail pane")
+    @Test("A capped pane wraps its text while leaving room for a neighboring detail pane")
     func cappedPane() {
         // -- Arrange --
         let renderer = ViewRenderer.make(
@@ -183,8 +183,8 @@ struct CellLayoutTests {
         let frame = renderer.render(.now, proposal: ProposedCellSize(width: 16, height: 3))
 
         // -- Assert --
-        #expect(frame.grid?.size == CellSize(width: 13, height: 2))
-        #expect(frame.grid?.snapshotText == "Long n Detail\nShort        ")
+        #expect(frame.grid?.size == CellSize(width: 12, height: 3))
+        #expect(frame.grid?.snapshotText == "Long        \nnote  Detail\ntitle       ")
     }
 
     @Test("A capped frame preserves the order of transparent group children")

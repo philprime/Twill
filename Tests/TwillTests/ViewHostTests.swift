@@ -19,7 +19,11 @@ struct ViewHostTests {
         host.stop()
 
         // -- Assert --
-        #expect(output.writes == ["\r\u{1B}[2KHello [2J world", "\n"])
+        #expect(
+            output.writes == [
+                "\r\r\n\r\u{1B}[1A\r\u{1B}[2KHello [2J\r\u{1B}[1B\r\u{1B}[2Kworld    \r\u{1B}[1A",
+                "\u{1B}[1B\r\n",
+            ])
         #expect(runLoop.timers.isEmpty)
     }
 

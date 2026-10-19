@@ -48,7 +48,12 @@ struct ViewHostResizeTests {
         #expect(loop.timers.count == 1)
         #expect(loop.timers.last === timer)
         #expect(loop.cancelled.isEmpty)
-        #expect(output.writes == ["\r\u{1B}[2KABC", "\r\u{1B}[2KABCDEF", "\r\u{1B}[2KAB"])
+        #expect(
+            output.writes == [
+                "\r\r\n\r\u{1B}[1A\r\u{1B}[2KABC\r\u{1B}[1B\r\u{1B}[2KDEF\r\u{1B}[1A",
+                "\r\u{1B}[2KABCDEF\r\u{1B}[1B\r\u{1B}[2K\r\u{1B}[1A",
+                "\r\u{1B}[2KAB",
+            ])
         host.stop()
     }
 
