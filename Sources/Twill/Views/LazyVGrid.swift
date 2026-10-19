@@ -23,6 +23,6 @@ public struct LazyVGrid<Content: View>: View {
 
 extension LazyVGrid: PrimitiveView {
     func makeDescription() -> ViewDescription {
-        .group(children: [content], layout: GridLayout(columns: columns, spacing: spacing))
+        .group(children: [content], layout: GridLayout(columns: columns, rowSpacing: spacing, columnSpacing: spacing))
     }
 }
