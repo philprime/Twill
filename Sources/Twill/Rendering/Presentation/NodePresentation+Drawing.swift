@@ -8,10 +8,9 @@ extension NodePresentation {
                 primitive.draw(in: &region)
                 if context.isFocused, let caretColumn { region.placeCaret(column: caretColumn, row: 0) }
             }
-        case .styled(let foreground, let background):
-            drawing.withStyle(foreground: foreground, background: background, size: context.size) { region in
-                context.drawChildren(&region)
-            }
+        case .background(let color):
+            drawing.fillBackground(color, size: context.size)
+            context.drawChildren(&drawing)
         case .border(let glyphs, let color, let title):
             drawBorder(glyphs, color: color, title: title, in: &drawing, context: context)
         case .scroll(let offset, let contentHeight):
@@ -38,7 +37,7 @@ extension NodePresentation {
         let width = context.size.width
         let height = context.size.height
         guard width >= 2, height >= 2 else { return }
-        drawing.withStyle(foreground: color, background: nil, size: context.size) { region in
+        drawing.withForeground(color) { region in
             region.draw(glyphs.topLeft, width: 1, column: 0, row: 0)
             region.draw(glyphs.topRight, width: 1, column: width - 1, row: 0)
             region.draw(glyphs.bottomLeft, width: 1, column: 0, row: height - 1)

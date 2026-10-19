@@ -4,14 +4,14 @@ import Foundation
 extension ViewRenderer {
     var nodePresentation: NodePresentation {
         switch description {
-        case .button(let button) where button.role == .destructive:
-            return .styled(foreground: .red, background: nil)
         case .keyHints(let hints):
             let text = isEnabled ? hints.compactMap(\.text).joined(separator: "  •  ") : ""
             return .drawing(TextDrawing(text), caretColumn: nil)
-        case .styled(_, let foreground, let background):
-            return .styled(foreground: foreground, background: background)
-        case .border(_, let glyphs, let color, let title):
+        case .styled(_, _, .some):
+            return .background(layoutState.background)
+        case .border(_, let glyphs, let style, let title):
+            let color: Color?
+            if let style { color = style.resolve(in: layoutState.theme) } else { color = layoutState.foreground }
             return .border(glyphs: glyphs, color: color, title: title)
         case .scroll: return .scroll(offset: scrollState.offset, contentHeight: scrollState.contentHeight)
         case .textEditor(let editor):
@@ -31,16 +31,21 @@ extension ViewRenderer {
     func draw(in context: inout DrawingContext, focused: ViewRenderer?) {
         let presentation = nodePresentation
         context.withAttributes(layoutState.attributes, mask: .supported) { region in
-            presentation.draw(
-                in: &region,
-                context: NodePresentationContext(
-                    size: layoutState.size, isFocused: presentation.usesFocusAppearance && isInsideFocus(focused),
-                    isDirectlyFocused: focused === self,
-                    drawChildren: { region in
-                        for placement in self.layoutState.placements {
-                            region.withRegion(placement.bounds) { placement.node.draw(in: &$0, focused: focused) }
-                        }
-                    }))
+            region.withColors(
+                foreground: layoutState.foreground, background: layoutState.background,
+                usesTerminalBackground: layoutState.hasBackgroundStyle && layoutState.background == nil
+            ) { region in
+                presentation.draw(
+                    in: &region,
+                    context: NodePresentationContext(
+                        size: layoutState.size, isFocused: presentation.usesFocusAppearance && isInsideFocus(focused),
+                        isDirectlyFocused: focused === self,
+                        drawChildren: { region in
+                            for placement in self.layoutState.placements {
+                                region.withRegion(placement.bounds) { placement.node.draw(in: &$0, focused: focused) }
+                            }
+                        }))
+            }
         }
     }
 
