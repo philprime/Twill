@@ -29,11 +29,11 @@ let package = Package(
             exclude: ["Fixtures/make-test-font.py"], resources: [.copy("Fixtures/TwillTest.ttf")]),
         .target(
             name: "CHarfBuzz",
-            path: "ThirdParty/HarfBuzz",
+            path: "ThirdParty/HarfBuzz/bridge",
             sources: [
-                "upstream/src/harfbuzz.cc",
-                "upstream/src/hb-raster-draw.cc",
-                "upstream/src/hb-raster-image.cc",
+                "harfbuzz.cc",
+                "hb-raster-draw.cc",
+                "hb-raster-image.cc",
             ],
             publicHeadersPath: "include"
         ),
