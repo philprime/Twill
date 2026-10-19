@@ -23,13 +23,12 @@ struct NotesBrowserView: View {
     }
 
     private var selectedNote: Note? {
-        let matches = matchingNotes
-        return matches.first { $0.id == selectedNoteID } ?? matches.first
+        SelectionPolicy.firstVisible.resolve(in: matchingNotes, selection: selectedNoteID)
     }
 
     var body: some View {
         let matches = matchingNotes
-        let previewNote = matches.first { $0.id == selectedNoteID } ?? matches.first
+        let previewNote = SelectionPolicy.firstVisible.resolve(in: matches, selection: selectedNoteID)
         return VStack {
             Text(" Notes  \(notes.count) in memory ")
                 .frame(maxWidth: .infinity, alignment: .leading)

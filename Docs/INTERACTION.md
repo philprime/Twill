@@ -18,6 +18,14 @@ Retained inactive destinations do not participate in focus discovery, key routin
 
 A `.sheet` establishes a modal focus scope. Its content replaces the active inline frame while the underlying view remains mounted and retains its timeline deadlines. Presentation remembers the underlying focus and activates the sheet's first control. While presented, keys cannot reach the underlying screen, even when a handler returns `.ignored`. Dismissal restores the remembered control if it remains mounted, otherwise focus falls back to the active screen's first control. Explicit `@FocusState` and `.focused(...)` are for programmatic focus changes when automatic focus behavior is insufficient. A Boolean binding identifies a single focus target; an optional hashable value identifies one of several targets with `.focused(_:equals:)`. Bindings follow automatic focus traversal. Focusing a container restores its remembered focusable descendant when available, otherwise its first descendant. Programmatic focus can reach controls elsewhere in the active screen. Setting a binding to `false` or `nil` removes focus until another target is requested.
 
+## Collection selection policies
+
+Selection resolution is independent of keyboard focus. The default `selectionPolicy: .firstVisible` displays the first visible row for nil, missing, or hidden IDs. `.allowEmpty` displays no selection for those IDs. Empty collections have no effective selection under either policy. Outline visibility follows bound expansion, and a hidden stored ID can become selected again when it reappears.
+
+With row content focused and no effective selection, Down/Home selects the first visible row and Up/End the last. Enter is consumed without submission or binding writes. Outline Left/Right is likewise consumed without changing expansion or selection. With an effective selection, navigation and submission retain their ordinary behavior. Sortable table headers remain reachable above the first selected row, or from an empty table, without normalizing row selection merely to move focus.
+
+Rendering, filtering, expansion changes, and policy changes do not write the selection binding. Only explicit interaction or application actions do so. Use `SelectionPolicy.resolve(...)` with the same data and policy for detail presentation. Its hierarchy overload shares the outline's visible-row traversal.
+
 ## Disabled state
 
 `.disabled(_:)` sets inherited interaction eligibility. A disabled ancestor cannot be re-enabled by a descendant. Disabled content remains mounted and visible, retaining state, selection, viewport memory, tasks, and timeline deadlines. The modifier does not change layout or colors.

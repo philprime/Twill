@@ -10,45 +10,38 @@ public struct Table<Data: RandomAccessCollection, each Content: View>: View wher
     @FocusState private var focus: TableFocus?
     private let data: Data
     private let selection: Binding<Data.Element.ID?>
+    private let selectionPolicy: SelectionPolicy
     private let sortOrder: Binding<[KeyPathComparator<Data.Element>]>?
     private let columns: TableColumns<Data.Element, repeat each Content>
 
     /// Creates a table with bound row selection and typed columns.
     /// Supplying sort order enables sortable headers; the caller must apply the comparators to the data.
+    /// The policy resolves absent IDs without rendering-time binding writes.
     public init(
-        _ data: Data, selection: Binding<Data.Element.ID?>,
+        _ data: Data, selection: Binding<Data.Element.ID?>, selectionPolicy: SelectionPolicy = .firstVisible,
         sortOrder: Binding<[KeyPathComparator<Data.Element>]>? = nil,
         @TableColumnBuilder<Data.Element> columns: () -> TableColumns<Data.Element, repeat each Content>
     ) {
         self.data = data
         self.selection = selection
+        self.selectionPolicy = selectionPolicy
         self.sortOrder = sortOrder
         self.columns = columns()
     }
 
     private var selectedIndex: Data.Index? {
-        data.firstIndex { $0.id == selection.wrappedValue } ?? (data.isEmpty ? nil : data.startIndex)
+        selectionPolicy.index(in: data, selection: selection.wrappedValue, id: { $0.id })
     }
 
     private func handle(_ key: KeyEvent, headers: [Int]) -> KeyPressResult {
         guard [.arrowDown, .arrowUp, .home, .end, .enter].contains(key) else { return .ignored }
-        guard var index = selectedIndex else {
-            return key == .arrowUp ? focusHeader(headers) : .handled
+        if key == .arrowUp, !headers.isEmpty, data.isEmpty || selectedIndex == data.startIndex {
+            return focusHeader(headers)
         }
-        switch key {
-        case .arrowDown:
-            let next = data.index(after: index)
-            if next != data.endIndex { index = next }
-        case .arrowUp:
-            if index != data.startIndex {
-                index = data.index(before: index)
-            } else if !headers.isEmpty {
-                return focusHeader(headers)
-            }
-        case .home: index = data.startIndex
-        case .end: index = data.index(before: data.endIndex)
-        default: break
-        }
+        guard
+            let index = selectionPolicy.navigationIndex(
+                for: key, in: data, selection: selection.wrappedValue, id: { $0.id })
+        else { return .handled }
         selection.wrappedValue = data[index].id
         return key == .enter ? .ignored : .handled
     }
