@@ -24,6 +24,7 @@ Start with <doc:GettingStarted>, then explore <doc:ViewGallery> to see rendered 
 - ``Text``
 - ``VStack``
 - ``HStack``
+- ``SplitView``
 - ``Spacer``
 - ``Divider``
 - ``Group``
@@ -118,6 +119,7 @@ Start with <doc:GettingStarted>, then explore <doc:ViewGallery> to see rendered 
 - ``HorizontalAlignment``
 - ``VerticalAlignment``
 - ``FrameLimit``
+- ``SplitPaneWidth``
 - ``ScrollIndicatorVisibility``
 - ``Axis``
 
