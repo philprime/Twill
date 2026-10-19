@@ -50,6 +50,17 @@ public struct TableColumn<RowValue, Content: View> {
 }
 
 extension TableColumn where Content == Text {
+    /// Displays a formatted source value while sorting by its typed comparable key.
+    /// Formatting changes only text, not comparison semantics or caller-owned order.
+    public init<Value: Comparable>(
+        _ title: String, value: KeyPath<RowValue, Value> & Sendable,
+        format: @escaping @MainActor (Value) -> String
+    ) {
+        self.title = title
+        self.comparator = KeyPathComparator(value)
+        self.content = { Text(format($0[keyPath: value])) }
+    }
+
     /// Creates a sortable text column displaying the string at the supplied key path.
     public init(_ title: String, value: KeyPath<RowValue, String> & Sendable) {
         self.title = title
