@@ -75,8 +75,8 @@ struct FileBrowserView: View {
                 TableColumn("Name", value: \.name)
                 TableColumn("Kind", value: \.kind)
             }
+            .onActivate(open)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-            .onSubmit { openSelection() }
             .onKeyPress { key in
                 let wasG = pendingG
                 pendingG = key == .g && !wasG
@@ -87,7 +87,10 @@ struct FileBrowserView: View {
                 case .g:
                     if wasG { selected = 0 }
                 case .h, .arrowLeft, .backspace: goToParent()
-                case .l, .arrowRight: openSelection()
+                case .l, .arrowRight:
+                    if let entry = SelectionPolicy.firstVisible.resolve(in: entries, selection: selectedID) {
+                        open(entry)
+                    }
                 case .period:
                     showHidden.toggle()
                     reload()
@@ -120,9 +123,7 @@ struct FileBrowserView: View {
         reload(selecting: previous)
     }
 
-    private func openSelection() {
-        guard entries.indices.contains(selected) else { return }
-        let entry = entries[selected]
+    private func open(_ entry: FileEntry) {
         if entry.isDirectory {
             // Leave the current directory usable if the destination is unreadable.
             do {

@@ -121,6 +121,22 @@ List, table, and outline controls default to `.firstVisible`, resolving nil, mis
 
 With row content focused and no effective selection, Down/Home chooses the first row and Up/End chooses the last. Enter does not submit, and outline Left/Right does not expand or normalize selection. Existing selection retains ordinary navigation and submission behavior. Sortable table headers remain independent of row selection. Policy updates retain mounted rows, focus, and sibling schedules.
 
+## Activate Collection Items
+
+```swift
+List(items, selection: $selectedID) { item in
+    Text(item.title)
+}
+.onActivate { item in
+    open(item)
+}
+.frame(height: 8)
+```
+
+List, table, and outline activation callbacks receive the effective original element under the current selection policy. The element is captured before the selection write, and its ID is written before the callback runs. Callers do not need to read focus or recompute fallback selection. An installed callback consumes Enter instead of also firing `.onSubmit`; without one, submission behavior remains unchanged.
+
+No effective row means no activation, binding write, or submission. Sortable headers continue sorting rather than activating rows. Disabled/inactive controls and underlying modal content cannot activate. A later callback replaces an earlier one without changing collection identity or schedules. Callbacks may update or remove data, with ordinary keyed reconciliation on the next presentation. Apply `.onActivate` to the collection before general view modifiers.
+
 ## Navigate Scrolling Content
 
 A ``ScrollView`` controls its viewport, not keyboard grouping. Tab visits the controls inside it in the same way as controls outside it. Moving focus reveals the control through its enclosing viewports, each of which retains its own offset.
