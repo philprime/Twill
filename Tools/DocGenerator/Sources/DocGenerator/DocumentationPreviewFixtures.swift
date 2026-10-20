@@ -217,6 +217,8 @@ extension DocumentationPreviewFixture {
             ) {
                 Menu("Actions") {
                     Button("Save") {}.keyboardShortcut(.s)
+                    Divider()
+                    Menu("More") { Button("Inspect") {} }
                     Button("Delete") {}.disabled(true)
                 }
             },

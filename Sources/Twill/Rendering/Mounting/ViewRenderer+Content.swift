@@ -20,7 +20,7 @@ extension ViewRenderer {
         case .canvas(let interval, _):
             removeChildren()
             schedule.updateCanvas(interval: interval, at: date)
-        case .body(let body), .table(let body, _), .menu(let body, _):
+        case .body(let body), .table(let body, _), .menu(let body, _), .menuOpener(let body):
             reconcile([body], at: date)
         case .dialog(let actions, _, let kind):
             updateDialog(actions, kind: kind, at: date)
