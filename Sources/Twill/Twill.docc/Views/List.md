@@ -2,8 +2,8 @@
 
 ## Preview
 
-Keyed rows with the first row selected. Up/Down and Home/End change selection; Enter submits.
+Nonselectable keyed rows. Static content scrolls; embedded controls keep ordinary keyboard behavior.
 
-![List terminal preview: Keyed rows with the first row selected. Up/Down and Home/End change selection; Enter submits.](preview-List)
+![List terminal preview: Nonselectable keyed rows. Static content scrolls; embedded controls keep ordinary keyboard behavior.](preview-List)
 
 Explore related views in <doc:ViewGallery>.

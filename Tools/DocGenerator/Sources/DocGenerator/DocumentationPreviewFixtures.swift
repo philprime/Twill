@@ -240,10 +240,10 @@ extension DocumentationPreviewFixture {
         [
             Self(
                 "List",
-                "Keyed rows with the first row selected. Up/Down and Home/End "
-                    + "change selection; Enter submits."
+                "Nonselectable keyed rows. Static content scrolls; embedded "
+                    + "controls keep ordinary keyboard behavior."
             ) {
-                List(["Inbox", "Drafts", "Sent"], id: \.self, selection: binding(nil as String?)) { Text($0) }
+                List(["Inbox", "Drafts", "Sent"], id: \.self) { Text($0) }
             },
             Self("Table", "Aligned column headers and selected rows. Up/Down and Home/End navigate; Enter submits.") {
                 Table(
