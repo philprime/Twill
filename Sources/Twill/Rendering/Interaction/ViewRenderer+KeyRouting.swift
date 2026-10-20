@@ -59,6 +59,7 @@ extension ViewRenderer {
             if current.isEnabled, case .keyPress(_, let action) = current.description, action(key) == .handled {
                 return .handled
             }
+            if current.openSubmenu(key) { return .handled }
             if current === boundary { break }
             node = current.parent
         }
