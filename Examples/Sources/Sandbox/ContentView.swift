@@ -14,11 +14,14 @@ struct ContentView: View {
         }
     }
 
+    private enum GalleryCommand: Hashable { case expand, collapse }
+
     private struct GalleryState: Identifiable {
         let id: Gallery
         var isExpanded: Bool
     }
 
+    @State private var isPalettePresented = false
     @State private var selection = Gallery.colors
     @State private var galleries = [
         GalleryState(id: .colors, isExpanded: false),
@@ -31,13 +34,9 @@ struct ContentView: View {
         VStack(alignment: .leading, spacing: 1) {
             Menu("Gallery actions") {
                 Menu("Visibility") {
-                    Button("Expand all") { setExpanded(true) }
-                        .keyboardShortcut(KeyboardShortcut(.e, hint: "e"))
-                        .disabled(!galleries.contains { !$0.isExpanded })
+                    Button(expandCommand)
                     Divider()
-                    Button("Collapse all") { setExpanded(false) }
-                        .keyboardShortcut(KeyboardShortcut(.c, hint: "c"))
-                        .disabled(!galleries.contains { $0.isExpanded })
+                    Button(collapseCommand)
                 }
             }
             TabView(selection: $selection) {
@@ -51,9 +50,27 @@ struct ContentView: View {
                 }
             }
             Text("Left/Right: select tab · Tab/Down: content · Shift-Tab: tab bar")
-            Text("Ctrl-PageUp/PageDown: switch tabs from content")
+            Text("Ctrl-PageUp/PageDown: switch tabs from content · Ctrl-P: command palette")
             Text("Enter/Space: expand or collapse gallery · Gallery actions: Enter to open, Esc to dismiss")
         }
+        .commandPalette(isPresented: $isPalettePresented, commands: [expandCommand, collapseCommand])
+        .onKeyPress { key in
+            guard key == .controlP else { return .ignored }
+            isPalettePresented = true
+            return .handled
+        }
+    }
+
+    private var expandCommand: Command<GalleryCommand> {
+        Command(
+            .expand, title: "Expand all", isEnabled: galleries.contains { !$0.isExpanded },
+            shortcuts: [KeyboardShortcut(.e)], action: { setExpanded(true) })
+    }
+
+    private var collapseCommand: Command<GalleryCommand> {
+        Command(
+            .collapse, title: "Collapse all", isEnabled: galleries.contains { $0.isExpanded },
+            shortcuts: [KeyboardShortcut(.c)], action: { setExpanded(false) })
     }
 
     @ViewBuilder
