@@ -378,6 +378,7 @@ extension DocumentationPreviewFixture {
             ) {
                 Text("Task content").task {}
             },
+            itemSheet,
             Self(
                 "SheetView",
                 "A modal sheet over the base page. It traps keys and focus, "
