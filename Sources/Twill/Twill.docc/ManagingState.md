@@ -74,3 +74,14 @@ Selection identifies an item within a collection. Focus identifies the control r
 When a collection's bound selection is absent, the first visible item is the effective selection without rewriting the binding. User selection then updates the bound value. Empty collections have no activation target.
 
 See <doc:KeyboardInteraction> for focus routing and <doc:ScheduledWork> for work owned by a mounted view.
+
+## Observe Equatable Values
+
+```swift
+Toggle("Show hidden", isOn: $showHidden)
+    .onChange(of: showHidden) { oldValue, newValue in
+        reload(showHidden: newValue)
+    }
+```
+
+``View/onChange(of:initial:_:)`` delivers old/new values after reconciliation, coalescing intermediate and equal updates. Set `initial: true` for a current/current callback on the first eligible pass. Retained inactive destinations defer delivery until activation, while removal cancels it. Callback state writes request later mounted passes, with input routing and presentation handled by the host.
