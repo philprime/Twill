@@ -76,6 +76,7 @@ Start with <doc:GettingStarted>, then explore <doc:ViewGallery> to see rendered 
 - ``Slider``
 - ``Stepper``
 - ``Picker``
+- ``PickerPresentation``
 - ``Form``
 - ``FormField``
 - ``FormSection``

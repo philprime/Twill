@@ -189,7 +189,7 @@ extension DocumentationPreviewFixture {
                 Slider("Volume", value: binding(0.6), in: 0...1, step: 0.1)
             },
             Self("Picker", "A horizontal choice control. Left and Right change the selected option.") {
-                Picker("Sort", selection: binding("Name"), options: ["Name", "Date", "Size"]) { Text($0) }
+                Picker("Sort", selection: binding("Name"), options: ["Name", "Date", "Size"])
             },
             Self("ProgressView", "Determinate progress and an indeterminate spinner, captured at a fixed date.") {
                 VStack(alignment: .leading) {
