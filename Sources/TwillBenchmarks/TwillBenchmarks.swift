@@ -17,6 +17,7 @@ struct TwillBenchmarks {
                 benchmarks += CollectionBenchmark.Workload.allCases.map { CollectionBenchmark(workload: $0) }
                 benchmarks += EditorBenchmark.Workload.allCases.map { EditorBenchmark(workload: $0) }
                 benchmarks += TimelineBenchmark.Workload.allCases.map { TimelineBenchmark(workload: $0) }
+                benchmarks.append(GraphRasterBenchmark())
             #endif
             let suite = BenchmarkSuite(benchmarks: benchmarks)
             let command = try BenchmarkCommand(arguments: Array(CommandLine.arguments.dropFirst()))

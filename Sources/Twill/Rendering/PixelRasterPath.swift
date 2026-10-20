@@ -63,8 +63,13 @@ struct PixelRasterPath {
 
     func contains(_ point: PixelPoint) -> Bool {
         var winding = 0
-        for contour in contours where contour.points.count > 2 {
-            for index in contour.points.indices {
+        var contourIndex = 0
+        while contourIndex < contours.count {
+            let contour = contours[contourIndex]
+            contourIndex += 1
+            guard contour.points.count > 2 else { continue }
+            var index = 0
+            while index < contour.points.count {
                 let start = contour.points[index]
                 let end = contour.points[(index + 1) % contour.points.count]
                 let cross =
@@ -72,18 +77,24 @@ struct PixelRasterPath {
                     - (point.horizontal - start.horizontal) * (end.vertical - start.vertical)
                 if start.vertical <= point.vertical && end.vertical > point.vertical && cross > 0 { winding += 1 }
                 if start.vertical > point.vertical && end.vertical <= point.vertical && cross < 0 { winding -= 1 }
+                index += 1
             }
         }
         return winding != 0
     }
 
     func containsStroke(_ point: PixelPoint, radius: Double) -> Bool {
-        for contour in contours {
+        var contourIndex = 0
+        while contourIndex < contours.count {
+            let contour = contours[contourIndex]
+            contourIndex += 1
             let count = contour.closed ? contour.points.count : contour.points.count - 1
-            for index in 0..<count {
+            var index = 0
+            while index < count {
                 let start = contour.points[index]
                 let end = contour.points[(index + 1) % contour.points.count]
                 if Self.distance(point, from: start, to: end) <= radius { return true }
+                index += 1
             }
         }
         return false

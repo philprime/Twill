@@ -70,6 +70,18 @@ test-sanitize *args:
 benchmark *args:
     just _swift batch run -c release -Xswiftc -enable-testing -Xswiftc -DBENCHMARKING TwillBenchmarks "$@"
 
+# Attach Time Profiler on macOS and save a weighted CPU summary in a new artifact directory.
+trace pid duration="30s" output="":
+    bash "{{root}}/Tools/trace.sh" "$@"
+
+# Summarize run 1 of an existing xctrace recording without capturing again.
+trace-report input output="":
+    bash "{{root}}/Tools/trace.sh" --input "$@"
+
+# Verify trace summary reference resolution and weighted aggregation.
+test-trace:
+    bash "{{root}}/Tools/Tests/trace-summary-test.sh"
+
 # Profile SDK benchmark cases in debug. Choose a new output path for each recording.
 profile-benchmark output="/tmp/twill-benchmarks.trace" *args:
     #!/usr/bin/env bash

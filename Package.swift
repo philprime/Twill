@@ -19,7 +19,7 @@ let package = Package(
         .testTarget(name: "TwillIntegrationTests", dependencies: ["Twill"]),
 
         // Benchmark Testing
-        .executableTarget(name: "TwillBenchmarks", dependencies: ["Twill"]),
+        .executableTarget(name: "TwillBenchmarks", dependencies: ["Twill", "TwillGraphs"]),
         .testTarget(name: "TwillBenchmarkTests", dependencies: ["TwillBenchmarks"]),
 
         // Text Render Engine
