@@ -57,7 +57,7 @@ extension ItemSheetView: PrimitiveView {
         return .sheet(
             SheetDescription(
                 base: content, isPresented: isPresented,
-                identity: item.wrappedValue.map { AnyHashable($0.id) }, dismissalPolicy: dismissalPolicy,
+                identity: { item.wrappedValue.map { AnyHashable($0.id) } }, dismissalPolicy: dismissalPolicy,
                 onDismiss: onDismiss,
                 content: { dismiss in
                     ItemSheetContent(item: item.wrappedValue, dismiss: dismiss, presentedContent: presentedContent)

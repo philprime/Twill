@@ -103,7 +103,9 @@ Start with <doc:GettingStarted>, then explore <doc:ViewGallery> to see rendered 
 - ``DismissAction``
 - ``SheetDismissalPolicy``
 - ``View/alert(_:isPresented:actions:message:)``
+- ``View/alert(_:item:onDismiss:actions:message:)``
 - ``View/confirmationDialog(_:isPresented:actions:message:)``
+- ``View/confirmationDialog(_:item:onDismiss:actions:message:)``
 
 ### Drawing and Appearance
 
