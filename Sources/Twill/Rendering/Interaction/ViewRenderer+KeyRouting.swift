@@ -6,7 +6,7 @@ extension ViewRenderer {
         if let sheet = activeModalScope() {
             if sheet.handleDialogKey(key) { return true }
             // An ignored key cannot escape the presented scope to the base or application.
-            _ = sheet.handleInScope(key, modal: true)
+            if !sheet.handleInScope(key, modal: true) { _ = sheet.dismissSheetOnEscape(key) }
             return true
         }
         return handleInScope(key, modal: false)

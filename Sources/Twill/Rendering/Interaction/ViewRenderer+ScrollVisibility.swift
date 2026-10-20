@@ -7,7 +7,7 @@ extension ViewRenderer {
         var ancestor: ViewRenderer? = self
         while let node = ancestor {
             if case .scroll = node.description { node.scrollState.followFocus() }
-            if case .sheet(_, let presented, _) = node.description, presented.wrappedValue { break }
+            if case .sheet(let sheet) = node.description, sheet.isPresented.wrappedValue { break }
             ancestor = node.parent
         }
     }
