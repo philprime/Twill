@@ -1,6 +1,6 @@
 /// A bound multiline editor with a mounted caret and a scrolling viewport.
 ///
-/// Enter inserts a newline rather than submitting. Tab and Shift-Tab move
+/// In editable mode, Enter inserts a newline rather than submitting. Tab and Shift-Tab move
 /// between controls, and Escape and modified Enter route to enclosing handlers. Long
 /// lines scroll horizontally without soft wrapping. Focus changes retain the
 /// insertion point. The terminal host alone presents the hardware cursor.
@@ -10,10 +10,13 @@ public struct TextEditor: View {
     @State private var caret: Int?
     @State private var preferredColumn: Int?
     private let text: Binding<String>
+    private let editingMode: TextEditingMode
 
     /// Creates a multiline editor whose text is owned by the supplied binding.
-    public init(text: Binding<String>) {
+    /// Read-only mode retains caret/viewport navigation and consumes attempted edits.
+    public init(text: Binding<String>, editingMode: TextEditingMode = .editable) {
         self.text = text
+        self.editingMode = editingMode
     }
 
     private func handle(_ key: KeyEvent, pageHeight: Int) -> KeyPressResult {
@@ -28,22 +31,28 @@ public struct TextEditor: View {
             guard key.modifiers.isEmpty else { return .ignored }
             replace(offset..<offset, with: "\n")
         case .backspace, .delete:
-            delete(at: offset, backwards: key.key == .backspace)
+            delete(key, at: offset)
         case .arrowLeft, .arrowRight, .arrowUp, .arrowDown, .home, .end, .pageUp, .pageDown:
-            if key.modifiers.isEmpty { move(key, offset: offset, pageHeight: pageHeight) }
+            navigate(key, offset: offset, pageHeight: pageHeight)
         default:
             return .ignored
         }
         return .handled
     }
 
-    private func delete(at offset: Int, backwards: Bool) {
-        let lower = backwards ? max(0, offset - 1) : offset
-        let upper = backwards ? offset : min(text.wrappedValue.count, offset + 1)
+    private func delete(_ key: KeyEvent, at offset: Int) {
+        let backwards = key.key == .backspace
+        let destination =
+            key.modifiers.isWordEditing
+            ? TextWordNavigation(text.wrappedValue).destination(from: offset, backwards: backwards)
+            : (backwards ? max(0, offset - 1) : min(text.wrappedValue.count, offset + 1))
+        let lower = min(offset, destination)
+        let upper = max(offset, destination)
         if lower < upper { replace(lower..<upper, with: "") }
     }
 
     private func replace(_ range: Range<Int>, with inserted: String) {
+        guard editingMode == .editable else { return }
         var value = text.wrappedValue
         let start = value.index(value.startIndex, offsetBy: range.lowerBound)
         let end = value.index(value.startIndex, offsetBy: range.upperBound)
@@ -54,6 +63,15 @@ public struct TextEditor: View {
         text.wrappedValue = value
         caret = min(prefixCount, value.count)
         preferredColumn = nil
+    }
+
+    private func navigate(_ key: KeyEvent, offset: Int, pageHeight: Int) {
+        if key.modifiers.isWordEditing, key.key == .arrowLeft || key.key == .arrowRight {
+            caret = TextWordNavigation(text.wrappedValue).destination(from: offset, backwards: key.key == .arrowLeft)
+            preferredColumn = nil
+        } else if key.modifiers.isEmpty {
+            move(key, offset: offset, pageHeight: pageHeight)
+        }
     }
 
     private func move(_ key: KeyEvent, offset: Int, pageHeight: Int) {
