@@ -190,3 +190,17 @@ A sheet retains the underlying mounted view and its schedules. Keep presentation
 Both `.alert` and `.confirmationDialog` accept optional identifiable items, with or without a message builder. Actions and messages receive current payload values. Matching IDs retain action state, changed IDs replace it and reset deliberate focus, and nil ends presentation. The ordinary role, disabled, Escape-cancellation, and fallback-action policies remain in effect.
 
 Actions run before dismissal and clear only their owning lifetime. Replacing a payload ID from an action preserves the replacement even before reconciliation. Optional `onDismiss` callbacks use the shared sheet lifecycle. Nil payloads do not evaluate action/message builders.
+
+## Search Commands
+
+```swift
+.commandPalette(isPresented: $showCommands, commands: commands)
+```
+
+The modifier uses an ordinary sheet and lifetime-scoped dismissal. `CommandPalette` is also composable directly with an explicit dismiss request. Search initially receives automatic focus. Up/Down changes effective selection while the search caret stays active; Tab can enter the ordinary result list. Enter performs the effective command once and requests dismissal. Escape cancels, and reopening starts a fresh query.
+
+Matching uses case-insensitive title substrings and retains caller order. Unavailable commands are omitted, and empty results do not activate or dismiss. Updated command snapshots preserve query state while replacing displayed metadata/actions. The positive visible-row limit bounds the viewport without promising virtualization.
+
+Advertised shortcuts are text metadata, not registered palette actions. Printable input edits search, while unhandled command chords remain trapped by the modal scope rather than reaching underlying controls. Selection uses the shared pure first-visible policy, including when filtering hides a stored ID.
+
+Palette state, deadlines, cached resize, removal, and focus restoration follow the ordinary mounted view and sheet contracts.

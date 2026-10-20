@@ -468,3 +468,11 @@ Caller-owned empty content with an ordinary retry action.
 A one-cell status row composing ordinary key hints and flexible space.
 
 ![StatusBar terminal preview](preview-StatusBar.svg)
+
+## CommandPalette
+
+``CommandPalette``
+
+Search available commands while selection remains independent of search focus.
+
+![CommandPalette terminal preview](preview-CommandPalette.svg)
