@@ -45,6 +45,8 @@ Start with <doc:GettingStarted>, then explore <doc:ViewGallery> to see rendered 
 
 - <doc:ManagingState>
 - ``State``
+- ``ChangeObservationView``
+- ``View/onChange(of:initial:_:)``
 - ``Binding``
 
 ### Keyboard Interaction

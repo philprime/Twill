@@ -25,6 +25,7 @@ enum ViewDescription {
     case menu(any View, Binding<Bool>)
     case menuButtonHints
     case menuOpener(any View)
+    case changeObservation(any View, any AnyValueChangeObserver)
     case keyHints([KeyHintDescription])
     case dialog(any View, isPresented: Binding<Bool>, kind: DialogKind)
     case disclosure(header: any View, content: (any View)?)
