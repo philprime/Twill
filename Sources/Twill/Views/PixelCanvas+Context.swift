@@ -75,9 +75,12 @@ extension PixelCanvas {
             precondition(lineWidth.isFinite && lineWidth >= 0)
             guard lineWidth > 0, let inverse = transform.inverse else { return }
             let raster = PixelRasterPath(path, resolutionScale: transform.maximumScale)
-            guard let bounds = raster.applying(transform).bounds else { return }
-            let expanded = bounds.expanded(by: lineWidth / 2 * transform.maximumScale)
-            paint(bounds: expanded, color: color) {
+            let transformed = raster.applying(transform)
+            guard let bounds = transformed.bounds else { return }
+            let radius = lineWidth / 2 * transform.maximumScale
+            let expanded = bounds.expanded(by: radius)
+            let strokeBounds = PixelStrokeBounds(path: transformed, radius: radius)
+            paint(bounds: expanded, color: color, horizontalRange: strokeBounds.horizontalRange(for:)) {
                 raster.containsStroke(inverse.apply($0), radius: lineWidth / 2)
             }
         }
@@ -107,24 +110,34 @@ extension PixelCanvas {
         }
 
         private func paint(
-            bounds: PixelPathBounds, color: PixelColor, contains: (PixelPoint) -> Bool
+            bounds: PixelPathBounds, color: PixelColor,
+            horizontalRange: ((Int) -> ClosedRange<Double>?)? = nil,
+            contains: (PixelPoint) -> Bool
         ) {
-            paint(bounds: bounds, color: color, coverage: { contains($0) ? 1 : 0 })
+            paint(bounds: bounds, color: color, horizontalRange: horizontalRange, coverage: { contains($0) ? 1 : 0 })
         }
 
         private func paint(
-            bounds: PixelPathBounds, color: PixelColor, coverage: (PixelPoint) -> Double
+            bounds: PixelPathBounds, color: PixelColor,
+            horizontalRange: ((Int) -> ClosedRange<Double>?)? = nil,
+            coverage: (PixelPoint) -> Double
         ) {
             var clippedBounds = bounds
             for clip in clips {
                 guard let clipBounds = clip.bounds else { return }
                 clippedBounds = clippedBounds.intersection(clipBounds)
             }
-            surface.paint(
-                bounds: clippedBounds, color: color, opacity: opacity,
-                coverage: { point in
-                    clips.allSatisfy { $0.contains(point) } ? coverage(point) : 0
-                })
+            if clips.isEmpty {
+                surface.paint(
+                    bounds: clippedBounds, color: color, opacity: opacity, horizontalRange: horizontalRange,
+                    coverage: coverage)
+            } else {
+                surface.paint(
+                    bounds: clippedBounds, color: color, opacity: opacity, horizontalRange: horizontalRange,
+                    coverage: { point in
+                        clips.allSatisfy { $0.contains(point) } ? coverage(point) : 0
+                    })
+            }
         }
     }
 }
