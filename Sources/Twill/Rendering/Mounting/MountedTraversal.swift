@@ -24,15 +24,15 @@ extension ViewRenderer {
     }
 
     var sheetBranch: ViewRenderer? {
-        guard case .sheet(_, let isPresented, _) = description else { return nil }
-        return isPresented.wrappedValue ? retainedChildren.dropFirst().first : retainedChildren.first
+        guard case .sheet(let sheet) = description else { return nil }
+        return sheet.isPresented.wrappedValue ? retainedChildren.dropFirst().first : retainedChildren.first
     }
 
     /// Resolves the topmost modal boundary without entering inactive tab destinations.
     func activeModalScope() -> ViewRenderer? {
-        if case .sheet(_, let isPresented, _) = description {
+        if case .sheet(let sheet) = description {
             guard let branch = sheetBranch else { return nil }
-            return branch.activeModalScope() ?? (isPresented.wrappedValue ? self : nil)
+            return branch.activeModalScope() ?? (sheet.isPresented.wrappedValue ? self : nil)
         }
         for child in presentationChildren.reversed() {
             if let sheet = child.activeModalScope() { return sheet }

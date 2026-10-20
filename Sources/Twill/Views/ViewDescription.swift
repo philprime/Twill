@@ -55,7 +55,7 @@ enum ViewDescription {
     case keyPress(any View, @MainActor (KeyEvent) -> KeyPressResult)
     case keyboardShortcut(any View, [KeyboardShortcut])
     case task(any View, priority: TaskPriority, action: @MainActor @Sendable () async -> Void)
-    case sheet(base: any View, isPresented: Binding<Bool>, content: @MainActor () -> any View)
+    case sheet(SheetDescription)
     case conditional(first: Bool, content: any View)
     case timeline(PeriodicTimelineSchedule, @MainActor (Date) -> any View)
 }

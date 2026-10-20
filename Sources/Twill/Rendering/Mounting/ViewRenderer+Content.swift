@@ -60,10 +60,8 @@ extension ViewRenderer {
         case .disclosure(let header, let content):
             if content == nil { restoreFocusBeforeDisclosureCollapse() }
             reconcile(content.map { [header, $0] } ?? [header], at: date)
-        case .sheet(let base, let isPresented, let content):
-            let dismissing = !isPresented.wrappedValue && retainedChildren.count > 1
-            reconcile(isPresented.wrappedValue ? [base, content()] : [base], at: date)
-            if dismissing { restoreFocusAfterSheetDismissal() }
+        case .sheet(let sheet):
+            updateSheet(sheet, at: date)
         case .conditional(let first, let content):
             updateConditional(first: first, content: content, previous: previous, at: date)
         case .timeline(let schedule, let content):

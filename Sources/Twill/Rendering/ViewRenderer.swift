@@ -23,6 +23,7 @@ final class ViewRenderer {
     var editorState = MountedEditorState()
     var scrollState = MountedScrollState()
     var layoutState = MountedLayoutState()
+    var sheetState = MountedSheetState()
 
     private init(_ view: any View, taskRegistry: MountedTaskRegistry) {
         viewType = ObjectIdentifier(type(of: view))
@@ -44,7 +45,9 @@ final class ViewRenderer {
         // A removed node must not discard the only handle to unfinished cleanup work.
         viewTask?.cancel()
         viewTask = nil
+        let onDismiss = sheetState.end()
         childStorage.unmount()
+        onDismiss?()
     }
 
     func matches(_ view: any View) -> Bool {
