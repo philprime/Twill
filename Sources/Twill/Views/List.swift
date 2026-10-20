@@ -10,40 +10,37 @@ public struct List<Data: RandomAccessCollection, ID: Hashable, RowContent: View>
     private let data: Data
     private let id: KeyPath<Data.Element, ID>
     private let selection: Binding<ID?>
+    private let selectionPolicy: SelectionPolicy
     private let rowContent: @MainActor (Data.Element) -> RowContent
 
     /// Creates a list with stable, unique row IDs and externally owned selection.
-    /// A missing ID displays the first row as selected without changing the binding.
+    /// The policy resolves nil or missing IDs without changing the binding.
+    /// By default the first visible row is selected; allow-empty retains no selection.
     public init(
         _ data: Data, id: KeyPath<Data.Element, ID>, selection: Binding<ID?>,
+        selectionPolicy: SelectionPolicy = .firstVisible,
         @ViewBuilder rowContent: @escaping @MainActor (Data.Element) -> RowContent
     ) {
         self.data = data
         self.id = id
         self.selection = selection
+        self.selectionPolicy = selectionPolicy
         self.rowContent = rowContent
     }
 
     private var selectedIndex: Data.Index? {
-        data.firstIndex { $0[keyPath: id] == selection.wrappedValue } ?? (data.isEmpty ? nil : data.startIndex)
+        selectionPolicy.index(in: data, selection: selection.wrappedValue, id: { $0[keyPath: id] })
     }
 
     private func handle(_ key: KeyEvent) -> KeyPressResult {
         guard [.arrowDown, .arrowUp, .home, .end, .enter].contains(key) else { return .ignored }
-        guard var index = selectedIndex else { return .handled }
-        switch key {
-        case .arrowDown:
-            let next = data.index(after: index)
-            if next != data.endIndex { index = next }
-        case .arrowUp:
-            if index != data.startIndex { index = data.index(before: index) }
-        case .home: index = data.startIndex
-        case .end: index = data.index(before: data.endIndex)
-        default: break
-        }
+        guard
+            let index = selectionPolicy.navigationIndex(
+                for: key, in: data, selection: selection.wrappedValue, id: { $0[keyPath: id] })
+        else { return .handled }
         selection.wrappedValue = data[index][keyPath: id]
         // Submission routes through the existing enclosing action after selecting
-        // the effective row. An empty list consumes Enter without submitting.
+        // the effective row. Without an effective row, Enter is consumed without submitting.
         return key == .enter ? .ignored : .handled
     }
 }
@@ -51,10 +48,10 @@ public struct List<Data: RandomAccessCollection, ID: Hashable, RowContent: View>
 extension List where Data.Element: Identifiable, ID == Data.Element.ID {
     /// Creates a selectable list using each element's stable, unique `id` as its row identity.
     public init(
-        _ data: Data, selection: Binding<ID?>,
+        _ data: Data, selection: Binding<ID?>, selectionPolicy: SelectionPolicy = .firstVisible,
         @ViewBuilder rowContent: @escaping @MainActor (Data.Element) -> RowContent
     ) {
-        self.init(data, id: \.id, selection: selection, rowContent: rowContent)
+        self.init(data, id: \.id, selection: selection, selectionPolicy: selectionPolicy, rowContent: rowContent)
     }
 }
 
