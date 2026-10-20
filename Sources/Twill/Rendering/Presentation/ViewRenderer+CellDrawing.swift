@@ -30,16 +30,37 @@ extension ViewRenderer {
 
     func draw(in context: inout DrawingContext, focused: ViewRenderer?) {
         let presentation = nodePresentation
-        context.withAttributes(layoutState.attributes, mask: .supported) { region in
+        let appearance = controlAppearance(focused: focused)
+        let foreground: Color?
+        if let style = appearance.foreground {
+            foreground = style.resolve(in: layoutState.theme)
+        } else {
+            foreground = layoutState.foreground
+        }
+        let background: Color?
+        if let style = appearance.background {
+            background = style.resolve(in: layoutState.theme)
+        } else {
+            background = layoutState.background
+        }
+        let highlight: Bool?
+        switch appearance.focusEffect {
+        case .automatic: highlight = nil
+        case .none: highlight = false
+        case .reversed: highlight = true
+        }
+        context.withAttributes(appearance.attributes ?? layoutState.attributes, mask: .supported) { region in
             region.withColors(
-                foreground: layoutState.foreground, background: layoutState.background,
-                usesTerminalBackground: layoutState.hasBackgroundStyle && layoutState.background == nil
+                foreground: foreground, background: background,
+                usesTerminalBackground: (appearance.background != nil || layoutState.hasBackgroundStyle)
+                    && background == nil
             ) { region in
+                if appearance.background != nil { region.fillBackground(background, size: layoutState.size) }
                 presentation.draw(
                     in: &region,
                     context: NodePresentationContext(
                         size: layoutState.size, isFocused: presentation.usesFocusAppearance && isInsideFocus(focused),
-                        isDirectlyFocused: focused === self,
+                        isDirectlyFocused: focused === self, focusHighlight: highlight,
                         drawChildren: { region in
                             for placement in self.layoutState.placements {
                                 region.withRegion(placement.bounds) { placement.node.draw(in: &$0, focused: focused) }
