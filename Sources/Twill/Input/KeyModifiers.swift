@@ -12,7 +12,7 @@ public struct KeyModifiers: OptionSet, Sendable, Equatable {
     public static let alt = Self(rawValue: 1 << 1)
     /// The Control modifier, distinct from a raw control-byte key event.
     public static let control = Self(rawValue: 1 << 2)
-    /// The Super modifier.
+    /// The Super modifier, corresponding to Command on macOS when forwarded by the terminal.
     public static let superKey = Self(rawValue: 1 << 3)
     /// The Hyper modifier.
     public static let hyper = Self(rawValue: 1 << 4)
