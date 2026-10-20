@@ -58,6 +58,8 @@ Start with <doc:GettingStarted>, then explore <doc:ViewGallery> to see rendered 
 ### Commands and Key Hints
 
 - ``Command``
+- ``CommandPalette``
+- ``View/commandPalette(_:isPresented:commands:)``
 - ``KeyHints``
 - ``KeyboardShortcut``
 
