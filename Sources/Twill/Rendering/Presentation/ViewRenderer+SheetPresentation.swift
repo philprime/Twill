@@ -7,7 +7,7 @@ extension ViewRenderer {
         var outer = sheet
         var ancestor = sheet.parent
         while let current = ancestor {
-            if case .sheet(_, let presented, _) = current.description, presented.wrappedValue {
+            if case .sheet(let sheet) = current.description, sheet.isPresented.wrappedValue {
                 outer = current
             }
             ancestor = current.parent

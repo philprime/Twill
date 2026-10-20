@@ -1,8 +1,6 @@
 import Twill
 
 struct HelpView: View {
-    let onDismiss: @MainActor () -> Void
-
     var body: some View {
         VStack {
             Text("Help").bold().underline()
@@ -21,10 +19,5 @@ struct HelpView: View {
         .foregroundStyle(.foreground)
         .border(.single, color: NotesPalette.border)
         .focusable()
-        .onKeyPress { key in
-            guard key == .escape else { return .ignored }
-            onDismiss()
-            return .handled
-        }
     }
 }
