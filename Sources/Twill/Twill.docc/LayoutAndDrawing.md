@@ -39,6 +39,8 @@ Text("A long terminal title")
 
 `.lineLimit(_:)` limits visible lines and defaults omitted content to tail truncation. Nil resets an inherited limit, and values below one use one line. `.truncationMode(.head)`, `.middle`, and `.tail` choose which part is replaced by an ellipsis. Ellipsis placement also respects whole graphemes and terminal-cell width. Without an explicit limit or truncation mode, height bounds clip complete rows.
 
+Use `.multilineTextAlignment(.leading)`, `.center`, or `.trailing` to position rendered rows within the text block. The modifier reuses `HorizontalAlignment` and defaults to leading. Row offsets use terminal-cell widths after wrapping and truncation, including combining and wide graphemes. Center alignment rounds spare cells down on the leading side. Alignment distributes spare cells only, leaving clipped horizontal overflow at the leading edge. It changes neither measured size nor the block's placement within an enclosing frame.
+
 These modifiers inherit through containers. The nearest setting to a text node takes precedence, including a local `.lineLimit(nil)` reset. They configure static text rather than editing-control viewports or single-line terminal chrome. Resize reflows cached descriptions without reevaluating view bodies or changing timeline deadlines.
 
 ## Apply Appearance

@@ -338,11 +338,9 @@ extension DocumentationPreviewFixture {
             Self("DisabledView", "Disabled controls stay visible but do not receive focus or activate.") {
                 Button("Unavailable") {}.disabled(true)
             },
-            Self(
-                "TextLayoutView", "Inherited line limits and truncation keep a terminal title within its viewport.",
-                proposal: .init(width: 12)
-            ) {
-                Text("A long terminal title").lineLimit(1).truncationMode(.middle)
+            Self("TextLayoutView", "Aligned text with limits and truncation.", proposal: .init(width: 12)) {
+                Text("A long terminal title\nShort").lineLimit(2).truncationMode(.middle)
+                    .multilineTextAlignment(.center)
             },
             Self("PaddingView", "The padding modifier reserves one blank cell around the enclosed content.") {
                 Text("Padded").padding(1)
