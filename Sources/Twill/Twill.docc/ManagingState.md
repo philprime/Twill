@@ -85,3 +85,16 @@ Toggle("Show hidden", isOn: $showHidden)
 ```
 
 ``View/onChange(of:initial:_:)`` delivers old/new values after reconciliation, coalescing intermediate and equal updates. Set `initial: true` for a current/current callback on the first eligible pass. Retained inactive destinations defer delivery until activation, while removal cancels it. Callback state writes request later mounted passes, with input routing and presentation handled by the host.
+
+## Restart Work by Identity
+
+```swift
+let requestedID = requestID
+Text(title).task(id: requestedID) {
+    title = await loadTitle(requestedID)
+}
+```
+
+``View/task(id:priority:_:)`` retains work for equal Equatable IDs, including after completion. A changed ID cancels and joins prior cleanup before starting its replacement. Rapid changes can skip intermediate actions without skipping predecessor cleanup. Task identity does not replace mounted content identity or its state/focus.
+
+Actions handle their own errors and cancellation cooperatively. Removal and shutdown join all owned work before terminal restoration, so unfinished cleanup delays both replacement and shutdown.

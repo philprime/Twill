@@ -171,6 +171,8 @@ Start with <doc:GettingStarted>, then explore <doc:ViewGallery> to see rendered 
 - ``StyledView``
 - ``SubmitView``
 - ``TaskView``
+- ``KeyedTaskView``
+- ``View/task(id:priority:_:)``
 - ``TextLayoutView``
 - ``ViewList``
 

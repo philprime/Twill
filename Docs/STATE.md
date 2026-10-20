@@ -45,3 +45,11 @@ Delivery follows the complete reconciliation/body-evaluation pass. Changes coale
 Inactive retained destinations defer delivery and coalesce until presentation eligibility returns, including modifiers surrounding a destination. An initial callback deferred this way uses current/current on activation. Removal cancels pending delivery and releases retained values/actions. Pending registrations do not extend node lifetime or add timer deadlines.
 
 Callbacks run on the UI actor and may write state. Those writes request later mounted passes rather than recursive delivery. Cached layout/resize does not deliver observations. Before routing another input key, the host settles newly requested content passes while retaining one coalesced presentation. Stopping from a callback cancels later delivery and prevents subsequent presentation or application key fallthrough.
+
+## Key Asynchronous Work
+
+`.task(id:priority:_:)` separates task identity from mounted view identity. Equal Equatable IDs preserve running, queued, or completed work with its original action and requested priority. Changing the ID updates ordinary content immediately, cancels the prior work, and joins its cleanup before starting the replacement with the new action/priority. Content state, focus, and sibling schedules retain their normal mounted lifetimes.
+
+Rapid changes may skip cancelled intermediate actions. Their owned task handles still join predecessors before completing, so a newer action cannot bypass older cleanup. Removal and application shutdown cancel and join all owned work before restoring borrowed terminal resources, including work no longer attached to a mounted node. Registrations do not retain removed owners.
+
+Cancellation is cooperative. Actions are nonthrowing and must handle errors, including cancellation errors, themselves. Cleanup that does not finish blocks replacement and shutdown. Capture request values when constructing the action when work must use a particular immutable input snapshot. Ordinary `.task(priority:_:)` continues to follow mounted view identity rather than a separate key.
