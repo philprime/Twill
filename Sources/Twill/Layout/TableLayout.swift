@@ -6,7 +6,7 @@ struct TableLayout: PrimitiveLayout {
     var behavior: LayoutBehavior { LayoutBehavior(width: .filling) }
 
     func columnWidths(in proposedWidth: Int?, subviews: [CellSize]) -> [Int] {
-        let naturalGrid = GridLayout(columns: columns.map(gridItem), spacing: Self.spacing)
+        let naturalGrid = GridLayout(columns: columns.map(gridItem), rowSpacing: 0, columnSpacing: Self.spacing)
         let naturalWidth = naturalGrid.sizeThatFits(.unspecified, subviews: subviews).width
         let natural = naturalGrid.columnWidths(in: naturalWidth, subviews: subviews)
         guard let proposedWidth else { return natural }
@@ -22,14 +22,14 @@ struct TableLayout: PrimitiveLayout {
             }
             return gridItem(policy)
         }
-        return GridLayout(columns: resolved, spacing: Self.spacing)
+        return GridLayout(columns: resolved, rowSpacing: 0, columnSpacing: Self.spacing)
             .columnWidths(in: proposedWidth, subviews: subviews)
     }
 
     private func gridItem(_ policy: TableColumnWidth) -> GridItem {
         switch policy {
         case .automatic: GridItem(.flexible())
-        case .fixed(let width): GridItem(.flexible(minimum: width, maximum: width))
+        case .fixed(let width): GridItem(.fixed(width))
         case .flexible(let minimum, let maximum): GridItem(.flexible(minimum: minimum, maximum: maximum))
         }
     }

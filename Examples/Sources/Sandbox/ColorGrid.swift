@@ -52,14 +52,12 @@ struct ColorGrid: View {
         VStack {
             Text("Colors")
                 .border(.single, color: Color.white)
-            VStack(spacing: 1) {
+            VGrid(columns: Array(repeating: GridItem(.fixed(20)), count: 4), rowSpacing: 1, columnSpacing: 2) {
                 ForEach(rows) { row in
-                    HStack(spacing: 2) {
-                        ForEach(row.swatches) { swatch in
-                            HStack(spacing: 1) {
-                                Text("    ").backgroundStyle(swatch.color)
-                                Text(swatch.name).frame(width: 15)
-                            }
+                    ForEach(row.swatches) { swatch in
+                        HStack(spacing: 1) {
+                            Text("    ").backgroundStyle(swatch.color)
+                            Text(swatch.name).frame(width: 15)
                         }
                     }
                 }
