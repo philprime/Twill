@@ -81,6 +81,7 @@ Start with <doc:GettingStarted>, then explore <doc:ViewGallery> to see rendered 
 - ``SelectionPolicy``
 - ``Table``
 - ``TableColumn``
+- ``TableColumnWidth``
 - ``TableColumnBuilder``
 - ``TableColumns``
 - ``OutlineGroup``
