@@ -1,7 +1,8 @@
 /// A single-selection, scrolling hierarchy with externally owned expansion state.
 /// Up/Down and Home/End select visible rows. Right expands a branch or selects
 /// its first child, while Left collapses a branch or selects its parent. Enter
-/// invokes the nearest `.onSubmit` action. Selection remains visible without focus.
+/// activates the effective element, or invokes the nearest `.onSubmit` action
+/// when no activation callback is supplied. Selection remains visible without focus.
 /// IDs must be stable and unique across the entire hierarchy. A nil children
 /// collection identifies a leaf, while an empty collection is an expandable branch.
 /// The selection policy resolves nil, hidden, and missing IDs without changing
@@ -15,6 +16,7 @@ public struct OutlineGroup<Data: RandomAccessCollection, ID: Hashable, RowConten
     private let expandedIDs: Binding<Set<ID>>
     private let selectionPolicy: SelectionPolicy
     private let rowContent: @MainActor (Data.Element) -> RowContent
+    private var activation: (@MainActor (Data.Element) -> Void)?
 
     /// Creates a hierarchy with explicit stable identities, child collections, and bound selection and expansion.
     /// IDs must be unique throughout the hierarchy; nil children mark a leaf.
@@ -32,17 +34,26 @@ public struct OutlineGroup<Data: RandomAccessCollection, ID: Hashable, RowConten
         self.rowContent = rowContent
     }
 
+    /// Activates the effective visible original element instead of `.onSubmit`.
+    /// Hidden or missing IDs follow the configured selection policy.
+    public func onActivate(_ action: @escaping @MainActor (Data.Element) -> Void) -> Self {
+        var view = self
+        view.activation = action
+        return view
+    }
+
     /// The visible hierarchy flattened into indented selectable rows with expansion-key handling.
     public var body: some View {
         let rows = visibleRows
-        return List(rows, id: \.id, selection: selection, selectionPolicy: selectionPolicy) { row in
+        var list = List(rows, id: \.id, selection: selection, selectionPolicy: selectionPolicy) { row in
             HStack(spacing: 1) {
                 Text(row.marker)
                 rowContent(row.element)
             }
             .padding(.leading, row.depth * 2)
         }
-        .onKeyPress { handle($0, rows: rows) }
+        if let activation { list = list.onActivate { activation($0.element) } }
+        return list.onKeyPress { handle($0, rows: rows) }
     }
 
     private var visibleRows: [OutlineRow<Data.Element, ID>] {

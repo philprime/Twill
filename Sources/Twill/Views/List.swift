@@ -1,7 +1,8 @@
 /// A single-selection, vertically scrolling collection of keyed rows.
 ///
 /// The list is one control-level Tab stop. Up/Down and Home/End change selection,
-/// and Enter invokes the nearest `.onSubmit` action. Selection stays visible
+/// and Enter activates the effective element through `.onActivate`, or invokes
+/// the nearest `.onSubmit` action when no activation callback is supplied. Selection stays visible
 /// when another control has focus. Row content describes presentation, not
 /// independently focusable controls.
 public struct List<Data: RandomAccessCollection, ID: Hashable, RowContent: View>: View {
@@ -12,6 +13,7 @@ public struct List<Data: RandomAccessCollection, ID: Hashable, RowContent: View>
     private let selection: Binding<ID?>
     private let selectionPolicy: SelectionPolicy
     private let rowContent: @MainActor (Data.Element) -> RowContent
+    private var activation: (@MainActor (Data.Element) -> Void)?
 
     /// Creates a list with stable, unique row IDs and externally owned selection.
     /// The policy resolves nil or missing IDs without changing the binding.
@@ -28,6 +30,15 @@ public struct List<Data: RandomAccessCollection, ID: Hashable, RowContent: View>
         self.rowContent = rowContent
     }
 
+    /// Activates the effective element on Enter after committing its selection.
+    /// This callback consumes Enter instead of also invoking `.onSubmit`.
+    /// Apply it before general view modifiers; a later callback replaces an earlier one.
+    public func onActivate(_ action: @escaping @MainActor (Data.Element) -> Void) -> Self {
+        var view = self
+        view.activation = action
+        return view
+    }
+
     private var selectedIndex: Data.Index? {
         selectionPolicy.index(in: data, selection: selection.wrappedValue, id: { $0[keyPath: id] })
     }
@@ -38,7 +49,12 @@ public struct List<Data: RandomAccessCollection, ID: Hashable, RowContent: View>
             let index = selectionPolicy.navigationIndex(
                 for: key, in: data, selection: selection.wrappedValue, id: { $0[keyPath: id] })
         else { return .handled }
-        selection.wrappedValue = data[index][keyPath: id]
+        let element = data[index]
+        selection.wrappedValue = element[keyPath: id]
+        if key == .enter, let activation {
+            activation(element)
+            return .handled
+        }
         // Submission routes through the existing enclosing action after selecting
         // the effective row. Without an effective row, Enter is consumed without submitting.
         return key == .enter ? .ignored : .handled

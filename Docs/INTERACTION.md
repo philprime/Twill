@@ -26,6 +26,14 @@ With row content focused and no effective selection, Down/Home selects the first
 
 Rendering, filtering, expansion changes, and policy changes do not write the selection binding. Only explicit interaction or application actions do so. Use `SelectionPolicy.resolve(...)` with the same data and policy for detail presentation. Its hierarchy overload shares the outline's visible-row traversal.
 
+## Item-aware collection activation
+
+A collection's `.onActivate` callback receives its effective original element on Enter. It follows the configured selection policy and current visible data, not a separately maintained focus value or a second lookup of the stored ID. The handler snapshots the element, writes its effective ID to the selection binding, then invokes the callback exactly once. A binding setter that redirects selection does not replace that payload.
+
+An installed activation callback consumes Enter instead of also invoking `.onSubmit`. Without one, existing submission routing remains. Empty or allow-empty collections with no effective row consume Enter without writes, activation, or submission. Sortable headers retain their own Enter/Space behavior and do not activate rows. A later activation callback replaces an earlier one, and callback changes preserve mounted identity and schedules.
+
+Activation is scoped to the eligible focused collection. Inactive, disabled, and underlying modal content do not receive it. The callback may change or remove data; subsequent presentation reconciles keyed rows normally. Apply this typed callback directly to the collection before general view modifiers.
+
 ## Disabled state
 
 `.disabled(_:)` sets inherited interaction eligibility. A disabled ancestor cannot be re-enabled by a descendant. Disabled content remains mounted and visible, retaining state, selection, viewport memory, tasks, and timeline deadlines. The modifier does not change layout or colors.
