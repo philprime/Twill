@@ -21,6 +21,8 @@ enum ViewDescription {
     case tabs(any View, selection: Binding<AnyHashable>)
     case body(any View)
     case button(ButtonDescription)
+    case menu(any View, Binding<Bool>)
+    case menuButtonHints
     case keyHints([KeyHintDescription])
     case dialog(any View, isPresented: Binding<Bool>, kind: DialogKind)
     case disclosure(header: any View, content: (any View)?)

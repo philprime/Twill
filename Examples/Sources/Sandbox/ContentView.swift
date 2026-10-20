@@ -29,18 +29,14 @@ struct ContentView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 1) {
-            Menu(
-                "Gallery actions",
-                items: [
-                    MenuItem(
-                        "Expand all", shortcuts: [KeyboardShortcut(.e, hint: "e")],
-                        isEnabled: galleries.contains { !$0.isExpanded }
-                    ) { setExpanded(true) },
-                    MenuItem(
-                        "Collapse all", shortcuts: [KeyboardShortcut(.c, hint: "c")],
-                        isEnabled: galleries.contains { $0.isExpanded }
-                    ) { setExpanded(false) },
-                ])
+            Menu("Gallery actions") {
+                Button("Expand all") { setExpanded(true) }
+                    .keyboardShortcut(KeyboardShortcut(.e, hint: "e"))
+                    .disabled(!galleries.contains { !$0.isExpanded })
+                Button("Collapse all") { setExpanded(false) }
+                    .keyboardShortcut(KeyboardShortcut(.c, hint: "c"))
+                    .disabled(!galleries.contains { $0.isExpanded })
+            }
             TabView(selection: $selection) {
                 ForEach($galleries) { gallery in
                     let kind = gallery.wrappedValue.id

@@ -15,7 +15,8 @@ struct DisabledActivationTests {
             Text("Base").sheet(isPresented: presentation) {
                 MenuContent(
                     title: "Actions",
-                    items: [MenuItem("Save", shortcuts: [KeyboardShortcut(.s, hint: "s")]) { actions.append("save") }],
+                    content: Button("Save") { actions.append("save") }.keyboardShortcut(
+                        KeyboardShortcut(.s, hint: "s")),
                     isPresented: presentation
                 ).disabled(true)
             })

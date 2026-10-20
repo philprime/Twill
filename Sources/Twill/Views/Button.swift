@@ -30,7 +30,7 @@ public struct Button<Label: View>: View {
 extension Button: PrimitiveView {
     func makeDescription() -> ViewDescription {
         .button(
-            ButtonDescription(content: body, role: role, action: action, isEnabled: isEnabled, shortcuts: shortcuts))
+            ButtonDescription(label: label, role: role, action: action, isEnabled: isEnabled, shortcuts: shortcuts))
     }
 }
 

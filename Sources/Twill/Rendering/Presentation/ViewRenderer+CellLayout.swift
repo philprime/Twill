@@ -59,7 +59,7 @@ extension ViewRenderer {
     private var hasLayoutContent: Bool {
         if let traits = layoutState.traits { return traits.hasContent }
         switch description {
-        case .spacer, .divider, .drawing, .text, .canvas, .textField, .textEditor: return true
+        case .spacer, .divider, .drawing, .text, .canvas, .textField, .textEditor, .menuButtonHints: return true
         case .keyHints(let hints): return isEnabled && hints.contains(where: \.hasContent)
         case .tableRow: return true
         case .scroll where layoutState.scrollIndicators == .visible: return true
@@ -72,7 +72,7 @@ extension ViewRenderer {
 
     var layoutItems: [ViewRenderer] {
         switch description {
-        case .spacer, .divider, .drawing, .text, .canvas, .textField, .textEditor:
+        case .spacer, .divider, .drawing, .text, .canvas, .textField, .textEditor, .menuButtonHints:
             return [self]
         case .keyHints:
             return hasLayoutContent ? [self] : []
