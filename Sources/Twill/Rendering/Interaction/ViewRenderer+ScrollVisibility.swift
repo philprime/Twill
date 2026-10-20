@@ -25,21 +25,32 @@ extension ViewRenderer {
         scrollState.reveal(rect, viewport: layoutState.size)
     }
 
-    func bounds(of target: ViewRenderer, column: Int, row: Int) -> CellRect? {
+    func bounds(of target: ViewRenderer, column: Int, row: Int, includingAllLayoutItems: Bool = false) -> CellRect? {
+        var result: CellRect?
         for placement in layoutState.placements {
             let bounds = placement.bounds
             let originX = column + bounds.column
             let originY = row + bounds.row
             var ancestor: ViewRenderer? = placement.node
+            var found: CellRect?
             while let node = ancestor {
                 if node === target {
-                    return CellRect(column: originX, row: originY, width: bounds.width, height: bounds.height)
+                    found = CellRect(column: originX, row: originY, width: bounds.width, height: bounds.height)
+                    break
                 }
                 if node === self { break }
                 ancestor = node.parent
             }
-            if let found = placement.node.bounds(of: target, column: originX, row: originY) { return found }
+            if found == nil {
+                found = placement.node.bounds(
+                    of: target, column: originX, row: originY,
+                    includingAllLayoutItems: includingAllLayoutItems)
+            }
+            if let found {
+                if !includingAllLayoutItems { return found }
+                result = result.map { $0.union(found) } ?? found
+            }
         }
-        return nil
+        return result
     }
 }
