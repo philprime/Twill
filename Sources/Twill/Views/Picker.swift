@@ -1,21 +1,22 @@
-/// A single-choice control with a bound value and a label for each option.
-/// Left and Right select options without wrapping. Up and Down remain available
-/// for focus traversal, and selection stays marked when focus moves away.
-public struct Picker<SelectionValue: Hashable, OptionLabel: View>: View {
-    private let title: String
+/// A single-choice control with typed control/option labels and externally owned values.
+/// Missing values display the first option without rendering-time binding writes.
+public struct Picker<SelectionValue: Hashable, Label: View, OptionLabel: View>: View {
+    private let label: Label
     private let selection: Binding<SelectionValue>
     private let options: [SelectionValue]
+    private let presentation: PickerPresentation
     private let optionLabel: @MainActor (SelectionValue) -> OptionLabel
 
-    /// Supply distinct option values. An absent selection displays the first
-    /// option without changing the binding until the user chooses another value.
+    /// Creates a picker with distinct explicit values and a custom control label.
+    /// Tab traverses controls in every mode. Vertical mode reserves Up/Down for selection.
     public init(
-        _ title: String, selection: Binding<SelectionValue>, options: [SelectionValue],
-        @ViewBuilder content: @escaping @MainActor (SelectionValue) -> OptionLabel
+        selection: Binding<SelectionValue>, options: [SelectionValue], presentation: PickerPresentation = .inline,
+        @ViewBuilder content: @escaping @MainActor (SelectionValue) -> OptionLabel, @ViewBuilder label: () -> Label
     ) {
-        self.title = title
+        self.label = label()
         self.selection = selection
         self.options = options
+        self.presentation = presentation
         self.optionLabel = content
     }
 
@@ -23,29 +24,52 @@ public struct Picker<SelectionValue: Hashable, OptionLabel: View>: View {
         options.firstIndex(of: selection.wrappedValue) ?? options.indices.first
     }
 
-    /// The labeled choices, selection marker, and keyboard adjustment handler.
+    private var selected: SelectionValue? { selectedIndex.map { options[$0] } }
+
+    private var optionRows: some View {
+        let selectedValue = selected
+        return ForEach(options, id: \.self) { option in
+            HStack {
+                Text(option == selectedValue ? "[x]" : "[ ]")
+                optionLabel(option)
+            }.controlSelection(option == selectedValue)
+        }
+    }
+
+    @ViewBuilder
+    private var presentedContent: some View {
+        switch presentation {
+        case .inline:
+            HStack {
+                label
+                optionRows
+            }
+        case .compact:
+            HStack {
+                label
+                if let selected { optionLabel(selected).controlSelection(true) }
+            }
+        case .vertical:
+            VStack(alignment: .leading, spacing: 0) {
+                label
+                optionRows
+            }
+        }
+    }
+
+    /// The configured layout with one control-level adjustment handler.
     public var body: some View {
-        let selected = selectedIndex.map { options[$0] }
-        return HStack {
-            Text("\(title):")
-            ForEach(options, id: \.self) { option in
-                HStack {
-                    Text(option == selected ? "[x]" : "[ ]")
-                    optionLabel(option)
-                }.controlSelection(option == selected)
-            }
+        presentedContent.focusable().onKeyPress(handle).controlPresentation(.picker)
+    }
+
+    private func handle(_ key: KeyEvent) -> KeyPressResult {
+        let backwards = key == .arrowLeft || (presentation == .vertical && key == .arrowUp)
+        let forwards = key == .arrowRight || (presentation == .vertical && key == .arrowDown)
+        guard backwards || forwards else { return .ignored }
+        if let index = selectedIndex {
+            let next = index + (forwards ? 1 : -1)
+            if options.indices.contains(next) { selection.wrappedValue = options[next] }
         }
-        .focusable()
-        .onKeyPress { key in
-            guard key == .arrowLeft || key == .arrowRight else { return .ignored }
-            if let index = selectedIndex {
-                let next = index + (key == .arrowRight ? 1 : -1)
-                if options.indices.contains(next) {
-                    selection.wrappedValue = options[next]
-                }
-            }
-            return .handled
-        }
-        .controlPresentation(.picker)
+        return .handled
     }
 }
