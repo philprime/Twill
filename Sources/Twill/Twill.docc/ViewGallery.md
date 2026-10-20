@@ -421,6 +421,14 @@ Attaches a mounted asynchronous action. The empty action here leaves the underly
 
 ![TaskView terminal preview](preview-TaskView.svg)
 
+## ItemSheetView
+
+``ItemSheetView``
+
+A payload presents content keyed by its identity, retaining the base page.
+
+![ItemSheetView terminal preview](preview-ItemSheetView.svg)
+
 ## SheetView
 
 ``SheetView``
