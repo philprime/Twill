@@ -30,6 +30,20 @@ Modifier order matters. Padding inside a border creates interior space. Padding 
 
 ``LazyVGrid`` uses a shared `spacing:` parameter for both axes. Its current implementation mounts all children when evaluated, as documented on that type. ``ScrollView`` clips content to a visible height while preserving mounted state outside the visible area. Use ``ScrollViewReader`` to obtain a proxy for scrolling to keyed children or explicit `.id(...)` targets.
 
+## Allocate Split Panes
+
+```swift
+SplitView(leadingWidth: .fixed(28), trailingWidth: .flexible(minimum: 12), spacing: 2) {
+    Sidebar()
+} trailing: {
+    Detail()
+}
+```
+
+`SplitView` stores two concretely typed horizontal panes. Fixed widths and flexible minimums are nonnegative cell counts. Finite proposals reserve fixed/minimum widths and spacing before sharing surplus among flexible panes; any remainder goes to the last flexible pane. Without a finite width, panes use intrinsic content bounded by their declared policies. Both panes align content at the top-leading edge and share height.
+
+An empty pane reserves neither width nor a gap, while the other pane retains its mounted identity and ordinary control focus. Insufficient terminal space clips excess content rather than changing traversal, hiding panes, or moving focus. Nested scroll views retain independent offsets. Cached resize changes geometry without reevaluating bodies or shifting timeline phases.
+
 ## Distribute Space and Separate Content
 
 ```swift
