@@ -215,9 +215,15 @@ extension DocumentationPreviewFixture {
                 Menu(
                     "Actions",
                     items: [
-                        MenuItem("Save", shortcut: KeyboardShortcut(.s)) {},
+                        MenuItem("Save", shortcuts: [KeyboardShortcut(.s)]) {},
                         MenuItem("Delete", isEnabled: false) {},
                     ])
+            },
+            Self("KeyHints", "Available commands share their current titles and shortcut hints with controls.") {
+                KeyHints([
+                    Command("save", title: "Save", shortcuts: [KeyboardShortcut(.controlS)]) {},
+                    Command("cancel", title: "Cancel", shortcuts: [KeyboardShortcut(.escape)]) {},
+                ])
             },
             Self("DisclosureGroup", "An expanded section. Enter or Space on the header toggles its content.") {
                 DisclosureGroup("Details", isExpanded: binding(true)) { Text("Additional information") }

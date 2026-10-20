@@ -48,6 +48,12 @@ Start with <doc:GettingStarted>, then explore <doc:ViewGallery> to see rendered 
 - ``KeyModifiers``
 - ``KeyPressResult``
 
+### Commands and Key Hints
+
+- ``Command``
+- ``KeyHints``
+- ``KeyboardShortcut``
+
 ### Controls and Forms
 
 - ``Button``
@@ -76,7 +82,6 @@ Start with <doc:GettingStarted>, then explore <doc:ViewGallery> to see rendered 
 - ``Tab``
 - ``Menu``
 - ``MenuItem``
-- ``KeyboardShortcut``
 
 ### Modal Presentation
 

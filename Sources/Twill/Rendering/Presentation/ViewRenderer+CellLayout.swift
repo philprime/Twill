@@ -14,6 +14,7 @@ extension ViewRenderer {
         if let traits = layoutState.traits { return traits.hasContent }
         switch description {
         case .drawing, .canvas, .textField, .textEditor: return true
+        case .keyHints(let hints): return isEnabled && hints.contains(where: \.hasContent)
         case .tableRow: return true
         case .tabs: return hasTabBar
         case .tab where !tabState.isActive: return false
@@ -26,6 +27,8 @@ extension ViewRenderer {
         switch description {
         case .drawing, .canvas, .textField, .textEditor:
             return [self]
+        case .keyHints:
+            return hasLayoutContent ? [self] : []
         case .tableRow:
             return [self]
         case .group(_, .some), .table, .control, .styled, .border, .scroll, .dialog, .disclosure:

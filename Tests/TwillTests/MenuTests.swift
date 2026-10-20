@@ -12,7 +12,7 @@ struct MenuTests {
             Menu(
                 "Actions",
                 items: [
-                    MenuItem("Save", shortcut: KeyboardShortcut(.s, hint: "s")) {},
+                    MenuItem("Save", shortcuts: [KeyboardShortcut(.s, hint: "s")]) {},
                     MenuItem("Delete", isEnabled: false) {},
                 ]))
         let closed = renderer.render(.now)
@@ -67,8 +67,10 @@ struct MenuTests {
             rootView: Menu(
                 "Actions",
                 items: [
-                    MenuItem("Save", shortcut: KeyboardShortcut(shortcut, hint: "Ctrl-S")) { actions.append("save") },
-                    MenuItem("Delete", shortcut: KeyboardShortcut(.d, hint: "d"), isEnabled: false) {
+                    MenuItem("Save", shortcuts: [KeyboardShortcut(shortcut, hint: "Ctrl-S")]) {
+                        actions.append("save")
+                    },
+                    MenuItem("Delete", shortcuts: [KeyboardShortcut(.d, hint: "d")], isEnabled: false) {
                         actions.append("delete")
                     },
                 ]), runLoop: RecordingRunLoop(), output: RecordingTerminalOutput())
@@ -127,7 +129,7 @@ struct MenuTests {
                 items: empty
                     ? []
                     : [
-                        MenuItem("Unavailable", shortcut: KeyboardShortcut(.u, hint: "u"), isEnabled: false) {
+                        MenuItem("Unavailable", shortcuts: [KeyboardShortcut(.u, hint: "u")], isEnabled: false) {
                             activations += 1
                         }
                     ]), runLoop: RecordingRunLoop(), output: RecordingTerminalOutput())

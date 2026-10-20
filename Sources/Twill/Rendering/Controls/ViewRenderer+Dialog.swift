@@ -3,8 +3,8 @@ import Foundation
 @MainActor
 extension ViewRenderer {
     var buttonRole: ButtonRole? {
-        guard case .button(_, let role, _) = description else { return nil }
-        return role
+        guard case .button(let button) = description else { return nil }
+        return button.role
     }
 
     var enclosingButton: ViewRenderer? {

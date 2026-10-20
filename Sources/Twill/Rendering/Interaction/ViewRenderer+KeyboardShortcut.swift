@@ -17,6 +17,7 @@ extension ViewRenderer {
 
     private func matchingShortcutButton(_ key: KeyEvent) -> ViewRenderer? {
         guard isEnabled else { return nil }
+        if case .button(let button) = description, button.shortcuts.contains(where: { $0.key == key }) { return self }
         if case .keyboardShortcut(_, let shortcuts) = description {
             if shortcuts.contains(where: { $0.key == key }), let button = shortcutButton() { return button }
         }
