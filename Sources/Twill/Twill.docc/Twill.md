@@ -33,6 +33,7 @@ Start with <doc:GettingStarted>, then explore <doc:ViewGallery> to see rendered 
 - ``GridItem``
 - ``ScrollView``
 - ``ScrollViewReader``
+- ``ScrollIndicatorView``
 - ``ScrollViewProxy``
 - ``GroupBox``
 - ``EmptyView``
@@ -123,6 +124,7 @@ Start with <doc:GettingStarted>, then explore <doc:ViewGallery> to see rendered 
 - ``HorizontalAlignment``
 - ``VerticalAlignment``
 - ``FrameLimit``
+- ``ScrollIndicatorVisibility``
 - ``Axis``
 
 ### Scheduled and Asynchronous Work
