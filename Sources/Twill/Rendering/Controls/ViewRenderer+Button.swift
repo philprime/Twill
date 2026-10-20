@@ -10,7 +10,7 @@ extension ViewRenderer {
 
     @ViewBuilder
     private func mountedButtonContent<Label: View>(_ label: Label) -> some View {
-        if hasMenuScope {
+        if menuAncestor != nil {
             HStack(alignment: .top, spacing: 0) {
                 actionLabel(label)
                 MenuButtonHints()
@@ -28,50 +28,32 @@ extension ViewRenderer {
         }
     }
 
-    private var hasMenuScope: Bool {
-        var ancestor = parent
-        while let node = ancestor {
-            if case .menu = node.description { return true }
-            if case .sheet = node.description { return false }
-            ancestor = node.parent
-        }
-        return false
-    }
-
-    var menuButtonSuffix: String? {
-        guard case .button(let button) = description else { return nil }
-        var shortcuts = button.shortcuts
-        var ancestor = parent
-        while let node = ancestor {
-            if case .keyboardShortcut(_, let alternatives) = node.description {
-                if node.shortcutButton(requiringEnabled: false) === self { shortcuts += alternatives }
-            }
-            if case .menu = node.description {
-                let hints = shortcuts.map(\.hint).joined(separator: "/")
-                return (hints.isEmpty ? "" : "  [\(hints)]") + (isEnabled ? "" : " (disabled)")
-            }
-            if case .sheet = node.description { return nil }
-            ancestor = node.parent
-        }
-        return nil
-    }
-
     /// Focused activation and shortcuts share action-before-dismissal ordering.
     func activateButton() {
         guard isEnabled, case .button(let button) = description else { return }
         button.action()
         var ancestor = parent
+        var dismissedMenu = false
+        var crossesMenuSheet = false
         while let node = ancestor {
             switch node.description {
-            case .dialog(_, let isPresented, _), .menu(_, let isPresented):
+            case .menuOpener:
+                return
+            case .menu(_, let isPresented):
                 isPresented.wrappedValue = false
+                dismissedMenu = true
+                crossesMenuSheet = true
+            case .dialog(_, let isPresented, _):
+                if !dismissedMenu { isPresented.wrappedValue = false }
                 return
             case .sheet:
-                // A nested sheet owns its own dismissal, not its ancestor's action scope.
-                return
+                // Each menu owns one sheet. Other modal boundaries remain independent.
+                guard crossesMenuSheet else { return }
+                crossesMenuSheet = false
             default:
-                ancestor = node.parent
+                break
             }
+            ancestor = node.parent
         }
     }
 }

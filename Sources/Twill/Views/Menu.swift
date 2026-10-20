@@ -14,7 +14,7 @@ public struct Menu<Label: View, Content: View>: View {
 
     /// The opener and its modal action content.
     public var body: some View {
-        Button(action: { isPresented = true }, label: { label })
+        MenuOpener(content: Button(action: { isPresented = true }, label: { label }))
             .sheet(isPresented: $isPresented) {
                 MenuContent(title: title, content: content, isPresented: $isPresented)
             }
