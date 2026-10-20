@@ -24,14 +24,12 @@ struct MenuApplicationTests {
         let application = Application(
             rootView: HStack {
                 Button("Other") { events.append("other") }
-                Menu(
-                    "Actions",
-                    items: [
-                        MenuItem("Unavailable", shortcuts: [KeyboardShortcut(.d, hint: "d")], isEnabled: false) {
-                            events.append("disabled")
-                        },
-                        MenuItem("Save", shortcuts: [KeyboardShortcut(.s, hint: "s")]) { events.append("save") },
-                    ])
+                Menu("Actions") {
+                    Button("Unavailable") { events.append("disabled") }.keyboardShortcut(
+                        KeyboardShortcut(.d, hint: "d")
+                    ).disabled(true)
+                    Button("Save") { events.append("save") }.keyboardShortcut(KeyboardShortcut(.s, hint: "s"))
+                }
             },
             runLoop: runLoop,
             terminalSession: DefaultTerminalSession(
