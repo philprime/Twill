@@ -39,14 +39,7 @@ struct FileBrowserView: View {
             } else {
                 directoryTable
                     .id(directory.path)
-                Toggle(
-                    "Show hidden files",
-                    isOn: Binding(
-                        get: { showHidden },
-                        set: {
-                            showHidden = $0
-                            reload()
-                        }))
+                Toggle("Show hidden files", isOn: $showHidden)
             }
             Text(
                 message.isEmpty
@@ -58,6 +51,7 @@ struct FileBrowserView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .task { reload() }
+        .onChange(of: showHidden) { _, _ in reload() }
     }
 
     private var directoryTable: some View {
@@ -93,7 +87,6 @@ struct FileBrowserView: View {
                     }
                 case .period:
                     showHidden.toggle()
-                    reload()
                 case .r: reload()
                 default: return .ignored
                 }

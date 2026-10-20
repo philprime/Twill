@@ -15,6 +15,7 @@ final class ViewHost {
     private var timer: Timer?
     private var scheduledDate: Date?
     private var isPresentationPending = false
+    private var needsContentRefresh = false
     private var isActive = false
     // Presentation invalidation is readiness, not a time deadline. Keeping one source
     // avoids creating timer machinery and lets a due timeline consume the same work.
@@ -59,6 +60,7 @@ final class ViewHost {
         cancelTimer()
         runLoop.remove(presentationSource)
         isPresentationPending = false
+        needsContentRefresh = false
         renderer?.unmount()
         renderer = nil
         taskRegistry.cancelAll()
@@ -76,7 +78,9 @@ final class ViewHost {
     }
 
     private func requestPresentation() {
-        guard isActive, !isPresentationPending else { return }
+        guard isActive else { return }
+        needsContentRefresh = true
+        guard !isPresentationPending else { return }
         isPresentationPending = true
         runLoop.signal(presentationSource)
     }
@@ -99,7 +103,11 @@ final class ViewHost {
         guard isActive, let renderer else { return false }
         // A prior key may have changed mounted state while its presentation is
         // still coalesced. Route this key through the current scope immediately.
-        if isPresentationPending { renderer.refreshContent(at: now()) }
+        while needsContentRefresh {
+            needsContentRefresh = false
+            renderer.refreshContent(at: now())
+            guard isActive else { return false }
+        }
         return renderer.handle(key)
     }
 
@@ -118,7 +126,9 @@ final class ViewHost {
         // signals distinct follow-up work instead of being consumed by this frame.
         runLoop.consume(presentationSource)
         isPresentationPending = false
+        needsContentRefresh = false
         let frame = renderer.render(now(), proposal: proposal, centeredInViewport: presenter.mode == .fullscreen)
+        guard isActive else { return }
         try presenter.present(FrameSnapshot(grid: frame.grid, caret: renderer.caretPosition))
         guard isActive else { return }
         // Parent state updates must not restart an unchanged child's deadline.

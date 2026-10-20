@@ -138,7 +138,7 @@ public final class Application {
         let exitOnControlD = options.exitOnControlD && (key == .controlD || key == .d.withModifiers(.control))
         if exitOnControlC || exitOnControlD {
             stop()
-        } else if !viewHost.handle(key) {
+        } else if !viewHost.handle(key), !isStopping {
             onKeyEvent?(key)
         }
     }
