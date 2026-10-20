@@ -14,9 +14,11 @@ struct ClockView: View {
                         .frame(maxWidth: .infinity, alignment: .trailing)
                 }
             }
-            Picker("Face", selection: $selection, options: ClockFace.allCases) { face in
+            Picker(selection: $selection, options: ClockFace.allCases, presentation: .compact) { face in
                 Text("\(face.rawValue + 1) \(face.title)")
                     .foregroundStyle(face.color)
+            } label: {
+                Text("Face:").bold()
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             GroupBox(selection.title) {
