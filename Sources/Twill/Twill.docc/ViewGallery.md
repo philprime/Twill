@@ -452,3 +452,19 @@ A separator spans the stack's minor axis and inherits appearance.
 Fixed and flexible panes share width without changing keyboard traversal.
 
 ![SplitView terminal preview](preview-SplitView.svg)
+
+## ContentUnavailableView
+
+``ContentUnavailableView``
+
+Caller-owned empty content with an ordinary retry action.
+
+![ContentUnavailableView terminal preview](preview-ContentUnavailableView.svg)
+
+## StatusBar
+
+``StatusBar``
+
+A one-cell status row composing ordinary key hints and flexible space.
+
+![StatusBar terminal preview](preview-StatusBar.svg)

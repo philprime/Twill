@@ -187,3 +187,27 @@ For animated drawing, use the interval initializer and derive the frame from the
 ## Display Raster Images
 
 ``Image`` holds immutable PNG data. Load it outside view evaluation, then pass it to ``ImageView`` with dimensions in terminal cells. Image presentation uses the Kitty graphics protocol and requires a compatible terminal. Terminal emulators without that protocol cannot display the raster content. Text-based view previews in <doc:ViewGallery> are independent of terminal raster-image support.
+
+## Compose Empty and Status Content
+
+`ContentUnavailableView` composes a label, description, and ordinary actions. The caller chooses when to show loading, failure, or empty results rather than delegating application-state inference to the component.
+
+```swift
+ContentUnavailableView {
+    Text("No results")
+} description: {
+    Text("Try another search")
+} actions: {
+    Button("Retry", action: retry)
+}
+
+StatusBar {
+    Text(status)
+    Spacer()
+    KeyHints(commands)
+}
+```
+
+Unavailable content uses bold labels, muted descriptions, centered multiline text, and one-cell gaps. Inner styling remains authoritative. It centers intrinsic content in offered space and remains intrinsic without an offer. Actions retain ordinary focus and disabled behavior.
+
+`StatusBar` fills offered width and reserves one terminal row, clipping excess content. Its builder supports ordinary text, controls, flexible spacing, and key hints. Hints remain presentation-only metadata. Both components retain concrete content types, use normal mounted identity and independent scheduling, and add no polling or focus boundaries.

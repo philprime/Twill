@@ -23,6 +23,8 @@ Start with <doc:GettingStarted>, then explore <doc:ViewGallery> to see rendered 
 - <doc:LayoutAndDrawing>
 - ``Text``
 - ``VStack``
+- ``ContentUnavailableView``
+- ``StatusBar``
 - ``HStack``
 - ``SplitView``
 - ``Spacer``
