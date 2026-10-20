@@ -33,10 +33,14 @@ final class ViewHost {
         self.now = now
     }
 
-    func start(size: TerminalSize? = nil, mode: Application.Options.UIOptions.Mode = .inline) throws {
+    func start(
+        size: TerminalSize? = nil, mode: Application.Options.UIOptions.Mode = .inline,
+        terminalCapabilities: TerminalCapabilities = TerminalCapabilities()
+    ) throws {
         presenter.mode = mode
         // Body evaluation belongs to the running session, not application construction.
-        let renderer = ViewRenderer.make(rootView, taskRegistry: taskRegistry)
+        let renderer = ViewRenderer.make(
+            rootView, taskRegistry: taskRegistry, terminalCapabilities: terminalCapabilities)
         renderer.onInvalidation = { [weak self] in self?.requestPresentation() }
         self.renderer = renderer
         isActive = true

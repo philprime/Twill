@@ -7,24 +7,16 @@ struct FilePreviewView: View {
     @State private var line = 0
     @State private var pendingG = false
 
-    private var supportsImages: Bool {
-        let environment = ProcessInfo.processInfo.environment
-        return environment["TERM_PROGRAM"] == "ghostty" || environment["TERM"] == "xterm-kitty"
-            || environment["TERM"] == "xterm-ghostty"
-    }
-
     var body: some View {
         VStack(alignment: .leading) {
             Text("\(name) (read-only)").foregroundStyle(Color.ansi(.yellow))
             switch preview {
             case .image(let image):
-                if supportsImages {
-                    ImageView(image, width: 40, height: 20)
-                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-                } else {
-                    Text("PNG preview requires Ghostty or Kitty. Terminal capability probing is not yet supported.")
-                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+                ImageView(image, width: 40, height: 20) {
+                    ContentUnavailableView(
+                        "Image unavailable", description: "PNG graphics are not enabled for this terminal.")
                 }
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             case .text(let lines):
                 textPreview(lines)
             }

@@ -122,6 +122,9 @@ Start with <doc:GettingStarted>, then explore <doc:ViewGallery> to see rendered 
 - ``PixelColor``
 - ``Image``
 - ``ImageView``
+- ``ImageContentMode``
+- ``TerminalCapabilities``
+- ``TerminalImageProtocol``
 - ``Style``
 - ``Color``
 - ``SemanticColor``

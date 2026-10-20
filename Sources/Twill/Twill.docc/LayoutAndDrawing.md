@@ -215,7 +215,9 @@ Draw only during the callback, and do not retain contexts for later use. Each pr
 
 ## Display Raster Images
 
-``Image`` holds immutable PNG data. Load it outside view evaluation, then pass it to ``ImageView`` with dimensions in terminal cells. Image presentation uses the Kitty graphics protocol and requires a compatible terminal. Terminal emulators without that protocol cannot display the raster content. Text-based view previews in <doc:ViewGallery> are independent of terminal raster-image support.
+``Image`` holds immutable PNG data. Load it outside view evaluation, then pass it to ``ImageView`` with a cell rectangle and caller-provided unsupported-terminal content. The application's ``TerminalCapabilities`` snapshot chooses the mounted branch. Its default environment hints are caller-overridable and do not actively probe the terminal.
+
+Default aspect-fit placement accounts for an explicit cell height-to-width ratio, centers pixels within the constrained rectangle, and leaves image output/cleanup to the host. Stretch is explicit, and partial viewport clipping omits a placement rather than changing its geometry. See <doc:ImageView> for capability configuration and cell-aspect assumptions. Text-based view previews in <doc:ViewGallery> are independent of live terminal raster support.
 
 ## Compose Empty and Status Content
 
