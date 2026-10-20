@@ -184,11 +184,10 @@ extension DocumentationPreviewFixture {
             },
             Self(
                 "TextEditor",
-                "A multiline editor. Enter inserts a newline; arrows move the "
-                    + "caret; Tab moves between controls.",
+                "A wrapped editor with logical lines and a visual-row caret.",
                 proposal: .init(width: 24, height: 3)
             ) {
-                TextEditor(text: binding("First line\nSecond line"))
+                TextEditor(text: binding("First line wraps here too\nSecond line"), lineBreakMode: .wordWrapping)
             },
             Self(
                 "Stepper",
