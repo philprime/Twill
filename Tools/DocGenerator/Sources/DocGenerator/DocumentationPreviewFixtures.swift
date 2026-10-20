@@ -203,12 +203,10 @@ extension DocumentationPreviewFixture {
                     + "opens or activates; arrows navigate; "
                     + "Escape dismisses.", keys: [.enter]
             ) {
-                Menu(
-                    "Actions",
-                    items: [
-                        MenuItem("Save", shortcuts: [KeyboardShortcut(.s)]) {},
-                        MenuItem("Delete", isEnabled: false) {},
-                    ])
+                Menu("Actions") {
+                    Button("Save") {}.keyboardShortcut(.s)
+                    Button("Delete") {}.disabled(true)
+                }
             },
             Self("KeyHints", "Available commands share their current titles and shortcut hints with controls.") {
                 KeyHints([

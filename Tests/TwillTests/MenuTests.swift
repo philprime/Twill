@@ -9,12 +9,10 @@ struct MenuTests {
     func presentation() throws {
         // -- Arrange --
         let renderer = ViewRenderer.make(
-            Menu(
-                "Actions",
-                items: [
-                    MenuItem("Save", shortcuts: [KeyboardShortcut(.s, hint: "s")]) {},
-                    MenuItem("Delete", isEnabled: false) {},
-                ]))
+            Menu("Actions") {
+                Button("Save") {}.keyboardShortcut(KeyboardShortcut(.s, hint: "s"))
+                Button("Delete") {}.disabled(true)
+            })
         let closed = renderer.render(.now)
 
         // -- Act --
@@ -34,14 +32,12 @@ struct MenuTests {
         // -- Arrange --
         var actions: [String] = []
         let host = ViewHost(
-            rootView: Menu(
-                "Actions",
-                items: [
-                    MenuItem("Disabled first", isEnabled: false) { actions.append("disabled first") },
-                    MenuItem("Save") { actions.append("save") },
-                    MenuItem("Disabled middle", isEnabled: false) { actions.append("disabled middle") },
-                    MenuItem("Delete") { actions.append("delete") },
-                ]), runLoop: RecordingRunLoop(), output: RecordingTerminalOutput())
+            rootView: Menu("Actions") {
+                Button("Disabled first") { actions.append("disabled first") }.disabled(true)
+                Button("Save") { actions.append("save") }
+                Button("Disabled middle") { actions.append("disabled middle") }.disabled(true)
+                Button("Delete") { actions.append("delete") }
+            }, runLoop: RecordingRunLoop(), output: RecordingTerminalOutput())
         try host.start()
         defer { host.stop() }
 
@@ -64,16 +60,11 @@ struct MenuTests {
         var actions: [String] = []
         let shortcut = KeyEvent.character("s", modifiers: .control)
         let host = ViewHost(
-            rootView: Menu(
-                "Actions",
-                items: [
-                    MenuItem("Save", shortcuts: [KeyboardShortcut(shortcut, hint: "Ctrl-S")]) {
-                        actions.append("save")
-                    },
-                    MenuItem("Delete", shortcuts: [KeyboardShortcut(.d, hint: "d")], isEnabled: false) {
-                        actions.append("delete")
-                    },
-                ]), runLoop: RecordingRunLoop(), output: RecordingTerminalOutput())
+            rootView: Menu("Actions") {
+                Button("Save") { actions.append("save") }.keyboardShortcut(KeyboardShortcut(shortcut, hint: "Ctrl-S"))
+                Button("Delete") { actions.append("delete") }.keyboardShortcut(KeyboardShortcut(.d, hint: "d"))
+                    .disabled(true)
+            }, runLoop: RecordingRunLoop(), output: RecordingTerminalOutput())
         try host.start()
         defer { host.stop() }
 
@@ -97,7 +88,7 @@ struct MenuTests {
         let host = ViewHost(
             rootView: HStack {
                 Button("Other") { actions.append("other") }
-                Menu("Actions", items: [MenuItem("Save") { actions.append("save") }])
+                Menu("Actions") { Button("Save") { actions.append("save") } }
             }.onKeyPress { key in
                 guard key == .x else { return .ignored }
                 actions.append("leaked")
@@ -124,15 +115,12 @@ struct MenuTests {
         // -- Arrange --
         var activations = 0
         let host = ViewHost(
-            rootView: Menu(
-                "Actions",
-                items: empty
-                    ? []
-                    : [
-                        MenuItem("Unavailable", shortcuts: [KeyboardShortcut(.u, hint: "u")], isEnabled: false) {
-                            activations += 1
-                        }
-                    ]), runLoop: RecordingRunLoop(), output: RecordingTerminalOutput())
+            rootView: Menu("Actions") {
+                if !empty {
+                    Button("Unavailable") { activations += 1 }.keyboardShortcut(KeyboardShortcut(.u, hint: "u"))
+                        .disabled(true)
+                }
+            }, runLoop: RecordingRunLoop(), output: RecordingTerminalOutput())
         try host.start()
         defer { host.stop() }
 

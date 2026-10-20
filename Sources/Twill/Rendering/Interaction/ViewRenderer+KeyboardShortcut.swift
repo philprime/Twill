@@ -27,13 +27,13 @@ extension ViewRenderer {
         return nil
     }
 
-    private func shortcutButton() -> ViewRenderer? {
-        guard isEnabled else { return nil }
+    func shortcutButton(requiringEnabled: Bool = true) -> ViewRenderer? {
+        guard !requiringEnabled || isEnabled else { return nil }
         if case .button = description { return self }
         // Modifiers can wrap the action, but a container of multiple controls
         // must not accidentally assign its shortcut to an arbitrary descendant.
         let children = interactionChildren
         guard children.count == 1 else { return nil }
-        return children[0].shortcutButton()
+        return children[0].shortcutButton(requiringEnabled: requiringEnabled)
     }
 }

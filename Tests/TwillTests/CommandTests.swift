@@ -126,7 +126,7 @@ struct CommandTests {
                 "save", title: title, isEnabled: available,
                 shortcuts: [KeyboardShortcut(key)]
             ) { actions.append(title) }
-            return Menu("Actions", items: [MenuItem(command)])
+            return Menu("Actions") { Button(command) }
         }
         let renderer = ViewRenderer.make(content(available: true, title: "Save", key: .s))
         _ = renderer.render(.now)
@@ -195,7 +195,7 @@ struct CommandTests {
         #expect(frame.grid?.snapshotText == "Count 2")
     }
 
-    @Test("Menu items reuse command alternatives, role and action")
+    @Test("Menu buttons reuse command alternatives, role and action")
     func menuActions() throws {
         // -- Arrange --
         var actions = 0
@@ -204,7 +204,7 @@ struct CommandTests {
             shortcuts: [KeyboardShortcut(.controlS), KeyboardShortcut(.superS)]
         ) { actions += 1 }
         let host = ViewHost(
-            rootView: Menu("Actions", items: [MenuItem(command)]),
+            rootView: Menu("Actions") { Button(command) },
             runLoop: RecordingRunLoop(), output: RecordingTerminalOutput())
         try host.start()
         defer { host.stop() }

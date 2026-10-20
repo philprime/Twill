@@ -81,15 +81,15 @@ Editing-mode updates retain mounted caret and viewport state and independent tim
 
 ## Commands and key hints
 
-`Command<ID>` is an immutable snapshot of application-owned action identity, title, availability, role, shortcut alternatives, and a UI-actor action. `perform()` respects the snapshot's availability. Derive command values from mounted state when describing a screen, and share those values through `Button(command)`, `MenuItem(command)`, and `KeyHints(commands)`.
+`Command<ID>` is an immutable snapshot of application-owned action identity, title, availability, role, shortcut alternatives, and a UI-actor action. `perform()` respects the snapshot's availability. Derive command values from mounted state when describing a screen, and share those values through `Button(command)` (including inside menu builders) and `KeyHints(commands)`.
 
-Command identity is logical metadata. It does not establish mounted view identity or register an action globally. Only mounted eligible controls supply shortcut actions. Buttons and menu items use the command's current title, role, availability, and alternatives. Inherited disabled state can further restrict a control without mutating the shared command snapshot.
+Command identity is logical metadata. It does not establish mounted view identity or register an action globally. Only mounted eligible controls supply shortcut actions. Buttons use the command's current title, role, availability, and alternatives. Inherited disabled state can further restrict a control without mutating the shared command snapshot.
 
 `KeyHints` displays available commands with shortcuts, omitting unavailable commands and commands without shortcuts. It honors its own inherited disabled scope and contributes no layout when no hints remain. Extra control-local disabled modifiers do not change a command value elsewhere; use the shared command's availability for conditions that must also govern its hints. Hints are presentation only and do not install handlers, register work, or change focus. Metadata updates retain mounted state and independent scheduling deadlines.
 
 ## Action shortcuts
 
-`.keyboardShortcut(_:)` associates one key or an array of `KeyboardShortcut` alternatives with a button's existing action. Apply it to a button or its surrounding modifiers, not to a container of independent actions. A matching event invokes the action once, even when alternatives repeat. Labels and focus are unchanged. `KeyboardShortcut` supplies generated display hints and accepts explicit hint overrides for menus and help text.
+`.keyboardShortcut(_:)` associates one key or an array of `KeyboardShortcut` alternatives with a button's existing action. Apply it to a button or its surrounding modifiers, not to a container of independent actions. A matching event invokes the action once, even when alternatives repeat. The modifier does not move focus. Menu action labels include hints from structurally eligible shortcut metadata, including disabled actions; other button labels remain unchanged. `KeyboardShortcut` supplies generated display hints and accepts explicit hint overrides for menus and help text.
 
 Focused controls and existing scoped handlers receive input first. Unhandled shortcuts run before default focus navigation. Search starts at the focused subtree and expands through its enclosing mounted content, stopping at the current screen or topmost modal boundary. The nearest matching enabled action wins; ties within a subtree follow composition order. Without focus, search uses the active scope. Inactive destinations and disabled actions do not participate. Dialog shortcuts preserve action-before-dismissal ordering, and inner sheets own their own dismissal.
 
