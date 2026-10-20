@@ -4,7 +4,7 @@ import Foundation
 extension ViewRenderer {
     func updateSheet(_ sheet: SheetDescription, at date: Date) {
         if sheet.isPresented.wrappedValue {
-            let lifetime = sheetState.begin(identity: sheet.identity, onDismiss: sheet.onDismiss)
+            let lifetime = sheetState.begin(identity: sheet.identity(), onDismiss: sheet.onDismiss)
             let scope = lifetime.actionScope
             let dismiss = DismissAction { [weak self, weak scope] in
                 guard let scope else { return }
@@ -22,10 +22,11 @@ extension ViewRenderer {
     }
 
     private func dismissSheet(scope: MountedSheetActionScope) {
-        guard sheetState.current?.actionScope === scope, case .sheet(let sheet) = description,
-            sheet.isPresented.wrappedValue
-        else { return }
-        sheet.isPresented.wrappedValue = false
+        guard sheetState.current?.actionScope === scope, case .sheet(let sheet) = description else { return }
+        // An action may replace its payload before the next mounted update.
+        if sheetState.current?.identity == sheet.identity(), sheet.isPresented.wrappedValue {
+            sheet.isPresented.wrappedValue = false
+        }
         // Custom bindings need not be backed by State. The request still wakes this node.
         markDirty()
     }

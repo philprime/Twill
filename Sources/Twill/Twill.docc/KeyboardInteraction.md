@@ -174,4 +174,19 @@ Attach `.focused($focusedField, equals: .name)` and `.focused($focusedField, equ
 
 The `.sheet`, `.alert`, and `.confirmationDialog` modifiers isolate interaction from the underlying screen. While presented, ignored keys do not escape into underlying handlers. Dismissal restores the previous focus when that target is still mounted, or falls back to an eligible target.
 
-A sheet retains the underlying mounted view and its schedules. Keep the presentation Boolean in ``State`` and pass its binding to the modifier. See <doc:ViewGallery> for presentation previews.
+A sheet retains the underlying mounted view and its schedules. Keep presentation presence in a Boolean or optional identifiable payload in ``State`` and pass its binding to the modifier. See <doc:ViewGallery> for presentation previews.
+
+## Present Payload-driven Dialogs
+
+```swift
+.confirmationDialog("Delete?", item: $pendingNote) { note in
+    Button("Delete", role: .destructive) { delete(note.id) }
+    Button("Keep", role: .cancel) {}
+} message: { note in
+    Text(note.title)
+}
+```
+
+Both `.alert` and `.confirmationDialog` accept optional identifiable items, with or without a message builder. Actions and messages receive current payload values. Matching IDs retain action state, changed IDs replace it and reset deliberate focus, and nil ends presentation. The ordinary role, disabled, Escape-cancellation, and fallback-action policies remain in effect.
+
+Actions run before dismissal and clear only their owning lifetime. Replacing a payload ID from an action preserves the replacement even before reconciliation. Optional `onDismiss` callbacks use the shared sheet lifecycle. Nil payloads do not evaluate action/message builders.

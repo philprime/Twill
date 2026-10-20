@@ -11,8 +11,7 @@ struct NotesBrowserView: View {
     @State private var editingNote: Note?
     @State private var draftTitle = ""
     @State private var draftBody = ""
-    @State private var isDeletePresented = false
-    @State private var deletingNoteID: Note.ID?
+    @State private var deletingNote: Note?
 
     private var matchingNotes: [Note] {
         notes.filter {
@@ -104,20 +103,16 @@ struct NotesBrowserView: View {
                 onSave: { saveNote(note.id) },
                 onCancel: dismiss.callAsFunction)
         }
-        .confirmationDialog("Delete note?", isPresented: $isDeletePresented) {
-            Button("Delete note", role: .destructive) {
-                if let deletingNoteID { deleteNote(deletingNoteID) }
-                deletingNoteID = nil
-            }
-            Button("Keep note", role: .cancel) { deletingNoteID = nil }
-        } message: {
-            Text("This removes the note from this in-memory session.")
+        .confirmationDialog("Delete note?", item: $deletingNote) { note in
+            Button("Delete note", role: .destructive) { deleteNote(note.id) }
+            Button("Keep note", role: .cancel) {}
+        } message: { note in
+            Text("Remove \(note.title) from this in-memory session?")
         }
     }
 
     private func requestDeletion(_ id: Note.ID) {
-        deletingNoteID = id
-        isDeletePresented = true
+        deletingNote = notes.first { $0.id == id }
     }
 
     private func saveNote(_ id: Note.ID) {
