@@ -44,7 +44,7 @@ struct LazyVGridTests {
 
         // -- Assert --
         #expect(wide.grid?.snapshotText == "ABCD  EF   \n           \nG          ")
-        #expect(narrow.grid?.snapshotText == "AB EF\n     \nG    ")
+        #expect(narrow.grid?.snapshotText == "AB EF\nCD   \n     \nG    ")
         #expect(evaluations == 1)
     }
 

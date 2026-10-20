@@ -135,6 +135,7 @@ Start with <doc:GettingStarted>, then explore <doc:ViewGallery> to see rendered 
 - ``StyledView``
 - ``SubmitView``
 - ``TaskView``
+- ``TextLayoutView``
 - ``ViewList``
 
 ### Runtime Integration

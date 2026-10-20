@@ -40,7 +40,7 @@ public struct Slider<Value: BinaryFloatingPoint, Label: View>: View where Value.
         return VStack(alignment: .leading, spacing: 0) {
             HStack {
                 label
-                Text("\(value.wrappedValue)")
+                Text("\(value.wrappedValue)").frame(height: 1)
             }
             SliderTrack(fraction: fraction).frame(maxWidth: .infinity)
         }

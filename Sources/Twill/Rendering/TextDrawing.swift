@@ -5,12 +5,13 @@ protocol PrimitiveDrawing {
 }
 
 struct TextDrawing: PrimitiveDrawing {
-    private let glyphs: [(character: Character, width: Int)]
+    typealias Glyph = (character: Character, width: Int)
+    let glyphs: [Glyph]
     private let size: CellSize
 
     init(_ text: String) {
-        // Text is data, never terminal commands. Preserve the existing single-line
-        // text policy while measuring the sanitized graphemes in terminal columns.
+        // Chrome and editing lines are data, never terminal commands. Sanitize
+        // controls before measuring graphemes in terminal columns.
         let sanitized = String(
             text.unicodeScalars.map {
                 $0.properties.generalCategory == .control ? Character(" ") : Character(String($0))

@@ -17,6 +17,7 @@ extension ViewRenderer {
         case .textEditor(let editor):
             return .editor(content: editor.content, caret: editor.caret, offset: editorState.offset)
         case .drawing(let drawing): return .drawing(drawing, caretColumn: nil)
+        case .text(let drawing): return .drawing(drawing.configured(textLayout), caretColumn: nil)
         case .canvas(_, let render):
             return .drawing(
                 Canvas.Drawing(size: layoutState.size, date: schedule.canvasDate ?? .now, render: render),

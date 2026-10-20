@@ -53,8 +53,11 @@ struct DocumentationPreviewFixture {
 extension DocumentationPreviewFixture {
     fileprivate static var basic: [Self] {
         [
-            Self("Text", "Terminal text, including a wide glyph, with an explicit foreground color.") {
-                Text("Hello, terminal 界").foregroundStyle(Color.cyan)
+            Self(
+                "Text", "Text preserves line breaks and wraps words within terminal-cell width.",
+                proposal: .init(width: 14)
+            ) {
+                Text("Hello, terminal 界\nWrapped text").foregroundStyle(Color.cyan)
             },
             Self("EmptyView", "Intentionally blank: this view contributes no terminal cells.") { EmptyView() },
             Self("HStack", "Children arranged horizontally with two cells of spacing.") {
@@ -334,6 +337,12 @@ extension DocumentationPreviewFixture {
             },
             Self("DisabledView", "Disabled controls stay visible but do not receive focus or activate.") {
                 Button("Unavailable") {}.disabled(true)
+            },
+            Self(
+                "TextLayoutView", "Inherited line limits and truncation keep a terminal title within its viewport.",
+                proposal: .init(width: 12)
+            ) {
+                Text("A long terminal title").lineLimit(1).truncationMode(.middle)
             },
             Self("PaddingView", "The padding modifier reserves one blank cell around the enclosed content.") {
                 Text("Padded").padding(1)

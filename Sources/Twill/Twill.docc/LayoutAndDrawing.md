@@ -4,11 +4,11 @@ Compose terminal-cell layouts and draw custom content within measured bounds.
 
 ## Overview
 
-Twill measures width in terminal columns and height in rows. These are not pixel dimensions or Swift string character counts. Wide characters can occupy multiple columns. Single-line ``Text`` replaces control characters with spaces rather than interpreting them as terminal commands.
+Twill measures width in terminal columns and height in rows. These are not pixel dimensions or Swift string character counts. Wide characters can occupy multiple columns. ``Text`` preserves LF and CRLF line breaks and wraps at ordinary spaces when offered a finite width. Other control characters become spaces rather than terminal commands.
 
 ## Compose and Constrain Content
 
-``VStack`` places children vertically at their intrinsic heights. ``HStack`` places children horizontally at their intrinsic widths. Their spacing and alignment apply between and across children. Content outside the allocated bounds is clipped rather than wrapped or compressed.
+``VStack`` places children vertically at their intrinsic heights. ``HStack`` places children horizontally at their intrinsic widths. Their spacing and alignment apply between and across children. Vertical stacks and single-child composition forward finite proposals so text can reflow. Multiple intrinsic-width horizontal siblings keep their natural widths; bound an individual child's width or use a filling frame to give it a wrapping proposal. Bounds clip content that exceeds the allocated height.
 
 Use `.frame(width:height:alignment:)` for fixed dimensions and `.frame(maxWidth:maxHeight:alignment:)` to limit dimensions or fill a parent's proposed space with ``FrameLimit/infinity``. A frame can align a smaller child within its allocated bounds.
 
@@ -25,6 +25,21 @@ VStack(spacing: 1) {
 Modifier order matters. Padding inside a border creates interior space. Padding outside a border creates exterior space. ``GroupBox`` provides a titled border, while ``Form`` and its sections organize controls without making them scrollable.
 
 ``LazyVGrid`` uses ``GridItem`` descriptions to choose column widths. ``ScrollView`` clips content to a visible height while preserving mounted state outside the visible area. Use ``ScrollViewReader`` to obtain a proxy for scrolling to keyed children.
+
+## Control Text Breaks and Overflow
+
+Use `.lineBreakMode(.wordWrapping)` for word boundaries, `.lineBreakMode(.characterWrapping)` for complete grapheme boundaries, or `.lineBreakMode(.clipping)` to preserve logical lines without wrapping. Unspecified width keeps natural line widths. Whitespace that fits is preserved, while word-wrapping separators at a break are omitted. Oversized words split only between graphemes. A grapheme wider than the viewport occupies a clipped row and is never partially drawn.
+
+```swift
+Text("A long terminal title")
+    .lineLimit(1)
+    .truncationMode(.middle)
+    .frame(width: 12)
+```
+
+`.lineLimit(_:)` limits visible lines and defaults omitted content to tail truncation. Nil resets an inherited limit, and values below one use one line. `.truncationMode(.head)`, `.middle`, and `.tail` choose which part is replaced by an ellipsis. Ellipsis placement also respects whole graphemes and terminal-cell width. Without an explicit limit or truncation mode, height bounds clip complete rows.
+
+These modifiers inherit through containers. The nearest setting to a text node takes precedence, including a local `.lineLimit(nil)` reset. They configure static text rather than editing-control viewports or single-line terminal chrome. Resize reflows cached descriptions without reevaluating view bodies or changing timeline deadlines.
 
 ## Apply Appearance
 

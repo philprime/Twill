@@ -36,7 +36,7 @@ extension PrimitiveLayout {
         let child = subviews[0]
         return child.sizeThatFits(
             ProposedCellSize(
-                width: child.fillsWidth ? proposal.width : nil,
-                height: child.fillsHeight ? proposal.height : nil))
+                width: proposal.width,
+                height: proposal.height))
     }
 }

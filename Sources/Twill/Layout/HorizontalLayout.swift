@@ -1,5 +1,5 @@
-/// Intrinsic-width placement. Constrained bounds clip content rather than
-/// compressing or wrapping text. Transparent view lists use zero spacing.
+/// Intrinsic-width sibling placement. Constrained bounds clip natural-width
+/// siblings; single-child composition forwards proposals without a distribution pass.
 struct HorizontalLayout: PrimitiveLayout {
     let spacing: Int
     var alignment: VerticalAlignment = .top
