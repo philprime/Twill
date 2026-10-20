@@ -11,8 +11,10 @@ import Twill
 @Suite("Image application presentation")
 @MainActor
 struct ImageApplicationTests {
-    @Test("Image resources are deleted before the borrowed terminal is restored", .timeLimit(.minutes(1)))
-    func imageRoundTrip() async throws {
+    @Test(
+        "Image resources are deleted before the borrowed terminal is restored", .timeLimit(.minutes(1)),
+        arguments: [false, true])
+    func imageRoundTrip(cancel: Bool) async throws {
         // -- Arrange --
         let terminal = try TestTerminal()
         try terminal.configure { $0.c_iflag |= tcflag_t(IXOFF | IXANY) }
@@ -23,17 +25,24 @@ struct ImageApplicationTests {
             base64Encoded:
                 "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGP4z8AAAAMBAQDJ/pLvAAAAAElFTkSuQmCC")!
         let application = Application(
-            rootView: ImageView(try Image(pngData: data), width: 4, height: 2),
+            rootView: ImageView(try Image(pngData: data), width: 4, height: 2) { Text("Unsupported") },
             runLoop: runLoop,
             terminalSession: DefaultTerminalSession(
                 fileDescriptor: .custom(terminal.fileDescriptor),
                 output: DefaultTerminalOutput(fileDescriptor: .custom(pipe.fileHandleForWriting.fileDescriptor))
             )
         )
-        runLoop.add(Twill.Timer(interval: .milliseconds(1)) { application.stop() })
+        application.options.ui.terminalCapabilities = TerminalCapabilities(imageProtocol: .kitty)
+        var running: Task<Void, Error>?
+        runLoop.add(
+            Twill.Timer(interval: .milliseconds(1)) {
+                if cancel { running?.cancel() } else { application.stop() }
+            })
 
         // -- Act --
-        try await application.run()
+        let task = Task { try await application.run() }
+        running = task
+        try await task.value
         try pipe.fileHandleForWriting.close()
         let bytes = try #require(try pipe.fileHandleForReading.readToEnd())
         try pipe.fileHandleForReading.close()

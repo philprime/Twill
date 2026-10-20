@@ -42,7 +42,7 @@ extension ViewRenderer {
             .keyPress(let content, _), .styled(let content, _, _), .attributes(let content, _, _),
             .border(let content, _, _, _):
             reconcile([content], at: date)
-        case .button, .task, .tabs, .sheet, .conditional, .timeline, .disclosure:
+        case .button, .task, .tabs, .sheet, .conditional, .timeline, .disclosure, .image:
             updateSpecializedContent(updated, previous: previous, at: date)
         }
         updateTabState()
@@ -53,6 +53,8 @@ extension ViewRenderer {
         switch description {
         case .button(let button):
             updateButtonContent(button.label, at: date)
+        case .image(let image):
+            updateImage(image, at: date)
         case .tabs(let content, _):
             reconcile([content], at: date)
         case .task(let content, let priority, let action):

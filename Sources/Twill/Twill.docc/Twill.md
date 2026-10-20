@@ -116,6 +116,9 @@ Start with <doc:GettingStarted>, then explore <doc:ViewGallery> to see rendered 
 - ``Canvas``
 - ``Image``
 - ``ImageView``
+- ``ImageContentMode``
+- ``TerminalCapabilities``
+- ``TerminalImageProtocol``
 - ``Style``
 - ``Color``
 - ``SemanticColor``

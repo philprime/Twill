@@ -20,7 +20,11 @@ struct DocumentationPreviewFixture {
         self.description = description
         self.keys = keys
         self.proposal = proposal
-        makeRenderer = { ViewRenderer.make(try content(), taskRegistry: $0) }
+        makeRenderer = {
+            ViewRenderer.make(
+                try content(), taskRegistry: $0,
+                terminalCapabilities: TerminalCapabilities(imageProtocol: .kitty))
+        }
     }
 
     static let date = Date(timeIntervalSinceReferenceDate: 100)
@@ -130,16 +134,7 @@ extension DocumentationPreviewFixture {
                     }
                 }
             },
-            Self(
-                "ImageView",
-                "A 32-by-16 pixel checkerboard PNG placement, scaled to terminal "
-                    + "cells. Live output requires a Kitty graphics "
-                    + "compatible terminal such as Ghostty. This SVG embeds the renderer's PNG payload; "
-                    + "it does not test "
-                    + "terminal decoding or graphics-protocol support."
-            ) {
-                ImageView(try Image(pngData: imageData), width: 8, height: 4)
-            },
+            imageFixture,
             Self(
                 "TimelineView",
                 "A periodic timeline captured at the fixed reference date, 100 "
@@ -391,10 +386,4 @@ extension DocumentationPreviewFixture {
             },
         ]
     }
-
-    // A complete PNG, rather than the header-only test images accepted by Image's metadata validation.
-    static let imageData = Data(
-        base64Encoded:
-            "iVBORw0KGgoAAAANSUhEUgAAACAAAAAQCAIAAAD4YuoOAAAAL0lEQVR4nGMI23YIjv6nMcARtcSpZtAw"
-            + "toAWhiKLj1pA2IKhn4qGvgVDPxUNeQsAwo0zLiJrTHEAAAAASUVORK5CYII=")!
 }
