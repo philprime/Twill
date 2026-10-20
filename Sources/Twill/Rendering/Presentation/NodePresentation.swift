@@ -8,7 +8,7 @@
 enum NodePresentation {
     case content
     case drawing(any PrimitiveDrawing, caretColumn: Int?)
-    case styled(foreground: Color?, background: Color?)
+    case background(Color?)
     case border(glyphs: Border.Glyphs, color: Color?, title: TextDrawing?)
     case scroll(offset: Int, contentHeight: Int)
     case editor(snapshot: TextEditorSnapshot, offset: CellPosition)
@@ -47,7 +47,7 @@ enum NodePresentation {
             let size = content(
                 ProposedCellSize(width: proposal.width, height: proposal.height.map { max(0, $0 - 1) }))
             return proposal.constrain(CellSize(width: max(barSize.width, size.width), height: 1 + size.height))
-        case .content, .styled:
+        case .content, .background:
             return content(proposal)
         }
     }

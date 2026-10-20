@@ -41,8 +41,8 @@ public enum Color: Equatable, Style {
         case brightWhite
     }
 
-    /// This color itself, used when resolving the value as a style.
-    public var color: Color { self }
+    /// Concrete colors are independent of the semantic palette.
+    public func resolve(in theme: Theme) -> Color? { self }
 
     /// The theme-dependent ANSI black color.
     public static let black = Color.ansi(.black)
