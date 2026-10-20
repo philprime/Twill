@@ -44,7 +44,7 @@ struct NoteEditorView: View {
                     .foregroundStyle(.accent)
                 Button(cancel)
             }
-            KeyHints([save, cancel])
+            StatusBar { KeyHints([save, cancel]) }
                 .foregroundStyle(.muted)
         }
         .foregroundStyle(.foreground)
