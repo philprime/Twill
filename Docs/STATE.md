@@ -34,4 +34,4 @@ Selection is independent of mounted child identity and keyboard focus. A collect
 
 ## Presentation payload identity
 
-An optional identifiable payload can own sheet presence. A non-nil value presents content and nil ends its mounted lifetime. Updated values with the same ID retain the content's state and owned work; a changed ID replaces the keyed subtree. Dismissing and re-presenting starts a new lifetime even if the ID repeats. The underlying view retains its independent state, identity, and schedules throughout presentation. Keyboard isolation and focus restoration follow the interaction contract.
+An optional identifiable payload can own modal presence for sheets, alerts, and confirmations. A non-nil value presents content and nil ends its mounted lifetime. Updated values with the same ID retain the content's state and owned work; a changed ID replaces the keyed subtree. Dismissing and re-presenting starts a new lifetime even if the ID repeats. The underlying view retains its independent state, identity, and schedules throughout presentation. Keyboard isolation and focus restoration follow the interaction contract.

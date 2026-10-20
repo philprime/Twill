@@ -21,3 +21,24 @@ extension View {
         confirmationDialog(title, isPresented: isPresented, actions: actions, message: { return EmptyView() })
     }
 }
+
+extension View {
+    /// Presents an identifiable payload using shared dialog roles and sheet identity.
+    /// Updated values with the same ID retain state; actions dismiss after running.
+    public func confirmationDialog<Item: Identifiable, Actions: View, Message: View>(
+        _ title: String, item: Binding<Item?>, onDismiss: @escaping @MainActor () -> Void = {},
+        @ViewBuilder actions: @escaping @MainActor (Item) -> Actions,
+        @ViewBuilder message: @escaping @MainActor (Item) -> Message
+    ) -> some View {
+        payloadDialog((title, .confirmation), item: item, onDismiss: onDismiss, actions: actions, message: message)
+    }
+
+    /// Presents payload actions without a message using the ordinary dialog policy.
+    public func confirmationDialog<Item: Identifiable, Actions: View>(
+        _ title: String, item: Binding<Item?>, onDismiss: @escaping @MainActor () -> Void = {},
+        @ViewBuilder actions: @escaping @MainActor (Item) -> Actions
+    ) -> some View {
+        confirmationDialog(
+            title, item: item, onDismiss: onDismiss, actions: actions, message: { _ in return EmptyView() })
+    }
+}
