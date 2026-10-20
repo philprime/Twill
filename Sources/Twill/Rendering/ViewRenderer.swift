@@ -147,10 +147,15 @@ final class ViewRenderer {
     }
 
     func updateTask(
-        _ content: any View, priority: TaskPriority, action: @escaping @MainActor @Sendable () async -> Void,
+        _ content: any View, priority: TaskPriority, restart: Bool,
+        action: @escaping @MainActor @Sendable () async -> Void,
         at date: Date
     ) {
         reconcile([content], at: date)
-        if viewTask == nil { viewTask = taskRegistry.start(priority: priority, action: action) }
+        if viewTask == nil || restart {
+            let previous = viewTask
+            previous?.cancel()
+            viewTask = taskRegistry.start(priority: priority, after: previous, action: action)
+        }
     }
 }

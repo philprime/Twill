@@ -53,6 +53,6 @@ extension View {
 
 extension TaskView: PrimitiveView {
     func makeDescription() -> ViewDescription {
-        .task(content, priority: priority, action: action)
+        .task(content, priority: priority, restart: false, action: action)
     }
 }
