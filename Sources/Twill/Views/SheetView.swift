@@ -49,7 +49,7 @@ extension SheetView: PrimitiveView {
     func makeDescription() -> ViewDescription {
         .sheet(
             SheetDescription(
-                base: content, isPresented: isPresented, identity: nil,
+                base: content, isPresented: isPresented, identity: { nil },
                 dismissalPolicy: dismissalPolicy, onDismiss: onDismiss, content: { presentedContent($0) }))
     }
 }
