@@ -1,5 +1,5 @@
-/// The sheet owns input isolation and focus restoration. Only enabled items
-/// become buttons, so ordinary focus traversal skips unavailable actions.
+/// The sheet owns input isolation and focus restoration. Shared disabled-state
+/// handling keeps unavailable menu actions out of ordinary focus traversal.
 struct MenuContent: View {
     let title: String
     let items: [MenuItem]
@@ -10,11 +10,8 @@ struct MenuContent: View {
             VStack(alignment: .leading) {
                 ForEach(0..<items.count, id: \.self) { index in
                     let item = items[index]
-                    if item.isEnabled {
-                        Button(action: { activate(item) }, label: { label(for: item) })
-                    } else {
-                        label(for: item)
-                    }
+                    Button(action: { activate(item) }, label: { label(for: item) })
+                        .disabled(!item.isEnabled)
                 }
             }
             .padding(.horizontal)

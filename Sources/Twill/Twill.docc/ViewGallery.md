@@ -309,6 +309,14 @@ The border modifier encloses content in rounded terminal glyphs.
 
 ![BorderView terminal preview](preview-BorderView.svg)
 
+## DisabledView
+
+``DisabledView``
+
+Disabled controls stay visible but do not receive focus or activate.
+
+![DisabledView terminal preview](preview-DisabledView.svg)
+
 ## PaddingView
 
 ``PaddingView``
