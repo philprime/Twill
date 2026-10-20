@@ -30,16 +30,18 @@ extension ViewRenderer {
 
     func draw(in context: inout DrawingContext, focused: ViewRenderer?) {
         let presentation = nodePresentation
-        presentation.draw(
-            in: &context,
-            context: NodePresentationContext(
-                size: layoutState.size, isFocused: presentation.usesFocusAppearance && isInsideFocus(focused),
-                isDirectlyFocused: focused === self,
-                drawChildren: { region in
-                    for placement in self.layoutState.placements {
-                        region.withRegion(placement.bounds) { placement.node.draw(in: &$0, focused: focused) }
-                    }
-                }))
+        context.withAttributes(layoutState.attributes, mask: .supported) { region in
+            presentation.draw(
+                in: &region,
+                context: NodePresentationContext(
+                    size: layoutState.size, isFocused: presentation.usesFocusAppearance && isInsideFocus(focused),
+                    isDirectlyFocused: focused === self,
+                    drawChildren: { region in
+                        for placement in self.layoutState.placements {
+                            region.withRegion(placement.bounds) { placement.node.draw(in: &$0, focused: focused) }
+                        }
+                    }))
+        }
     }
 
     private func isInsideFocus(_ focused: ViewRenderer?) -> Bool {

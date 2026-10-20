@@ -3,9 +3,18 @@
 extension ViewRenderer {
     /// Rebuild once per frame, after content and active branches have settled. These
     /// scalar summaries never retain nodes or schedule work between presentations.
-    func prepareLayout() {
-        for child in retainedChildren { child.prepareLayout() }
+    /// Resolve lexical flags before flattening transparent view lists. Drawing
+    /// can then use cached scalar flags without changing collection placement.
+    func prepareLayout(inheritedAttributes: TextAttributes = []) {
+        let attributes: TextAttributes
+        if case .attributes(_, let values, let mask) = description {
+            attributes = inheritedAttributes.subtracting(mask).union(values.intersection(mask))
+        } else {
+            attributes = inheritedAttributes
+        }
+        for child in retainedChildren { child.prepareLayout(inheritedAttributes: attributes) }
         layoutState.beginFrame()
+        layoutState.attributes = attributes
         layoutState.traits = MountedLayoutState.Traits(
             hasContent: hasLayoutContent, fillsWidth: wantsFillWidth, fillsHeight: wantsFillHeight)
     }
