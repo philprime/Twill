@@ -103,6 +103,7 @@ struct DisclosureGroupFocusTests {
                 }
             })
         _ = renderer.render(start)
+        _ = renderer.handle(.arrowDown)
         _ = renderer.handle(.enter)
 
         // -- Act --

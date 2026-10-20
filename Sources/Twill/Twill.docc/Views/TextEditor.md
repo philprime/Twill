@@ -2,8 +2,8 @@
 
 ## Preview
 
-A multiline editor. Enter inserts a newline; arrows move the caret; Tab switches panes.
+A multiline editor. Enter inserts a newline; arrows move the caret; Tab moves between controls.
 
-![TextEditor terminal preview: A multiline editor. Enter inserts a newline; arrows move the caret; Tab switches panes.](preview-TextEditor)
+![TextEditor terminal preview: A multiline editor. Enter inserts a newline; arrows move the caret; Tab moves between controls.](preview-TextEditor)
 
 Explore related views in <doc:ViewGallery>.

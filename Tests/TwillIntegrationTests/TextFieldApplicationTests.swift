@@ -58,7 +58,7 @@ struct TextFieldApplicationTests {
         #expect(try terminal.snapshot() == original)
     }
 
-    @Test("Tab and Shift-Tab switch panes while editing through a real terminal", .timeLimit(.minutes(1)))
+    @Test("Tab and Shift-Tab switch controls without wrappers through a real terminal", .timeLimit(.minutes(1)))
     func textFieldPaneTraversal() async throws {
         // -- Arrange --
         let terminal = try TestTerminal()
@@ -73,15 +73,11 @@ struct TextFieldApplicationTests {
         let application = Application(
             rootView: HStack {
                 GroupBox("Search") {
-                    ScrollView {
-                        TextField("Search", text: Binding(get: { text }, set: { text = $0 }))
-                            .onSubmit { submissions.append(text) }
-                    }.frame(height: 1)
+                    TextField("Search", text: Binding(get: { text }, set: { text = $0 }))
+                        .onSubmit { submissions.append(text) }
                 }
                 GroupBox("Notes") {
-                    ScrollView {
-                        Button("Note") { activations += 1 }
-                    }.frame(height: 1)
+                    Button("Note") { activations += 1 }
                 }
             },
             runLoop: runLoop,

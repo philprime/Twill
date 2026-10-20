@@ -17,11 +17,8 @@ struct NoteEditorView: View {
                     validationMessage: title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
                         ? "Enter a title." : nil
                 ) {
-                    ScrollView {
-                        TextField("Title", text: $title)
-                    }
-                    .frame(height: 1)
-                    .border(.single, color: NotesPalette.border)
+                    TextField("Title", text: $title)
+                        .border(.single, color: NotesPalette.border)
                 }
                 FormField("Body") {
                     TextEditor(text: $noteText)
@@ -29,15 +26,12 @@ struct NoteEditorView: View {
                         .border(.single, color: NotesPalette.border)
                 }
             }
-            ScrollView {
-                VStack(alignment: .leading) {
-                    Button(saveLabel, action: onSave)
-                        .foregroundStyle(NotesPalette.accent)
-                    Button("Cancel", action: onCancel)
-                }
+            VStack(alignment: .leading) {
+                Button(saveLabel, action: onSave)
+                    .foregroundStyle(NotesPalette.accent)
+                Button("Cancel", action: onCancel)
             }
-            .frame(height: 2)
-            Text("Tab: pane  •  Enter: newline/choose  •  Esc: cancel")
+            Text("Tab: focus  •  Enter: newline/choose  •  Esc: cancel")
                 .foregroundStyle(NotesPalette.muted)
         }
         .foregroundStyle(NotesPalette.foreground)

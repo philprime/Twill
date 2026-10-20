@@ -23,7 +23,7 @@ struct FocusCoordinator {
             if let pane {
                 effects.append(.activatePane(scope: request.scope, pane: pane))
                 effects.append(.remember(scope: pane, target: target))
-                if request.presented !== target { effects.append(.followFocus(pane: pane)) }
+                if request.presented !== target { effects.append(.followFocus(target: target)) }
             } else {
                 effects.append(.remember(scope: request.scope, target: target))
             }
@@ -42,13 +42,13 @@ struct FocusCoordinator {
     }
 
     /// Reusing a valid memory must leave manual scroll policy alone. Only choosing a
-    /// replacement target resumes follow-focus, even when the candidate list is empty.
+    /// replacement target resumes follow-focus through its enclosing viewports.
     func select(_ candidates: FocusRequest.Candidates, rememberingIn scope: ViewRenderer) -> Selection {
         if let remembered = candidates.remembered, candidates.nodes.contains(where: { $0 === remembered }) {
             return Selection(target: remembered, effects: [])
         }
         let target = candidates.preferred ?? candidates.nodes.first
         return Selection(
-            target: target, effects: [.remember(scope: scope, target: target), .followFocus(pane: scope)])
+            target: target, effects: [.remember(scope: scope, target: target), .followFocus(target: target)])
     }
 }

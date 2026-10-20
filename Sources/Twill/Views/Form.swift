@@ -1,5 +1,5 @@
 /// Organizes fields and sections vertically with a blank row between entries.
-/// Forms do not create a scroll pane or change their controls' keyboard behavior.
+/// Controls participate in ordinary keyboard traversal without extra navigation wrappers.
 public struct Form<Content: View>: View {
     private let content: Content
 

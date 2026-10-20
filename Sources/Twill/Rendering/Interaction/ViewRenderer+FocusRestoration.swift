@@ -43,7 +43,7 @@ extension ViewRenderer {
         while let scope = ancestor {
             if let focused = scope.focusState.presentedFocus, previous.contains(focused) {
                 let target = selected.flatMap { $0.resolveFocus(in: $0.focusableNodes()) } ?? self
-                let pane = scope.scrollPanes().first { $0.contains(target) }
+                let pane = scope.keyboardStops().first { $0.ownsKeyboardFocus(target) }
                 var effects: [FocusTransition.Effect] = [
                     .remember(scope: scope, target: target), .activatePane(scope: scope, pane: pane),
                 ]

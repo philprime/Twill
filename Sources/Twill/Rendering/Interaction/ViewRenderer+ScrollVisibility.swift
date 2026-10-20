@@ -1,6 +1,17 @@
 /// Visibility is resolved after measuring, using cached placements. List selection
 /// can request reveal even when keyboard focus belongs to another pane.
 extension ViewRenderer {
+    func resumeFocusFollowing() {
+        // Viewports own offsets independently of the pane containing the control.
+        // Resume only its ancestor viewports, leaving sibling manual scrolling alone.
+        var ancestor: ViewRenderer? = self
+        while let node = ancestor {
+            if case .scroll = node.description { node.scrollState.followFocus() }
+            if case .sheet(_, let presented, _) = node.description, presented.wrappedValue { break }
+            ancestor = node.parent
+        }
+    }
+
     func revealFocus(_ focused: ViewRenderer?) {
         if case .scroll = description {
             let revealed = revealListSelection(focused: focused)
