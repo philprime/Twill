@@ -24,6 +24,8 @@ Start with <doc:GettingStarted>, then explore <doc:ViewGallery> to see rendered 
 - ``Text``
 - ``VStack``
 - ``HStack``
+- ``Spacer``
+- ``Divider``
 - ``Group``
 - ``ForEach``
 - ``LazyVGrid``
@@ -121,6 +123,7 @@ Start with <doc:GettingStarted>, then explore <doc:ViewGallery> to see rendered 
 - ``HorizontalAlignment``
 - ``VerticalAlignment``
 - ``FrameLimit``
+- ``Axis``
 
 ### Scheduled and Asynchronous Work
 
