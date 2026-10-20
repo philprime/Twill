@@ -99,6 +99,7 @@ Start with <doc:GettingStarted>, then explore <doc:ViewGallery> to see rendered 
 ### Modal Presentation
 
 - ``View/sheet(isPresented:content:)``
+- ``View/sheet(item:content:)``
 - ``View/alert(_:isPresented:actions:message:)``
 - ``View/confirmationDialog(_:isPresented:actions:message:)``
 
@@ -151,6 +152,7 @@ Start with <doc:GettingStarted>, then explore <doc:ViewGallery> to see rendered 
 - ``KeyboardShortcutView``
 - ``PaddingView``
 - ``SheetView``
+- ``ItemSheetView``
 - ``StyledView``
 - ``SubmitView``
 - ``TaskView``
