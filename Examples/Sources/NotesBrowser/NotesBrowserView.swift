@@ -8,8 +8,7 @@ struct NotesBrowserView: View {
     @State private var query = ""
     @State private var isHelpPresented = false
     @State private var isCreatePresented = false
-    @State private var isEditPresented = false
-    @State private var editingNoteID: Note.ID?
+    @State private var editingNote: Note?
     @State private var draftTitle = ""
     @State private var draftBody = ""
     @State private var isDeletePresented = false
@@ -76,10 +75,9 @@ struct NotesBrowserView: View {
                 isCreatePresented = true
             case .e:
                 guard let selectedNote else { return .ignored }
-                editingNoteID = selectedNote.id
                 draftTitle = selectedNote.title
                 draftBody = selectedNote.body
-                isEditPresented = true
+                editingNote = selectedNote
             default:
                 return .ignored
             }
@@ -97,14 +95,14 @@ struct NotesBrowserView: View {
                 onSave: createNote,
                 onCancel: { isCreatePresented = false })
         }
-        .sheet(isPresented: $isEditPresented) {
+        .sheet(item: $editingNote) { note in
             NoteEditorView(
                 title: $draftTitle,
                 noteText: $draftBody,
                 heading: "Edit note",
                 saveLabel: "Save changes",
-                onSave: saveNote,
-                onCancel: { isEditPresented = false })
+                onSave: { saveNote(note.id) },
+                onCancel: { editingNote = nil })
         }
         .confirmationDialog("Delete note?", isPresented: $isDeletePresented) {
             Button("Delete note", role: .destructive) {
@@ -122,14 +120,14 @@ struct NotesBrowserView: View {
         isDeletePresented = true
     }
 
-    private func saveNote() {
+    private func saveNote(_ id: Note.ID) {
         let title = draftTitle.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !title.isEmpty, let editingNoteID,
-            let index = notes.firstIndex(where: { $0.id == editingNoteID })
+        guard !title.isEmpty,
+            let index = notes.firstIndex(where: { $0.id == id })
         else { return }
         notes[index].title = title
         notes[index].body = draftBody
-        isEditPresented = false
+        editingNote = nil
     }
 
     private func deleteNote(_ id: Note.ID) {

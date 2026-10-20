@@ -31,3 +31,7 @@ Dynamic collections reconcile children by stable element ID rather than current 
 Selection is independent of mounted child identity and keyboard focus. A collection control may store a selected element ID in an ancestor so selection survives screen changes. If that ID is absent from the visible collection, the first visible element is the effective selection until the user selects another; the stored ID remains unchanged. An empty collection has neither an effective selection nor an activation target.
 
 [Interaction](INTERACTION.md) defines which focused control receives input and how editing, modal scopes, and key handlers affect state.
+
+## Presentation payload identity
+
+An optional identifiable payload can own sheet presence. A non-nil value presents content and nil ends its mounted lifetime. Updated values with the same ID retain the content's state and owned work; a changed ID replaces the keyed subtree. Dismissing and re-presenting starts a new lifetime even if the ID repeats. The underlying view retains its independent state, identity, and schedules throughout presentation. Keyboard isolation and focus restoration follow the interaction contract.
