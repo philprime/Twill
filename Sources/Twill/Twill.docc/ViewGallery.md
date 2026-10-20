@@ -476,3 +476,11 @@ A one-cell status row composing ordinary key hints and flexible space.
 Search available commands while selection remains independent of search focus.
 
 ![CommandPalette terminal preview](preview-CommandPalette.svg)
+
+## ChangeObservationView
+
+``ChangeObservationView``
+
+Equatable observation preserves ordinary content and delivers after reconciliation.
+
+![ChangeObservationView terminal preview](preview-ChangeObservationView.svg)

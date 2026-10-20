@@ -20,7 +20,7 @@ extension ViewRenderer {
         case .canvas(let interval, _):
             removeChildren()
             schedule.updateCanvas(interval: interval, at: date)
-        case .body(let body), .table(let body, _), .menu(let body, _), .menuOpener(let body):
+        case .body(let body), .table(let body, _), .menu(let body, _), .menuOpener(let body), .tabs(let body, _):
             reconcile([body], at: date)
         case .dialog(let actions, _, let kind):
             updateDialog(actions, kind: kind, at: date)
@@ -42,7 +42,7 @@ extension ViewRenderer {
             .keyPress(let content, _), .styled(let content, _, _), .attributes(let content, _, _),
             .border(let content, _, _, _):
             reconcile([content], at: date)
-        case .button, .task, .tabs, .sheet, .conditional, .timeline, .disclosure, .image:
+        case .button, .task, .changeObservation, .sheet, .conditional, .timeline, .disclosure, .image:
             updateSpecializedContent(updated, previous: previous, at: date)
         }
         updateTabState()
@@ -55,7 +55,9 @@ extension ViewRenderer {
             updateButtonContent(button.label, at: date)
         case .image(let image):
             updateImage(image, at: date)
-        case .tabs(let content, _):
+        case .changeObservation(let content, let observer):
+            changeObserver = observer
+            valueChanges.enqueue(self, observer: observer)
             reconcile([content], at: date)
         case .task(let content, let priority, let action):
             updateTask(content, priority: priority, action: action, at: date)
