@@ -13,8 +13,8 @@ import Twill
 struct ImageApplicationTests {
     @Test(
         "Image resources are deleted before the borrowed terminal is restored", .timeLimit(.minutes(1)),
-        arguments: [false, true])
-    func imageRoundTrip(rawPixels: Bool) async throws {
+        arguments: [false, true], [false, true])
+    func imageRoundTrip(rawPixels: Bool, cancel: Bool) async throws {
         // -- Arrange --
         let terminal = try TestTerminal()
         try terminal.configure { $0.c_iflag |= tcflag_t(IXOFF | IXANY) }
@@ -34,7 +34,7 @@ struct ImageApplicationTests {
                             with: .init(red: 255, green: 0, blue: 0))
                     }.frame(width: 2, height: 1)
                 } else {
-                    ImageView(image, width: 4, height: 2)
+                    ImageView(image, width: 4, height: 2) { Text("Unsupported") }
                 }
             },
             runLoop: runLoop,
@@ -43,10 +43,17 @@ struct ImageApplicationTests {
                 output: DefaultTerminalOutput(fileDescriptor: .custom(pipe.fileHandleForWriting.fileDescriptor))
             )
         )
-        runLoop.add(Twill.Timer(interval: .milliseconds(1)) { application.stop() })
+        application.options.ui.terminalCapabilities = TerminalCapabilities(imageProtocol: .kitty)
+        var running: Task<Void, Error>?
+        runLoop.add(
+            Twill.Timer(interval: .milliseconds(1)) {
+                if cancel { running?.cancel() } else { application.stop() }
+            })
 
         // -- Act --
-        try await application.run()
+        let task = Task { try await application.run() }
+        running = task
+        try await task.value
         try pipe.fileHandleForWriting.close()
         let bytes = try #require(try pipe.fileHandleForReading.readToEnd())
         try pipe.fileHandleForReading.close()
@@ -54,8 +61,7 @@ struct ImageApplicationTests {
 
         // -- Assert --
         if rawPixels {
-            #expect(output.contains("a=T,t=d,f=32,s=2,v=1,q=2,C=1"))
-            #expect(output.contains("m=0;/wAA//8AAP8="))
+            #expect(output.contains("a=T,t=d,f=32,s=2,v=1,q=2,C=1") && output.contains("m=0;/wAA//8AAP8="))
         } else {
             #expect(output.contains("a=T,t=d,f=100,q=2,C=1"))
             #expect(output.contains(data.base64EncodedString()))

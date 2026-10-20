@@ -12,8 +12,9 @@ struct ImageTests {
     @Test("Images participate in layout and retain their translated placement")
     func placement() throws {
         // -- Arrange --
-        let image = ImageView(try Image(pngData: png), width: 4, height: 2)
-        let renderer = ViewRenderer.make(image.padding(1))
+        let image = ImageView(try Image(pngData: png), width: 4, height: 2) { EmptyView() }
+        let renderer = ViewRenderer.make(
+            image.padding(1), terminalCapabilities: TerminalCapabilities(imageProtocol: .kitty))
 
         // -- Act --
         let frame = renderer.render(.now).grid
@@ -49,7 +50,9 @@ struct ImageTests {
         // -- Arrange --
         let output = RecordingTerminalOutput()
         let presenter = TerminalPresenter(output: output, mode: .fullscreen)
-        let renderer = ViewRenderer.make(ImageView(try Image(pngData: png), width: 4, height: 2))
+        let renderer = ViewRenderer.make(
+            ImageView(try Image(pngData: png), width: 4, height: 2) { EmptyView() },
+            terminalCapabilities: TerminalCapabilities(imageProtocol: .kitty))
         let frame = FrameSnapshot(grid: renderer.render(.now).grid, caret: nil)
         try presenter.present(frame)
         let count = output.writes.count
@@ -83,7 +86,9 @@ struct ImageTests {
         // -- Arrange --
         let output = RecordingTerminalOutput()
         let presenter = TerminalPresenter(output: output, mode: .fullscreen)
-        let renderer = ViewRenderer.make(ImageView(try Image(pngData: png), width: 4, height: 2))
+        let renderer = ViewRenderer.make(
+            ImageView(try Image(pngData: png), width: 4, height: 2) { EmptyView() },
+            terminalCapabilities: TerminalCapabilities(imageProtocol: .kitty))
         let frame = FrameSnapshot(grid: renderer.render(.now).grid, caret: nil)
         output.nextFailure = ImageWriteFailure.failed
 
@@ -100,7 +105,9 @@ struct ImageTests {
     func clipping() throws {
         // -- Arrange --
         var context = DrawingContext(size: CellSize(width: 4, height: 2))
-        let renderer = ViewRenderer.make(ImageView(try Image(pngData: png), width: 8, height: 4))
+        let renderer = ViewRenderer.make(
+            ImageView(try Image(pngData: png), width: 8, height: 4) { EmptyView() },
+            terminalCapabilities: TerminalCapabilities(imageProtocol: .kitty))
 
         // -- Act --
         context.withRegion(CellRect(column: -1, row: 0, width: 4, height: 2)) {
