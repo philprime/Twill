@@ -23,7 +23,7 @@ VStack {
 }
 ```
 
-Create command snapshots from mounted state in the view body so titles, availability, shortcuts, and hints update together. ``MenuItem`` also accepts a command. Its shortcut alternatives remain scoped to the open menu. A command's role participates in dialog policy, and `perform()` skips an unavailable snapshot.
+Create command snapshots from mounted state in the view body so titles, availability, shortcuts, and hints update together. Use `Button(command)` inside a menu builder to share the same action metadata. Its shortcut alternatives remain scoped to the open menu. A command's role participates in dialog policy, and `perform()` skips an unavailable snapshot.
 
 ``KeyHints`` shows available commands with shortcuts, using each shortcut's generated or overridden hint. It respects its inherited disabled scope and omits empty content. Hints alone do not activate shortcuts. Use shared command availability for conditions that must also hide hints, rather than a separate disabled modifier on a particular control.
 

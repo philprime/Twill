@@ -13,7 +13,8 @@ public struct KeyboardShortcutView<Content: View>: View {
 
 extension View {
     /// Invokes this button's action when its exact key event is unhandled.
-    /// Apply to a button or its modifiers. Labels are not changed automatically.
+    /// Apply to a button or its modifiers. Menu action content presents the hint;
+    /// other labels retain their ordinary presentation.
     public func keyboardShortcut(_ key: KeyEvent) -> KeyboardShortcutView<Self> {
         keyboardShortcut(KeyboardShortcut(key))
     }

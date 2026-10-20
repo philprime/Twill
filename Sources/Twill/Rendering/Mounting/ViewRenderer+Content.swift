@@ -15,12 +15,12 @@ extension ViewRenderer {
         let updated = Self.describe(view)
         description = updated
         switch updated {
-        case .empty, .spacer, .divider, .drawing, .text, .textField, .textEditor, .keyHints:
+        case .empty, .spacer, .divider, .drawing, .text, .textField, .textEditor, .keyHints, .menuButtonHints:
             removeChildren()
         case .canvas(let interval, _):
             removeChildren()
             schedule.updateCanvas(interval: interval, at: date)
-        case .body(let body), .table(let body, _):
+        case .body(let body), .table(let body, _), .menu(let body, _):
             reconcile([body], at: date)
         case .dialog(let actions, _, let kind):
             updateDialog(actions, kind: kind, at: date)
@@ -52,7 +52,7 @@ extension ViewRenderer {
     private func updateSpecializedContent(_ description: ViewDescription, previous: ViewDescription?, at date: Date) {
         switch description {
         case .button(let button):
-            reconcile([button.content], at: date)
+            updateButtonContent(button.label, at: date)
         case .tabs(let content, _):
             reconcile([content], at: date)
         case .task(let content, let priority, let action):
