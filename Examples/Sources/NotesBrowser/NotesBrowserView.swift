@@ -43,8 +43,7 @@ struct NotesBrowserView: View {
             HStack(spacing: 2) {
                 GroupBox("Notes") {
                     NoteListView(notes: matches, selectedNoteID: $selectedNoteID, onDelete: requestDeletion)
-                        .frame(width: 26)
-                        .frame(maxHeight: .infinity, alignment: .top)
+                        .frame(width: 26, maxHeight: .infinity, alignment: .top)
                         .foregroundStyle(.foreground)
                 }
                 .foregroundStyle(NotesPalette.border)
