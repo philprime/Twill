@@ -12,6 +12,11 @@ public struct Binding<Value> {
         setValue = set
     }
 
+    /// Creates a binding from its projection, enabling `$value` closure parameters.
+    public init(projectedValue: Binding<Value>) {
+        self = projectedValue
+    }
+
     /// Reads or writes the value through the supplied accessors.
     public var wrappedValue: Value {
         get { getValue() }

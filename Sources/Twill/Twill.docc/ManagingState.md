@@ -33,6 +33,28 @@ Project writable properties through a binding, such as `$settings.name`, to edit
 
 Use `Binding.constant(value)` when a control needs a binding to a fixed value. The binding returns the supplied value and ignores writes from the control.
 
+## Edit Collections
+
+Index a binding to a mutable collection, such as `$items[index].name`, to edit an element at a position. The index must remain valid in the current collection. An indexed binding follows the position, not the element's identity, when elements move.
+
+Pass a collection binding to ``ForEach`` to create editable rows:
+
+```swift
+ForEach($items) { item in
+    TextField("Name", text: item.name)
+}
+```
+
+Each closure receives a binding to an element. Elements must be identifiable, or supply an explicit `id:` key path. Row bindings resolve the latest element by its stable, unique ID on each access, including after insertion or reordering. This lookup is linear in the collection size. A row binding is invalid after its element is removed or its ID changes, so do not retain bindings to removed rows or edit identity through them.
+
+Projected closure parameters are also supported. Use an explicit UI-actor annotation for this syntax:
+
+```swift
+ForEach($items) { @MainActor $item in
+    TextField("Name", text: $item.name)
+}
+```
+
 ## Preserve Identity
 
 For ordinary composition, structural position and concrete view type determine mounted identity. Replacing a type or switching a conditional branch replaces the affected subtree. Removing a view releases its state. Mounting it again starts from its initial values.
