@@ -484,3 +484,11 @@ Search available commands while selection remains independent of search focus.
 Equatable observation preserves ordinary content and delivers after reconciliation.
 
 ![ChangeObservationView terminal preview](preview-ChangeObservationView.svg)
+
+## KeyedTaskView
+
+``KeyedTaskView``
+
+Task identity restarts owned work without replacing ordinary content identity.
+
+![KeyedTaskView terminal preview](preview-KeyedTaskView.svg)
