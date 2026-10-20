@@ -34,5 +34,5 @@
 <rect x="66" y="76" width="10" height="20" fill="#161b22"/>
 <rect x="76" y="76" width="10" height="20" fill="#161b22"/>
 <rect x="86" y="76" width="10" height="20" fill="#161b22"/>
-<image x="16" y="16" width="80" height="80" preserveAspectRatio="none" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAQCAIAAAD4YuoOAAAAL0lEQVR4nGMI23YIjv6nMcARtcSpZtAwtoAWhiKLj1pA2IKhn4qGvgVDPxUNeQsAwo0zLiJrTHEAAAAASUVORK5CYII="/>
+<image x="16" y="36" width="80" height="40" preserveAspectRatio="none" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAQCAIAAAD4YuoOAAAAL0lEQVR4nGMI23YIjv6nMcARtcSpZtAwtoAWhiKLj1pA2IKhn4qGvgVDPxUNeQsAwo0zLiJrTHEAAAAASUVORK5CYII="/>
 </svg>

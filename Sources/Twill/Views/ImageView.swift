@@ -1,38 +1,33 @@
-/// Displays an image in a terminal-cell rectangle using the Kitty graphics protocol.
-/// Requires a compatible terminal such as Ghostty. Width and height are cell counts,
-/// not pixels. The terminal scales the image to this rectangle.
-public struct ImageView: View {
-    /// Primitive content rendered directly by the runtime rather than through a composed body.
+/// Presents image data using injected terminal capabilities or caller-provided fallback content.
+public struct ImageView<Fallback: View>: View {
+    /// Primitive content rendered directly by the runtime.
     public typealias Body = Never
     private let image: Image
     private let size: CellSize
+    private let contentMode: ImageContentMode
+    private let fallback: Fallback
 
-    /// Displays an image in the requested terminal-cell rectangle. Negative dimensions are clamped to zero.
-    public init(_ image: Image, width: Int, height: Int) {
+    /// Reserves a cell rectangle, fitting pixels by default. Negative dimensions clamp to zero.
+    /// Unsupported terminals mount the fallback instead of emitting graphics commands.
+    public init(
+        _ image: Image, width: Int, height: Int, contentMode: ImageContentMode = .aspectFit,
+        @ViewBuilder fallback: () -> Fallback
+    ) {
         self.image = image
-        size = CellSize(width: max(0, width), height: max(0, height))
+        self.size = CellSize(width: max(0, width), height: max(0, height))
+        self.contentMode = contentMode
+        self.fallback = fallback()
     }
 }
 
 extension ImageView: PrimitiveView {
     func makeDescription() -> ViewDescription {
-        .drawing(ImageDrawing(image: image, size: size))
+        .image(ImageDescription(image: image, size: size, contentMode: contentMode, fallback: fallback))
     }
 }
 
-private struct ImageDrawing: PrimitiveDrawing {
-    let image: Image
-    let size: CellSize
-
-    func sizeThatFits(_ proposal: ProposedCellSize) -> CellSize {
-        proposal.constrain(size)
-    }
-
-    func draw(in context: inout DrawingContext) {
-        context.drawImage(
-            image.data,
-            size: CellSize(
-                width: min(size.width, context.regionSize.width),
-                height: min(size.height, context.regionSize.height)))
-    }
+struct SupportedImageView: View, PrimitiveView {
+    typealias Body = Never
+    let drawing: ImageDrawing
+    func makeDescription() -> ViewDescription { .drawing(drawing) }
 }
