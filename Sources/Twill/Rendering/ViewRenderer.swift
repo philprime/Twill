@@ -10,6 +10,8 @@ final class ViewRenderer {
     private let viewType: ObjectIdentifier
     private let taskRegistry: MountedTaskRegistry
     let terminalCapabilities: TerminalCapabilities
+    let valueChanges: ValueChangeRegistry
+    var changeObserver: (any AnyValueChangeObserver)?
     private var viewTask: Task<Void, Never>?
     weak var parent: ViewRenderer?
     var content: MountedContent
@@ -26,24 +28,31 @@ final class ViewRenderer {
     var layoutState = MountedLayoutState()
     var sheetState = MountedSheetState()
 
-    private init(_ view: any View, taskRegistry: MountedTaskRegistry, terminalCapabilities: TerminalCapabilities) {
+    private init(
+        _ view: any View, taskRegistry: MountedTaskRegistry, terminalCapabilities: TerminalCapabilities,
+        valueChanges: ValueChangeRegistry
+    ) {
         viewType = ObjectIdentifier(type(of: view))
         self.taskRegistry = taskRegistry
         self.terminalCapabilities = terminalCapabilities
+        self.valueChanges = valueChanges
         content = MountedContent(view)
     }
 
     static func make<Content: View>(
         _ view: Content, taskRegistry: MountedTaskRegistry = MountedTaskRegistry(),
-        terminalCapabilities: TerminalCapabilities = TerminalCapabilities()
+        terminalCapabilities: TerminalCapabilities = TerminalCapabilities(),
+        valueChanges: ValueChangeRegistry = ValueChangeRegistry()
     ) -> ViewRenderer {
-        ViewRenderer(view, taskRegistry: taskRegistry, terminalCapabilities: terminalCapabilities)
+        ViewRenderer(
+            view, taskRegistry: taskRegistry, terminalCapabilities: terminalCapabilities, valueChanges: valueChanges)
     }
 
     func unmount() {
         if case .scrollReader(_, let proxy) = description { proxy.renderer = nil }
         parent = nil
         onInvalidation = nil
+        changeObserver?.cancel()
         // Cancellation belongs to the node, but joining belongs to the host's registry.
         // A removed node must not discard the only handle to unfinished cleanup work.
         viewTask?.cancel()
@@ -58,7 +67,8 @@ final class ViewRenderer {
     }
 
     func makeChild(_ view: any View) -> ViewRenderer {
-        Self.make(view, taskRegistry: taskRegistry, terminalCapabilities: terminalCapabilities)
+        Self.make(
+            view, taskRegistry: taskRegistry, terminalCapabilities: terminalCapabilities, valueChanges: valueChanges)
     }
 
     func reconcile(_ views: [any View], at date: Date) {
@@ -94,6 +104,7 @@ final class ViewRenderer {
         } else {
             refresh(at: date)
         }
+        if parent == nil { valueChanges.deliverPending() }
     }
 
     func markDirty() {
