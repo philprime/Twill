@@ -59,6 +59,10 @@ ForEach($items) { @MainActor $item in
 
 For ordinary composition, structural position and concrete view type determine mounted identity. Replacing a type or switching a conditional branch replaces the affected subtree. Removing a view releases its state. Mounting it again starts from its initial values.
 
+Use `.id(value)` to give a subtree an explicit identity within its structural position. Equal IDs retain the subtree's state, focus and viewport memory, and pending schedules while updating its inputs. Changing the ID replaces the subtree and cancels its owned tasks. Returning to a previous ID mounts fresh state rather than restoring removed content.
+
+Modifier order determines the identity boundary. In `content.task { ... }.id(value)`, changing the ID replaces the task owner. In `content.id(value).task { ... }`, the task owner is outside that boundary and retains its lifetime. Replacement does not wait for cancelled tasks to finish. The host retains unfinished work and joins it during shutdown.
+
 Use ``ForEach`` with stable, unique element identifiers for dynamic collections. Reordering elements then preserves state for the identifiers that remain mounted. Do not use an index as identity when insertion or reordering changes which logical element occupies it.
 
 Keep state in a persistent ancestor when it must survive removal of a child. In particular, collapsed disclosure content is unmounted. A hidden tab destination, in contrast, remains mounted and retains its state.

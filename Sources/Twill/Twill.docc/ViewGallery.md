@@ -69,6 +69,14 @@ The view builder selects the visible branch while preserving structural identity
 
 ![ConditionalContent terminal preview](preview-ConditionalContent.svg)
 
+## IdentifiedView
+
+``IdentifiedView``
+
+Assigns an explicit mounted identity without changing the content's layout.
+
+![IdentifiedView terminal preview](preview-IdentifiedView.svg)
+
 ## ForEach
 
 ``ForEach``

@@ -94,6 +94,9 @@ extension DocumentationPreviewFixture {
             ) {
                 VStack { if true { Text("Visible branch") } else { Text("Other branch") } }
             },
+            Self("IdentifiedView", "Assigns an explicit mounted identity without changing the content's layout.") {
+                Text("Identified content").id("preview")
+            },
             Self("ForEach", "Repeats keyed content inside a vertical stack.") {
                 VStack(alignment: .leading) { ForEach(["Mercury", "Venus", "Earth"], id: \.self) { Text($0) } }
             },
