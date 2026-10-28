@@ -40,11 +40,13 @@ extension ViewRenderer {
         guard panes.indices.contains(next) else { return false }
         let destination = panes[next]
         let selection = destination.focusSelection(in: destination.keyboardCandidates())
+        var effects: [FocusTransition.Effect] = [.activatePane(scope: self, pane: destination)] + selection.effects
+        if let target = selection.target {
+            effects += [.followFocus(target: target), .reveal(pane: self, target: target)]
+        }
         applyFocusTransition(
             FocusTransition(
-                presentation: .target(selection.target),
-                effects: [.activatePane(scope: self, pane: destination)] + selection.effects,
-                requestsPresentation: true))
+                presentation: .target(selection.target), effects: effects, requestsPresentation: true))
         return true
     }
 

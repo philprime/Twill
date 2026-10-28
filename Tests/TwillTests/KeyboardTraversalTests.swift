@@ -83,6 +83,43 @@ struct KeyboardTraversalTests {
         #expect(selection == 1)
     }
 
+    @Test("Returning to a control resumes visibility after manual scrolling", arguments: [false, true])
+    func returningControlRevealsFocus(reverse: Bool) throws {
+        // -- Arrange --
+        let renderer = ViewRenderer.make(
+            VStack(alignment: .leading) {
+                Button("Before") {}
+                ScrollView {
+                    VStack {
+                        Text("0").focusable()
+                        Text("1").focusable()
+                        Text("2").focusable()
+                    }
+                }.frame(height: 1)
+                Button("After") {}
+            })
+        _ = renderer.render(.now)
+        _ = renderer.handle(.tab)
+        if reverse {
+            _ = renderer.handle(.tab)
+            _ = renderer.handle(.tab)
+        }
+        _ = renderer.render(.now)
+        #expect(renderer.handle(reverse ? .pageUp : .pageDown))
+        let scrolled = try #require(renderer.render(.now).grid)
+        #expect(scrolled.snapshotText.contains("1"))
+
+        // -- Act --
+        #expect(renderer.handle(reverse ? .tab : .shiftTab))
+        _ = renderer.render(.now)
+        #expect(renderer.handle(reverse ? .shiftTab : .tab))
+        let returned = try #require(renderer.render(.now).grid)
+
+        // -- Assert --
+        #expect(returned.snapshotText.contains(reverse ? "2" : "0"))
+        #expect(returned.isFocused(column: 0, row: 1))
+    }
+
     @Test("Tab traverses controls across plain viewports rather than treating viewports as groups")
     func viewportControls() {
         // -- Arrange --
