@@ -1,5 +1,4 @@
 struct TextEditorDescription {
-    let content: TextEditorContent
-    let caret: CellPosition
-    let handle: @MainActor (KeyEvent, Int) -> KeyPressResult
+    let snapshot: TextEditorSnapshot
+    let handle: @MainActor (KeyEvent, CellSize) -> KeyPressResult
 }

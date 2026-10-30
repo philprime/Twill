@@ -43,6 +43,12 @@ Enter invokes the nearest enclosing `.onSubmit` action. Submission retains the t
 
 Ctrl-C remains an application-owned orderly shutdown exception in every mode.
 
+## Editor visual rows
+
+An editor's explicit `lineBreakMode` selects word or character soft wrapping, or unwrapped horizontal scrolling with the default `.clipping`. Soft wraps preserve logical text, including separators and empty lines. Wrapped visual rows reserve one terminal cell for the insertion caret and disable horizontal viewport offsets. A one-column viewport contains only the caret; oversized graphemes remain wholly clipped.
+
+Vertical and page movement use visual rows and preferred cell columns. Shared wrap boundaries retain visual caret affinity without changing their logical offset. Home/End retain logical-line semantics, and word editing continues to use logical grapheme offsets. Resize reflows cached content and reveals the same insertion point without body reevaluation or schedule changes. Mode changes and external value updates retain mounted caret and viewport memory.
+
 ## Word editing and read-only values
 
 Exact Alt or Control modifiers on Left/Right move to the start of the previous run or end of the next run. Backspace/Delete with either modifier remove the corresponding range. Intervening whitespace, including newlines, is skipped before finding a run. Unicode letters, numbers, and underscores form word runs; punctuation and emoji form separate runs. All offsets are grapheme boundaries, and these operations share one policy across single-line, masked, and multiline editing. Modified events must be forwarded by the terminal. Escape-prefixed Backspace is recognized as Alt-Backspace alongside primary CSI-u reports.

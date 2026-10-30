@@ -21,8 +21,8 @@ extension NodePresentation {
                     CellRect(column: 0, row: -offset, width: context.size.width, height: contentHeight)
                 ) { content in context.drawChildren(&content) }
             }
-        case .editor(let content, let caret, let offset):
-            drawEditor(content, caret: caret, offset: offset, in: &drawing, context: context)
+        case .editor(let snapshot, let offset):
+            drawEditor(snapshot, offset: offset, in: &drawing, context: context)
         case .tabs(let bar):
             drawing.withRegion(CellRect(column: 0, row: 0, width: context.size.width, height: 1)) { region in
                 region.withFocus(context.isDirectlyFocused) { bar.draw(in: &$0) }
@@ -64,11 +64,13 @@ extension NodePresentation {
     }
 
     private func drawEditor(
-        _ content: TextEditorContent, caret: CellPosition, offset: CellPosition,
+        _ snapshot: TextEditorSnapshot, offset: CellPosition,
         in drawing: inout DrawingContext, context: NodePresentationContext
     ) {
         let size = context.size
         guard size.width > 0, size.height > 0 else { return }
+        let content = snapshot.layout(width: size.width)
+        let caret = content.position(at: snapshot.caret, upstream: snapshot.upstream)
         drawing.withRegion(CellRect(origin: .zero, size: size)) { viewport in
             viewport.withFocus(context.isFocused) { region in
                 let end = min(content.lines.count, offset.row + size.height)
@@ -76,7 +78,7 @@ extension NodePresentation {
                     region.withRegion(
                         CellRect(
                             column: -offset.column, row: row - offset.row,
-                            width: content.width, height: 1)
+                            width: content.drawingWidth, height: 1)
                     ) { content.lines[row].drawing.draw(in: &$0) }
                 }
             }
