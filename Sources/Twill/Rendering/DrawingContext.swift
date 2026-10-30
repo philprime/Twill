@@ -11,6 +11,7 @@ struct DrawingContext {
     private var focused = false
     private var foreground: Color?
     private var background: Color?
+    private var textAttributes: TextAttributes = []
 
     init(size: CellSize) {
         grid = CellGrid(size: size)
@@ -57,6 +58,15 @@ struct DrawingContext {
         self.background = oldBackground
     }
 
+    mutating func withAttributes(
+        _ attributes: TextAttributes, mask: TextAttributes, draw: (inout DrawingContext) -> Void
+    ) {
+        let previous = textAttributes
+        textAttributes = textAttributes.subtracting(mask).union(attributes.intersection(mask))
+        draw(&self)
+        textAttributes = previous
+    }
+
     mutating func withFocus(_ active: Bool, draw: (inout DrawingContext) -> Void) {
         let previous = focused
         focused = active
@@ -82,7 +92,8 @@ struct DrawingContext {
 
     mutating func draw(
         _ character: Character, width: Int, column: Int, row: Int,
-        foreground cellForeground: Color? = nil, background cellBackground: Color? = nil
+        foreground cellForeground: Color? = nil, background cellBackground: Color? = nil,
+        attributes cellAttributes: TextAttributes? = nil
     ) {
         let column = originX + column
         let row = originY + row
@@ -92,6 +103,7 @@ struct DrawingContext {
         grid.put(
             character, width: width, column: column, row: row, focused: focused,
             foreground: cellForeground ?? foreground,
-            background: cellBackground ?? background ?? grid.background(column: column, row: row))
+            background: cellBackground ?? background ?? grid.background(column: column, row: row),
+            attributes: cellAttributes ?? textAttributes)
     }
 }

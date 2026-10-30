@@ -8,11 +8,18 @@ extension Canvas {
         /// The background color, or nil to use the drawing context's inherited style.
         public let background: Color?
 
-        /// Creates a character cell with optional foreground and background colors.
-        public init(_ character: Character, foreground: Color? = nil, background: Color? = nil) {
+        /// Attributes to replace inherited flags, or nil to inherit them.
+        public let attributes: TextAttributes?
+
+        /// Creates a character cell with optional color and attribute overrides.
+        public init(
+            _ character: Character, foreground: Color? = nil, background: Color? = nil,
+            attributes: TextAttributes? = nil
+        ) {
             self.character = character
             self.foreground = foreground
             self.background = background
+            self.attributes = attributes
         }
     }
 }

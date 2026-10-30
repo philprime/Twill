@@ -10,6 +10,7 @@ struct MountedLayoutState {
         let fillsHeight: Bool
     }
 
+    var attributes: TextAttributes = []
     var size = CellSize.zero
     var placements: [(node: ViewRenderer, bounds: CellRect)] = []
     var traits: Traits?

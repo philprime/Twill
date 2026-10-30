@@ -12,6 +12,7 @@ struct CellGrid: Equatable {
     private var focusedCells: [Bool]
     private var foregrounds: [Color?]
     private var backgrounds: [Color?]
+    private var textAttributes: [TextAttributes]
 
     init(size: CellSize) {
         self.size = size
@@ -19,6 +20,7 @@ struct CellGrid: Equatable {
         focusedCells = Array(repeating: false, count: size.width * size.height)
         foregrounds = Array(repeating: nil, count: size.width * size.height)
         backgrounds = Array(repeating: nil, count: size.width * size.height)
+        textAttributes = Array(repeating: [], count: size.width * size.height)
     }
 
     subscript(column: Int, row: Int) -> TerminalCell {
@@ -41,6 +43,11 @@ struct CellGrid: Equatable {
         return backgrounds[row * size.width + column]
     }
 
+    func attributes(column: Int, row: Int) -> TextAttributes {
+        guard column >= 0, row >= 0, column < size.width, row < size.height else { return [] }
+        return textAttributes[row * size.width + column]
+    }
+
     mutating func fillBackground(_ color: Color, column: Int, row: Int) {
         hideImages(column: column, row: row, width: 1)
         backgrounds[row * size.width + column] = color
@@ -48,7 +55,7 @@ struct CellGrid: Equatable {
 
     mutating func put(
         _ character: Character, width: Int, column: Int, row: Int, focused: Bool = false,
-        foreground: Color? = nil, background: Color? = nil
+        foreground: Color? = nil, background: Color? = nil, attributes: TextAttributes = []
     ) {
         hideImages(column: column, row: row, width: width)
         for column in column..<(column + width) { eraseGlyph(column: column, row: row) }
@@ -57,11 +64,13 @@ struct CellGrid: Equatable {
         focusedCells[index] = focused
         foregrounds[index] = foreground
         backgrounds[index] = background
+        textAttributes[index] = attributes
         if width == 2 {
             cells[index + 1] = .continuation
             focusedCells[index + 1] = focused
             foregrounds[index + 1] = foreground
             backgrounds[index + 1] = background
+            textAttributes[index + 1] = attributes
         }
     }
 
@@ -82,11 +91,13 @@ struct CellGrid: Equatable {
             focusedCells[index - 1] = false
             foregrounds[index - 1] = nil
             backgrounds[index - 1] = nil
+            textAttributes[index - 1] = []
         case .glyph(_, width: 2):
             cells[index + 1] = .blank
             focusedCells[index + 1] = false
             foregrounds[index + 1] = nil
             backgrounds[index + 1] = nil
+            textAttributes[index + 1] = []
         default:
             break
         }
@@ -94,5 +105,6 @@ struct CellGrid: Equatable {
         focusedCells[index] = false
         foregrounds[index] = nil
         backgrounds[index] = nil
+        textAttributes[index] = []
     }
 }

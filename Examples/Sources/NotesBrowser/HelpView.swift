@@ -5,7 +5,7 @@ struct HelpView: View {
 
     var body: some View {
         VStack {
-            Text("Help")
+            Text("Help").bold().underline()
                 .foregroundStyle(NotesPalette.accent)
             Text("Tab / Shift-Tab: switch search, list, and detail")
             Text("Arrows: navigate list or scroll the preview")
@@ -15,7 +15,7 @@ struct HelpView: View {
             Text("Alt/Ctrl + Left/Right: words | Alt/Ctrl + Backspace/Delete: delete word")
             Text("?: help")
             Text("Esc: stop editing or close a sheet")
-            Text("Changes are in memory only and disappear when you quit")
+            Text("Changes are in memory only and disappear when you quit").dim().italic()
         }
         .multilineTextAlignment(.center)
         .foregroundStyle(NotesPalette.foreground)
