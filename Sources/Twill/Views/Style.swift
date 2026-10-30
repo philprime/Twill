@@ -1,5 +1,5 @@
-/// Resolves a terminal style to a color for cell presentation.
+/// Resolves a terminal style using the inherited foreground and control tint.
 public protocol Style: Sendable {
-    /// Resolves in the node's nearest palette. Nil explicitly selects the terminal default.
-    func resolve(in theme: Theme) -> Color?
+    /// Returns a color and additional attributes without changing layout or interaction.
+    func resolve(in context: StyleContext) -> ResolvedStyle
 }

@@ -8,11 +8,12 @@ import Twill
     import Glibc
 #endif
 
-@Suite("Themed terminal presentation")
+@Suite("Contextual terminal styles")
 @MainActor
-struct ThemeApplicationTests {
-    @Test("Nested palettes encode terminal defaults and restore inherited terminal modes", .timeLimit(.minutes(1)))
-    func themedOutput() async throws {
+struct StyleApplicationTests {
+    @Test(
+        "Nested tint and foreground hierarchy encode independently and restore terminal modes", .timeLimit(.minutes(1)))
+    func contextualOutput() async throws {
         // -- Arrange --
         let terminal = try TestTerminal()
         try terminal.configure { $0.c_iflag |= tcflag_t(IXON | IXOFF | IXANY) }
@@ -22,10 +23,9 @@ struct ThemeApplicationTests {
         let application = Application(
             rootView: HStack(spacing: 0) {
                 Text("A")
-                Text("B").theme(Theme(accent: .green))
-                Text("C").foregroundStyle(.foreground)
-            }.foregroundStyle(.accent).backgroundStyle(.background).bold().focusable()
-                .theme(Theme(background: .blue, accent: .red)),
+                Text("B").foregroundStyle(.secondary).tint(.green)
+                Text("C").foregroundStyle(.primary)
+            }.foregroundStyle(.tint).backgroundStyle(Color.blue).bold().focusable().tint(.red),
             runLoop: loop,
             terminalSession: DefaultTerminalSession(
                 fileDescriptor: .custom(terminal.fileDescriptor),
@@ -42,8 +42,8 @@ struct ThemeApplicationTests {
 
         // -- Assert --
         #expect(output.contains("\u{1B}[31m\u{1B}[44m\u{1B}[1m\u{1B}[7mA"))
-        #expect(output.contains("\u{1B}[32m\u{1B}[49mB"))
-        #expect(output.contains("\u{1B}[39m\u{1B}[44mC"))
+        #expect(output.contains("\u{1B}[32m\u{1B}[2mB"))
+        #expect(output.contains("\u{1B}[31m\u{1B}[22;1mC"))
         #expect(try terminal.snapshot() == original)
     }
 }

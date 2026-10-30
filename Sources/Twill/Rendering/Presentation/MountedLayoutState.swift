@@ -11,7 +11,7 @@ struct MountedLayoutState {
     }
 
     var attributes: TextAttributes = []
-    var theme = Theme()
+    var styleContext = StyleContext()
     var foreground: Color?
     var background: Color?
     var hasBackgroundStyle = false

@@ -41,13 +41,13 @@ struct NoteEditorView: View {
             }
             VStack(alignment: .leading) {
                 Button(save)
-                    .foregroundStyle(.accent)
+                    .foregroundStyle(.tint)
                 Button(cancel)
             }
             KeyHints([save, cancel])
-                .foregroundStyle(.muted)
+                .foregroundStyle(.secondary)
         }
-        .foregroundStyle(.foreground)
+        .foregroundStyle(NotesPalette.foreground)
         .frame(width: 58, alignment: .topLeading)
         .border(.single, color: NotesPalette.border)
     }

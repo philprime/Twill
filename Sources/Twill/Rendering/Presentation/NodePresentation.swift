@@ -9,7 +9,7 @@ enum NodePresentation {
     case content
     case drawing(any PrimitiveDrawing, caretColumn: Int?)
     case background(Color?)
-    case border(glyphs: Border.Glyphs, color: Color?, title: TextDrawing?)
+    case border(glyphs: Border.Glyphs, style: ResolvedStyle, title: TextDrawing?)
     case scroll(offset: Int, contentHeight: Int)
     case editor(snapshot: TextEditorSnapshot, offset: CellPosition)
     case tabs(bar: TextDrawing)

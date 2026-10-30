@@ -33,7 +33,7 @@ extension ViewRenderer {
             proxy.renderer = self
             reconcile([content], at: date)
         case .tab(let content, _, _), .disabled(let content, _), .keyboardShortcut(let content, _),
-            .textLayout(let content, _), .theme(let content, _),
+            .textLayout(let content, _), .tint(let content, _),
             .focusable(let content), .control(let content, _),
             .focusBinding(let content, _), .submit(let content, _),
             .scroll(let content), .pane(let content), .listSelection(let content, _, _), .listRow(let content, _),

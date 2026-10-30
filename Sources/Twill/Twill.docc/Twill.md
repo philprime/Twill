@@ -103,8 +103,10 @@ Start with <doc:GettingStarted>, then explore <doc:ViewGallery> to see rendered 
 - ``ImageView``
 - ``Style``
 - ``Color``
-- ``SemanticColor``
-- ``Theme``
+- ``HierarchicalStyle``
+- ``TintStyle``
+- ``StyleContext``
+- ``ResolvedStyle``
 - ``TextAttributes``
 - ``Border``
 - ``Edge``

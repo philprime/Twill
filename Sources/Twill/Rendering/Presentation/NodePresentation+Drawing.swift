@@ -11,8 +11,8 @@ extension NodePresentation {
         case .background(let color):
             drawing.fillBackground(color, size: context.size)
             context.drawChildren(&drawing)
-        case .border(let glyphs, let color, let title):
-            drawBorder(glyphs, color: color, title: title, in: &drawing, context: context)
+        case .border(let glyphs, let style, let title):
+            drawBorder(glyphs, style: style, title: title, in: &drawing, context: context)
         case .scroll(let offset, let contentHeight):
             let viewport = CellRect(origin: .zero, size: context.size)
             drawing.withRegion(viewport) { viewport in
@@ -31,30 +31,32 @@ extension NodePresentation {
     }
 
     private func drawBorder(
-        _ glyphs: Border.Glyphs, color: Color?, title: TextDrawing?, in drawing: inout DrawingContext,
+        _ glyphs: Border.Glyphs, style: ResolvedStyle, title: TextDrawing?, in drawing: inout DrawingContext,
         context: NodePresentationContext
     ) {
         let width = context.size.width
         let height = context.size.height
         guard width >= 2, height >= 2 else { return }
-        drawing.withForeground(color) { region in
-            region.draw(glyphs.topLeft, width: 1, column: 0, row: 0)
-            region.draw(glyphs.topRight, width: 1, column: width - 1, row: 0)
-            region.draw(glyphs.bottomLeft, width: 1, column: 0, row: height - 1)
-            region.draw(glyphs.bottomRight, width: 1, column: width - 1, row: height - 1)
-            for column in 1..<(width - 1) {
-                region.draw(glyphs.top, width: 1, column: column, row: 0)
-                region.draw(glyphs.bottom, width: 1, column: column, row: height - 1)
-            }
-            // Clip within the top edge so a long or wide title cannot overwrite a corner.
-            if let title, width > 3 {
-                region.withRegion(CellRect(column: 2, row: 0, width: width - 3, height: 1)) {
-                    title.draw(in: &$0)
+        drawing.withForeground(style.color) { region in
+            region.withAttributes(style.attributes, mask: style.attributes) { region in
+                region.draw(glyphs.topLeft, width: 1, column: 0, row: 0)
+                region.draw(glyphs.topRight, width: 1, column: width - 1, row: 0)
+                region.draw(glyphs.bottomLeft, width: 1, column: 0, row: height - 1)
+                region.draw(glyphs.bottomRight, width: 1, column: width - 1, row: height - 1)
+                for column in 1..<(width - 1) {
+                    region.draw(glyphs.top, width: 1, column: column, row: 0)
+                    region.draw(glyphs.bottom, width: 1, column: column, row: height - 1)
                 }
-            }
-            for row in 1..<(height - 1) {
-                region.draw(glyphs.left, width: 1, column: 0, row: row)
-                region.draw(glyphs.right, width: 1, column: width - 1, row: row)
+                // Clip within the top edge so a long or wide title cannot overwrite a corner.
+                if let title, width > 3 {
+                    region.withRegion(CellRect(column: 2, row: 0, width: width - 3, height: 1)) {
+                        title.draw(in: &$0)
+                    }
+                }
+                for row in 1..<(height - 1) {
+                    region.draw(glyphs.left, width: 1, column: 0, row: row)
+                    region.draw(glyphs.right, width: 1, column: width - 1, row: row)
+                }
             }
         }
         drawing.withRegion(CellRect(column: 1, row: 1, width: width - 2, height: height - 2)) { region in

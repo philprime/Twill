@@ -33,12 +33,12 @@ struct NotesBrowserView: View {
         return VStack {
             Text(" Notes  \(notes.count) in memory ")
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .foregroundStyle(.background)
-                .backgroundStyle(.accent)
+                .foregroundStyle(NotesPalette.background)
+                .backgroundStyle(.tint)
             GroupBox("Search") {
                 TextField("Search titles and bodies", text: $query)
                     .frame(maxWidth: .infinity, alignment: .leading)
-                    .foregroundStyle(.foreground)
+                    .foregroundStyle(NotesPalette.foreground)
             }
             .foregroundStyle(NotesPalette.border)
             HStack(spacing: 2) {
@@ -46,7 +46,7 @@ struct NotesBrowserView: View {
                     NoteListView(notes: matches, selectedNoteID: $selectedNoteID, onDelete: requestDeletion)
                         .frame(width: 26)
                         .frame(maxHeight: .infinity, alignment: .top)
-                        .foregroundStyle(.foreground)
+                        .foregroundStyle(NotesPalette.foreground)
                 }
                 .foregroundStyle(NotesPalette.border)
                 if let previewNote {
@@ -55,7 +55,7 @@ struct NotesBrowserView: View {
                             NoteDetailView(note: previewNote)
                         }
                         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-                        .foregroundStyle(.foreground)
+                        .foregroundStyle(NotesPalette.foreground)
                     }
                     .foregroundStyle(NotesPalette.border)
                 }
@@ -63,9 +63,9 @@ struct NotesBrowserView: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             Text(" Tab: focus  •  Arrows: scroll/select  •  e: edit  •  n: new  •  d: delete  •  ?: help ")
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .foregroundStyle(.accent)
+                .foregroundStyle(.tint)
         }
-        .backgroundStyle(.background)
+        .backgroundStyle(NotesPalette.background)
         .onKeyPress { key in
             // An editing field consumes printable keys before they reach these shortcuts.
             switch key {

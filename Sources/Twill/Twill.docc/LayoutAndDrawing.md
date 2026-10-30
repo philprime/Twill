@@ -47,23 +47,23 @@ These modifiers inherit through containers. The nearest setting to a text node t
 
 Use `.foregroundStyle(...)` and `.backgroundStyle(...)` with a ``Style`` such as ``Color``. Styles propagate to descendants, and more local styling can override them. ANSI palette colors follow the terminal's theme. RGB colors request true color, whose appearance depends on terminal support.
 
-## Resolve Semantic Colors
+## Resolve Foreground Hierarchy and Tint
 
 ```swift
 VStack {
-    Text("Primary").foregroundStyle(.foreground)
-    Text("Action").foregroundStyle(.accent)
-    Text("Detail").foregroundStyle(.muted)
+    Text("Primary").foregroundStyle(.primary)
+    Text("Detail").foregroundStyle(.secondary)
+    Text("Action").foregroundStyle(.tint)
 }
-.backgroundStyle(.background)
-.theme(Theme(foreground: .white, background: .black, accent: .cyan))
+.foregroundStyle(Color.blue)
+.tint(.cyan)
 ```
 
-``SemanticColor`` supplies foreground, background, accent, muted, and validation roles. ``Theme`` maps each role to a concrete color or nil for the terminal default. A palette alone does not paint content; semantic styles select the roles to use. Concrete ``Color`` values remain available and independent of the palette. Destructive buttons use the validation role, which defaults to red.
+``HierarchicalStyle`` expresses prominence relative to the inherited primary foreground. Secondary keeps its hue and adds terminal dim emphasis; primary restores the primary style without clearing explicit view attributes. Dim is a terminal-specific approximation whose appearance depends on terminal and font support. Local attribute modifiers can clear inherited style contributions; a nearer hierarchical declaration can restore its prominence without restoring unrelated cleared flags. A concrete foreground style establishes a new primary style.
 
-Theme boundaries replace the palette for their subtree. Semantic declarations inherited from outside a boundary resolve again against the nearer palette, while local style declarations and concrete colors retain precedence. Explicit terminal-default roles clear inherited colors rather than acting as missing overrides. Background styles paint their bounds; foreground styles do not. Theme updates preserve layout, mounted state, and independent schedules.
+``View/tint(_:)`` sets control emphasis independently of ordinary text. Otherwise unstyled buttons use the nearest tint, while explicit foreground declarations take precedence. Destructive buttons retain their red default, and styles on their label content can override it. ``TintStyle`` follows the nearest tint override, including for declarations inherited from outside the override. Nil clears an inherited tint and falls back to the primary foreground color. Application palettes and validation colors remain application-owned.
 
-Custom ``Style`` implementations resolve with `resolve(in:)`, returning a concrete color or nil for terminal default. Style values remain concrete in public composition and resolve only at the mounted presentation boundary.
+Custom ``Style`` implementations resolve with `resolve(in:)` using an immutable ``StyleContext``. They return a ``ResolvedStyle`` containing a color and additional text attributes. A nil resolved color explicitly selects the terminal default. Foreground and border styles contribute attributes to their drawn text; background styles use the resolved color to paint their bounds. Border attributes do not affect content. Style values remain concrete in public composition and resolve at the mounted presentation boundary. Style and tint updates preserve layout, mounted state, focus, and independent schedules.
 
 ## Apply Terminal Text Attributes
 
