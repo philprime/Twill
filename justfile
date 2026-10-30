@@ -78,6 +78,10 @@ trace pid duration="30s" output="":
 trace-report input output="":
     bash "{{root}}/Tools/trace.sh" --input "$@"
 
+# Verify cached toolchains are usable before publishing their executable path.
+test-setup-swift:
+    bash "{{root}}/Tools/Tests/setup-swift-test.sh"
+
 # Verify trace summary reference resolution and weighted aggregation.
 test-trace:
     bash "{{root}}/Tools/Tests/trace-summary-test.sh"

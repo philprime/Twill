@@ -11,7 +11,8 @@ mkdir -p "$SWIFT_CACHE_PATH"
 cd "$SWIFT_CACHE_PATH"
 
 if [[ ! -f "$SWIFT_CACHE_PATH.complete" ]]; then
-  SWIFTLY_VERSION=1.1.4
+  # Ubuntu 26.04 requires a matching toolchain built against its libxml2 ABI.
+  SWIFTLY_VERSION=1.2.0
   DOWNLOAD_DIR=$(mktemp -d "$RUNNER_TEMP/setup-swift.XXXXXX")
 
   case "$RUNNER_OS" in
@@ -77,6 +78,10 @@ if [[ "$ACTUAL_VERSION" != "$SWIFT_VERSION" ]]; then
   echo "::error::Expected Swift $SWIFT_VERSION, got $ACTUAL_VERSION"
   exit 1
 fi
+
+# SwiftPM loads libraries that `swift --version` does not exercise.
+"$SWIFT_BIN/swift-build" --version
+"$SWIFT_BIN/swift-test" --version
 
 # Match the runner tool-cache convention: publish only complete installations.
 touch "$SWIFT_CACHE_PATH.complete"
