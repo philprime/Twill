@@ -6,6 +6,8 @@ public struct KeyModifiers: OptionSet, Sendable, Equatable {
     /// Creates modifier flags from their raw bit mask.
     public init(rawValue: UInt8) { self.rawValue = rawValue }
 
+    var isWordEditing: Bool { self == .alt || self == .control }
+
     /// The Shift modifier.
     public static let shift = Self(rawValue: 1 << 0)
     /// The Alt modifier, commonly labeled Option on Apple keyboards.
