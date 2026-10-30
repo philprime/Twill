@@ -71,7 +71,7 @@ struct PickerPresentationStateTests {
     }
 
     private struct SelectionStyle: ControlStyle {
-        func resolve(_ state: ControlState, in theme: Theme) -> ControlAppearance {
+        func resolve(_ state: ControlState, in context: StyleContext) -> ControlAppearance {
             ControlAppearance(foreground: state.isSelected ? Color.green : Color.blue, focusEffect: .none)
         }
     }
