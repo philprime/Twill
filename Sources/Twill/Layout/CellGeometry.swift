@@ -66,5 +66,14 @@ struct CellRect: Equatable {
         )
     }
 
+    func union(_ other: CellRect) -> CellRect {
+        let left = min(column, other.column)
+        let top = min(row, other.row)
+        return CellRect(
+            column: left, row: top,
+            width: max(column + width, other.column + other.width) - left,
+            height: max(row + height, other.row + other.height) - top)
+    }
+
     static let zero = CellRect(origin: .zero, size: .zero)
 }
