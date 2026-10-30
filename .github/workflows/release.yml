@@ -7,6 +7,7 @@ on:
     branches:
       - main
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
   workflow_dispatch:
 
 permissions:
@@ -18,6 +19,7 @@ concurrency:
 
 jobs:
   release:
+    if: github.event_name != 'pull_request' || !github.event.pull_request.draft
     name: Create Release
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -128,7 +130,7 @@ jobs:
   release-required-check:
     name: Release - Required Check
     needs: [release, publish-documentation]
-    if: always()
+    if: always() && (github.event_name != 'pull_request' || !github.event.pull_request.draft)
     runs-on: ubuntu-latest
     steps:
       - name: Check for failures
