@@ -45,11 +45,13 @@ struct MultilineTextDrawing: PrimitiveDrawing {
         let source = sourceRows(width: width)
         let count = min(source.count, height ?? source.count, configuration.lineLimit ?? source.count)
         var rows = source.prefix(count).map { Array(lines[$0.line][$0.range]) }
+        // Omitting trailing empty rows does not hide text or require an ellipsis.
+        let omitsText = source.dropFirst(count).contains { !$0.range.isEmpty }
         var truncated = false
         if let mode = configuration.effectiveTruncationMode {
             for index in rows.indices {
                 let budget = width ?? (columns(rows[index]) + 1)
-                if index == count - 1, source.count > count {
+                if index == count - 1, omitsText {
                     rows[index] = TextTruncation().apply(remaining(from: source[index]), width: budget, mode: mode)
                     truncated = true
                 } else if let width, columns(rows[index]) > width {

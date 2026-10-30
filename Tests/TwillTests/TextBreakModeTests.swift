@@ -54,6 +54,39 @@ struct TextBreakModeTests {
         #expect(frame.snapshotText == "one  \ntwo …")
     }
 
+    @Test(
+        "Omitting trailing empty lines preserves fitting text without an ellipsis",
+        arguments: ["abc\n", "abc\r\n", "abc\n\n"],
+        [Text.TruncationMode.tail, .head, .middle])
+    func trailingEmptyLines(text: String, mode: Text.TruncationMode) throws {
+        // -- Arrange --
+        let lineLimited = ViewRenderer.make(Text(text).lineLimit(1).truncationMode(mode))
+        let heightLimited = ViewRenderer.make(Text(text).truncationMode(mode))
+
+        // -- Act --
+        let lineFrame = try #require(lineLimited.render(.now, proposal: .init(width: 3)).grid)
+        let heightFrame = try #require(heightLimited.render(.now, proposal: .init(width: 3, height: 1)).grid)
+
+        // -- Assert --
+        #expect(lineFrame.size == CellSize(width: 3, height: 1))
+        #expect(lineFrame.snapshotText == "abc")
+        #expect(heightFrame.size == CellSize(width: 3, height: 1))
+        #expect(heightFrame.snapshotText == "abc")
+    }
+
+    @Test("Omitting nonempty logical lines indicates vertical overflow even when their joined text fits")
+    func nonemptyOmittedLines() throws {
+        // -- Arrange --
+        let renderer = ViewRenderer.make(Text("a\nb").lineLimit(1))
+
+        // -- Act --
+        let frame = try #require(renderer.render(.now, proposal: .init(width: 10)).grid)
+
+        // -- Assert --
+        #expect(frame.size.height == 1)
+        #expect(frame.snapshotText.contains("…"))
+    }
+
     @Test("Wide glyphs never split around the ellipsis and narrow widths make progress")
     func wideTruncation() throws {
         // -- Arrange --
