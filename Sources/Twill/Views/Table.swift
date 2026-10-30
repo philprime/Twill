@@ -141,7 +141,8 @@ extension Table: PrimitiveView {
         let content = ScrollView {
             VStack(alignment: .leading, spacing: 0) {
                 TableRow(
-                    cells: descriptions.enumerated().map { header($0.element, index: $0.offset, headers: headers) })
+                    cells: descriptions.enumerated().map { header($0.element, index: $0.offset, headers: headers) },
+                    alignments: descriptions.map { $0.alignment })
                 if let selection {
                     ListSelectionContent(
                         content: rows(descriptions, selectedID: selectedID),
@@ -153,7 +154,7 @@ extension Table: PrimitiveView {
                 }
             }
         }
-        let layout = TableLayout(columnCount: descriptions.count)
+        let layout = TableLayout(columns: descriptions.map { $0.width })
         if selection != nil { return .table(content.keyboardPane(), layout) }
         return .table(content, layout)
     }
@@ -162,7 +163,9 @@ extension Table: PrimitiveView {
         VStack(alignment: .leading, spacing: 0) {
             ForEach(data, id: id) { element in
                 ListRow(
-                    content: TableRow(cells: descriptions.map { $0.content(element) }),
+                    content: TableRow(
+                        cells: descriptions.map { $0.content(element) },
+                        alignments: descriptions.map { $0.alignment }),
                     isSelected: selection == nil ? nil : element[keyPath: id] == selectedID)
             }
         }
@@ -172,17 +175,23 @@ extension Table: PrimitiveView {
 private struct TableRow: View, PrimitiveView {
     typealias Body = Never
     let cells: [any View]
+    let alignments: [HorizontalAlignment]
 
     func makeDescription() -> ViewDescription {
-        .tableRow(cells: cells.map { TableCell(content: $0) })
+        .tableRow(cells: cells.enumerated().map { TableCell(content: $0.element, alignment: alignments[$0.offset]) })
     }
 }
 
 private struct TableCell: View, PrimitiveView {
     typealias Body = Never
     let content: any View
+    let alignment: HorizontalAlignment
 
     func makeDescription() -> ViewDescription {
-        .group(children: [content], layout: HorizontalLayout(spacing: 0))
+        .group(
+            children: [content],
+            layout: FrameLayout(
+                width: nil, height: nil, maxWidth: .infinity, maxHeight: nil,
+                alignment: Alignment(horizontal: alignment, vertical: .top)))
     }
 }
