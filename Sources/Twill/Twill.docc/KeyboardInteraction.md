@@ -108,6 +108,19 @@ An editor's `lineBreakMode` is explicit: `.wordWrapping` and `.characterWrapping
 
 Up/Down and Page keys follow visual rows and preserve a preferred cell column, including end-of-row affinity at shared wrap boundaries. Home/End still reach logical-line endpoints. Read-only and word-editing policies apply in either layout mode. Resize reflows cached descriptions, retains the logical insertion offset, and reveals the caret without reevaluating view bodies or altering sibling schedules. Wrapping-mode and external value updates preserve mounted editor state.
 
+## Choose Collection Selection Behavior
+
+```swift
+List(items, selection: $selectedID, selectionPolicy: .allowEmpty) { item in
+    Text(item.title)
+}
+let detail = SelectionPolicy.allowEmpty.resolve(in: items, selection: selectedID)
+```
+
+List, table, and outline controls default to `.firstVisible`, resolving nil, missing, or hidden IDs to the first visible row. `.allowEmpty` keeps those cases unselected. Empty collections have no effective selection under either policy. Resolution never writes the binding; a stored ID can reappear after filtering or expansion changes. The hierarchy resolver accepts `children:` and `expandedIDs:` to match outline visibility.
+
+With row content focused and no effective selection, Down/Home chooses the first row and Up/End chooses the last. Enter does not submit, and outline Left/Right does not expand or normalize selection. Existing selection retains ordinary navigation and submission behavior. Sortable table headers remain independent of row selection. Policy updates retain mounted rows, focus, and sibling schedules.
+
 ## Navigate Scrolling Content
 
 A ``ScrollView`` controls its viewport, not keyboard grouping. Tab visits the controls inside it in the same way as controls outside it. Moving focus reveals the control through its enclosing viewports, each of which retains its own offset.

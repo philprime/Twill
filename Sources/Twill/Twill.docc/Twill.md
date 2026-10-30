@@ -78,6 +78,7 @@ Start with <doc:GettingStarted>, then explore <doc:ViewGallery> to see rendered 
 ### Collections and Presentation
 
 - ``List``
+- ``SelectionPolicy``
 - ``Table``
 - ``TableColumn``
 - ``TableColumnBuilder``
