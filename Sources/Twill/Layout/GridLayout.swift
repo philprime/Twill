@@ -1,7 +1,8 @@
 /// Lays out mounted cells in rows and distributes terminal columns among flexible grid items.
 struct GridLayout: PrimitiveLayout {
     let columns: [GridItem]
-    let spacing: Int
+    let rowSpacing: Int
+    let columnSpacing: Int
 
     var behavior: LayoutBehavior { LayoutBehavior(width: .filling) }
 
@@ -21,8 +22,8 @@ struct GridLayout: PrimitiveLayout {
         let resolved = columns(in: width)
         let widths = columnWidths(in: width, subviews: subviews)
         let heights = rowHeights(for: subviews, columnCount: resolved.count)
-        let contentWidth = widths.reduce(0, +) + (resolved.count - 1) * spacing
-        let height = heights.reduce(0, +) + (heights.count - 1) * spacing
+        let contentWidth = widths.reduce(0, +) + (resolved.count - 1) * columnSpacing
+        let height = heights.reduce(0, +) + (heights.count - 1) * rowSpacing
         return proposal.constrain(CellSize(width: contentWidth, height: height))
     }
 
@@ -32,12 +33,12 @@ struct GridLayout: PrimitiveLayout {
         let heights = rowHeights(for: subviews, columnCount: widths.count)
         var column = 0
         let offsets = widths.map { width in
-            defer { column += width + spacing }
+            defer { column += width + columnSpacing }
             return column
         }
         var row = 0
         let rowOffsets = heights.map { height in
-            defer { row += height + spacing }
+            defer { row += height + rowSpacing }
             return row
         }
         return subviews.indices.map { index in
@@ -56,16 +57,18 @@ struct GridLayout: PrimitiveLayout {
 
         var widths = resolved.map { item in
             switch item.size {
+            case .fixed(let width): return width
             case .flexible(let minimum, _), .adaptive(let minimum): return minimum
             }
         }
         let limits = resolved.map { item in
             switch item.size {
+            case .fixed(let width): return width
             case .flexible(_, let maximum): return maximum
             case .adaptive: return Int.max
             }
         }
-        let gaps = (resolved.count - 1) * spacing
+        let gaps = (resolved.count - 1) * columnSpacing
         var remaining = max(0, width - gaps - widths.reduce(0, +))
         while remaining > 0 {
             let eligible = widths.indices.filter { widths[$0] < limits[$0] }
@@ -82,12 +85,12 @@ struct GridLayout: PrimitiveLayout {
 
     private func columns(in width: Int) -> [GridItem] {
         guard columns.count == 1, case .adaptive(let minimum) = columns[0].size else { return columns }
-        let count = max(1, (width + spacing) / (minimum + spacing))
+        let count = max(1, (width + columnSpacing) / (minimum + columnSpacing))
         return Array(repeating: columns[0], count: count)
     }
 
     private func intrinsicWidth(for subviews: [CellSize], columns: [GridItem]) -> Int {
-        intrinsicWidths(for: subviews, columns: columns).reduce(0, +) + (columns.count - 1) * spacing
+        intrinsicWidths(for: subviews, columns: columns).reduce(0, +) + (columns.count - 1) * columnSpacing
     }
 
     private func intrinsicWidths(for subviews: [CellSize], columns: [GridItem]) -> [Int] {
@@ -96,6 +99,7 @@ struct GridLayout: PrimitiveLayout {
                 stride(from: column, to: subviews.count, by: columns.count)
                 .map { subviews[$0].width }.max() ?? 0
             switch columns[column].size {
+            case .fixed(let width): return width
             case .flexible(let minimum, let maximum): return min(max(natural, minimum), maximum)
             case .adaptive(let minimum): return max(natural, minimum)
             }
