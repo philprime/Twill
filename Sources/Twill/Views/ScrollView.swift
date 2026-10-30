@@ -1,5 +1,6 @@
 /// A vertically scrollable viewport. The proposed height fixes the visible area;
 /// content retains its intrinsic height and mounted state outside that area.
+/// Controls inside and outside the viewport participate in Tab navigation automatically.
 public struct ScrollView<Content: View>: View {
     /// Primitive content rendered directly by the runtime rather than through a composed body.
     public typealias Body = Never

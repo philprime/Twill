@@ -19,7 +19,7 @@ extension ViewRenderer {
                 focusState.present(target)
                 var ancestor = target
                 while let node = ancestor {
-                    if case .tab = node.description { node.focusState.remember(target) }
+                    node.focusState.remember(target)
                     ancestor = node.parent
                 }
                 // Shared bindings settle once per transition, not on unchanged frames.
@@ -35,7 +35,7 @@ extension ViewRenderer {
             case .remember(let scope, let target): scope.focusState.remember(target)
             case .activatePane(let scope, let pane): scope.focusState.activatePane(pane)
             case .clearedBinding(let scope, let binding): scope.focusState.recordClearedBinding(binding)
-            case .followFocus(let pane): pane.scrollState.followFocus()
+            case .followFocus(let target): target?.resumeFocusFollowing()
             case .reveal(let pane, let target): pane.revealFocus(target)
             }
         }

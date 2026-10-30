@@ -111,7 +111,7 @@ struct FocusNavigationTests {
         #expect(activations == 1)
     }
 
-    @Test("Arrows follow focusable order across rows and columns; Tab leaves focus unchanged")
+    @Test("Arrows and Tab follow focusable order across rows and columns")
     func orderedNavigation() {
         // -- Arrange --
         var activated: [String] = []
@@ -158,7 +158,7 @@ struct FocusNavigationTests {
         _ = renderer.handle(.enter)
 
         // -- Assert --
-        #expect(activated == ["A", "B", "B", "C", "B", "A"])
+        #expect(activated == ["A", "B", "C", "D", "C", "B"])
     }
 
     @Test("Down arrow moves focus between interactive rows, skipping a header")

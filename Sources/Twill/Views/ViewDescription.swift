@@ -32,6 +32,7 @@ enum ViewDescription {
     case listSelection(any View, AnyHashable?, @MainActor (KeyEvent) -> KeyPressResult)
     case listRow(any View, isSelected: Bool)
     case scroll(any View)
+    case pane(any View)
     case scrollReader(any View, ScrollViewProxy)
     case styled(any View, foreground: Color?, background: Color?)
     case border(any View, glyphs: Border.Glyphs, color: Color?, title: TextDrawing? = nil)

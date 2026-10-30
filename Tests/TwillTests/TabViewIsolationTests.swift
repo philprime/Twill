@@ -82,13 +82,13 @@ struct TabViewIsolationTests {
                         Button("A1") { activate("A1") }
                         Button("A2") { activate("A2") }
                     }
-                }.frame(height: 2)
+                }.frame(height: 2).keyboardPane()
                 ScrollView {
                     VStack {
                         Button("B1") { activate("B1") }
                         Button("B2") { activate("B2") }
                     }
-                }.frame(height: 2)
+                }.frame(height: 2).keyboardPane()
             }
         }
     }
@@ -111,6 +111,7 @@ struct TabViewIsolationTests {
         var activated: [String] = []
         let renderer = ViewRenderer.make(PaneTabs { activated.append($0) })
         _ = renderer.render(.now)
+        _ = renderer.handle(.tab)
 
         // -- Act --
         _ = renderer.handle(.shiftTab)
@@ -138,6 +139,7 @@ struct TabViewIsolationTests {
         let renderer = ViewRenderer.make(PaneTabs { activated.append($0) })
         _ = renderer.render(.now)
         _ = renderer.handle(.tab)
+        _ = renderer.handle(.tab)
         _ = renderer.handle(.arrowDown)
         _ = renderer.handle(KeyEvent(.pageDown, modifiers: .control))
         _ = renderer.render(.now)
@@ -160,6 +162,7 @@ struct TabViewIsolationTests {
         var activated: [String] = []
         let renderer = ViewRenderer.make(PaneTabs { activated.append($0) })
         _ = renderer.render(.now)
+        _ = renderer.handle(.tab)
         _ = renderer.handle(.tab)
         _ = renderer.handle(.arrowDown)
 
@@ -184,7 +187,7 @@ struct TabViewIsolationTests {
             return TabView(selection: $selection) {
                 Tab("First", value: 0) {
                     HStack {
-                        ScrollView { Button("Navigation") {} }.frame(height: 2)
+                        ScrollView { Button("Navigation") {} }.frame(height: 2).keyboardPane()
                         TextEditor(text: $text).frame(width: 8, height: 2)
                     }
                 }
@@ -199,6 +202,7 @@ struct TabViewIsolationTests {
         var text: Binding<String>?
         let renderer = ViewRenderer.make(EditorPaneTabs { text = $0 })
         _ = renderer.render(.now)
+        _ = renderer.handle(.tab)
         _ = renderer.handle(.tab)
         _ = renderer.handle(.a)
         _ = renderer.render(.now)

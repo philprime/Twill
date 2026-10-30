@@ -2,8 +2,8 @@
 
 ## Preview
 
-Content clipped to a two-row pane. Up/Down scroll; Tab switches panes.
+Content clipped to a two-row viewport. Up/Down scroll; Tab moves between controls.
 
-![ScrollView terminal preview: Content clipped to a two-row pane. Up/Down scroll; Tab switches panes.](preview-ScrollView)
+![ScrollView terminal preview: Content clipped to a two-row viewport. Up/Down scroll; Tab moves between controls.](preview-ScrollView)
 
 Explore related views in <doc:ViewGallery>.
