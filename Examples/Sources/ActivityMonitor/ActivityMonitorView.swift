@@ -69,7 +69,7 @@ struct ActivityMonitorView: View {
     }
 
     private func processTable(_ processes: [ProcessSample]) -> some View {
-        Table(processes, selection: $selectedID, sortOrder: $sortOrder) {
+        Table(processes, id: \.id, selection: $selectedID, sortOrder: $sortOrder) {
             TableColumn("PID", value: \ProcessSample.id) { process in
                 Text(String(process.id))
             }
