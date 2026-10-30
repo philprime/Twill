@@ -9,7 +9,8 @@ struct NodePresentationTests {
     func borderContext() {
         // -- Arrange --
         let presentation = NodePresentation.border(
-            glyphs: Border.single.glyphs, color: nil, title: TextDrawing("界界界界界"))
+            glyphs: Border.single.glyphs, style: ResolvedStyle(color: nil, attributes: [.dim]),
+            title: TextDrawing("界界界界界"))
         var proposals: [ProposedCellSize] = []
 
         // -- Act --
@@ -33,6 +34,8 @@ struct NodePresentationTests {
         #expect(drawing.grid[8, 0] == .glyph("┐", width: 1))
         #expect(drawing.grid[1, 1] == .glyph("A", width: 1))
         #expect(drawing.grid[3, 1] == .glyph("C", width: 1))
+        #expect(drawing.grid.attributes(column: 0, row: 0) == [.dim])
+        #expect(drawing.grid.attributes(column: 1, row: 1).isEmpty)
     }
 
     @Test("Scroll presentation measures unconstrained content and clips it at the mounted offset")

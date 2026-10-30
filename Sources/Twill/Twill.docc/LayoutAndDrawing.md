@@ -47,6 +47,24 @@ These modifiers inherit through containers. The nearest setting to a text node t
 
 Use `.foregroundStyle(...)` and `.backgroundStyle(...)` with a ``Style`` such as ``Color``. Styles propagate to descendants, and more local styling can override them. ANSI palette colors follow the terminal's theme. RGB colors request true color, whose appearance depends on terminal support.
 
+## Resolve Foreground Hierarchy and Tint
+
+```swift
+VStack {
+    Text("Primary").foregroundStyle(.primary)
+    Text("Detail").foregroundStyle(.secondary)
+    Text("Action").foregroundStyle(.tint)
+}
+.foregroundStyle(Color.blue)
+.tint(.cyan)
+```
+
+``HierarchicalStyle`` expresses prominence relative to the inherited primary foreground. Secondary keeps its hue and adds terminal dim emphasis; primary restores the primary style without clearing explicit view attributes. Dim is a terminal-specific approximation whose appearance depends on terminal and font support. Local attribute modifiers can clear inherited style contributions; a nearer hierarchical declaration can restore its prominence without restoring unrelated cleared flags. A concrete foreground style establishes a new primary style.
+
+``View/tint(_:)`` sets control emphasis independently of ordinary text. Otherwise unstyled buttons use the nearest tint, while explicit foreground declarations take precedence. Destructive buttons retain their red default, and styles on their label content can override it. ``TintStyle`` follows the nearest tint override, including for declarations inherited from outside the override. Nil clears an inherited tint and falls back to the primary foreground color. Application palettes and validation colors remain application-owned.
+
+Custom ``Style`` implementations resolve with `resolve(in:)` using an immutable ``StyleContext``. They return a ``ResolvedStyle`` containing a color and additional text attributes. A nil resolved color explicitly selects the terminal default. Foreground and border styles contribute attributes to their drawn text; background styles use the resolved color to paint their bounds. Border attributes do not affect content. Style values remain concrete in public composition and resolve at the mounted presentation boundary. Style and tint updates preserve layout, mounted state, focus, and independent schedules.
+
 ## Apply Terminal Text Attributes
 
 ```swift

@@ -3,18 +3,40 @@
 extension ViewRenderer {
     /// Rebuild once per frame, after content and active branches have settled. These
     /// scalar summaries never retain nodes or schedule work between presentations.
-    /// Resolve lexical flags before flattening transparent view lists. Drawing
-    /// can then use cached scalar flags without changing collection placement.
-    func prepareLayout(inheritedAttributes: TextAttributes = []) {
+    /// Resolve lexical flags and color declarations before flattening view lists.
+    /// Drawing uses cached values without changing collection placement.
+    func prepareLayout(
+        inheritedAttributes: TextAttributes = [], inheritedStyles: StyleEnvironment = StyleEnvironment()
+    ) {
+        var styles = inheritedStyles
+        switch description {
+        case .tint(_, let color): styles.tint = color
+        case .styled(_, let foreground, let background):
+            if let foreground { styles.applyForeground(foreground) }
+            if let background { styles.background = background }
+        case .button(let button) where button.role == .destructive:
+            styles.applyForeground(Color.red)
+        case .button where !styles.hasForegroundStyle && styles.tint != nil:
+            styles.applyForeground(TintStyle())
+        default: break
+        }
         let attributes: TextAttributes
         if case .attributes(_, let values, let mask) = description {
             attributes = inheritedAttributes.subtracting(mask).union(values.intersection(mask))
+            styles.attributeOverrides.formUnion(mask)
         } else {
             attributes = inheritedAttributes
         }
-        for child in retainedChildren { child.prepareLayout(inheritedAttributes: attributes) }
+        for child in retainedChildren {
+            child.prepareLayout(inheritedAttributes: attributes, inheritedStyles: styles)
+        }
         layoutState.beginFrame()
-        layoutState.attributes = attributes
+        let foreground = styles.resolvedForeground
+        layoutState.attributes = attributes.union(foreground.attributes.subtracting(styles.attributeOverrides))
+        layoutState.styleContext = styles.context
+        layoutState.foreground = foreground.color
+        layoutState.background = styles.resolvedBackground?.color
+        layoutState.hasBackgroundStyle = styles.background != nil
         layoutState.traits = MountedLayoutState.Traits(
             hasContent: hasLayoutContent, fillsWidth: wantsFillWidth, fillsHeight: wantsFillHeight)
     }

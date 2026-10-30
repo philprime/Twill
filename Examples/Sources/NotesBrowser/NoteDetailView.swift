@@ -6,10 +6,10 @@ struct NoteDetailView: View {
     var body: some View {
         VStack(alignment: .leading) {
             Text(note.title).bold()
-                .foregroundStyle(NotesPalette.accent)
+                .foregroundStyle(.tint)
             if note.body.allSatisfy(\.isWhitespace) {
                 Text("No body yet")
-                    .foregroundStyle(NotesPalette.muted)
+                    .foregroundStyle(.secondary)
             } else {
                 Text(note.body)
                     .foregroundStyle(NotesPalette.foreground)

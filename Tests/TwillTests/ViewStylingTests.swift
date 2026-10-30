@@ -152,7 +152,9 @@ struct ViewStylingTests {
     }
 
     private struct AccentStyle: Style {
-        let color = Color(red: 255, green: 102, blue: 0)
+        func resolve(in context: StyleContext) -> ResolvedStyle {
+            ResolvedStyle(color: Color(red: 255, green: 102, blue: 0))
+        }
     }
 
     @Test("Background styles resolve through the Style contract")

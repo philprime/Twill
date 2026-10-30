@@ -34,7 +34,7 @@ struct NotesBrowserView: View {
             Text(" Notes  \(notes.count) in memory ")
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .foregroundStyle(NotesPalette.background)
-                .backgroundStyle(NotesPalette.accent)
+                .backgroundStyle(.tint)
             GroupBox("Search") {
                 TextField("Search titles and bodies", text: $query)
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -63,7 +63,7 @@ struct NotesBrowserView: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             Text(" Tab: focus  •  Arrows: scroll/select  •  e: edit  •  n: new  •  d: delete  •  ?: help ")
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .foregroundStyle(NotesPalette.accent)
+                .foregroundStyle(.tint)
         }
         .backgroundStyle(NotesPalette.background)
         .onKeyPress { key in

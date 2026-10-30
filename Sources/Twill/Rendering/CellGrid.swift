@@ -48,7 +48,7 @@ struct CellGrid: Equatable {
         return textAttributes[row * size.width + column]
     }
 
-    mutating func fillBackground(_ color: Color, column: Int, row: Int) {
+    mutating func fillBackground(_ color: Color?, column: Int, row: Int) {
         hideImages(column: column, row: row, width: 1)
         backgrounds[row * size.width + column] = color
     }

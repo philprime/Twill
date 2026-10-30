@@ -13,7 +13,7 @@ struct NoteListView: View {
                         .foregroundStyle(NotesPalette.foreground)
                     Text(note.summary)
                         .frame(width: 22, alignment: .leading)
-                        .foregroundStyle(NotesPalette.muted)
+                        .foregroundStyle(.secondary)
                 }
             }
             .onKeyPress { key in
@@ -25,7 +25,7 @@ struct NoteListView: View {
             }
             if notes.isEmpty {
                 Text("No matching notes")
-                    .foregroundStyle(NotesPalette.muted)
+                    .foregroundStyle(.secondary)
             }
         }
     }

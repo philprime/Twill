@@ -14,7 +14,7 @@ public struct StyledView<Content: View, AppliedStyle: Style>: View {
 }
 
 extension View {
-    /// Sets the inherited foreground color for this content using the supplied style.
+    /// Sets the inherited foreground style, including contextual hierarchy and tint.
     public func foregroundStyle<S: Style>(_ style: S) -> StyledView<Self, S> {
         StyledView(content: self, style: style, role: .foreground)
     }
@@ -28,8 +28,8 @@ extension View {
 extension StyledView: PrimitiveView {
     func makeDescription() -> ViewDescription {
         switch role {
-        case .foreground: .styled(content, foreground: style.color, background: nil)
-        case .background: .styled(content, foreground: nil, background: style.color)
+        case .foreground: .styled(content, foreground: style, background: nil)
+        case .background: .styled(content, foreground: nil, background: style)
         }
     }
 }

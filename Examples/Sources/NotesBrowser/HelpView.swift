@@ -6,7 +6,7 @@ struct HelpView: View {
     var body: some View {
         VStack {
             Text("Help").bold().underline()
-                .foregroundStyle(NotesPalette.accent)
+                .foregroundStyle(.tint)
             Text("Tab / Shift-Tab: switch search, list, and detail")
             Text("Arrows: navigate list or scroll the preview")
             Text("Enter: select a note or start/finish editing a field")
