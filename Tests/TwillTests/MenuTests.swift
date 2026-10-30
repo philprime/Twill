@@ -12,7 +12,7 @@ struct MenuTests {
             Menu(
                 "Actions",
                 items: [
-                    MenuItem("Save", shortcut: MenuShortcut(.s, hint: "s")) {},
+                    MenuItem("Save", shortcut: KeyboardShortcut(.s, hint: "s")) {},
                     MenuItem("Delete", isEnabled: false) {},
                 ]))
         let closed = renderer.render(.now)
@@ -67,8 +67,8 @@ struct MenuTests {
             rootView: Menu(
                 "Actions",
                 items: [
-                    MenuItem("Save", shortcut: MenuShortcut(shortcut, hint: "Ctrl-S")) { actions.append("save") },
-                    MenuItem("Delete", shortcut: MenuShortcut(.d, hint: "d"), isEnabled: false) {
+                    MenuItem("Save", shortcut: KeyboardShortcut(shortcut, hint: "Ctrl-S")) { actions.append("save") },
+                    MenuItem("Delete", shortcut: KeyboardShortcut(.d, hint: "d"), isEnabled: false) {
                         actions.append("delete")
                     },
                 ]), runLoop: RecordingRunLoop(), output: RecordingTerminalOutput())
@@ -126,7 +126,7 @@ struct MenuTests {
                 "Actions",
                 items: [
                     MenuItem("Save") { activations += 1 },
-                    MenuItem("Unavailable", shortcut: MenuShortcut(.u, hint: "u"), isEnabled: false) {
+                    MenuItem("Unavailable", shortcut: KeyboardShortcut(.u, hint: "u"), isEnabled: false) {
                         activations += 1
                     },
                 ]
@@ -162,7 +162,7 @@ struct MenuTests {
                 items: empty
                     ? []
                     : [
-                        MenuItem("Unavailable", shortcut: MenuShortcut(.u, hint: "u"), isEnabled: false) {
+                        MenuItem("Unavailable", shortcut: KeyboardShortcut(.u, hint: "u"), isEnabled: false) {
                             activations += 1
                         }
                     ]), runLoop: RecordingRunLoop(), output: RecordingTerminalOutput())

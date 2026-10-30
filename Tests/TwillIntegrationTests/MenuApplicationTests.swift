@@ -27,10 +27,10 @@ struct MenuApplicationTests {
                 Menu(
                     "Actions",
                     items: [
-                        MenuItem("Unavailable", shortcut: MenuShortcut(.d, hint: "d"), isEnabled: false) {
+                        MenuItem("Unavailable", shortcut: KeyboardShortcut(.d, hint: "d"), isEnabled: false) {
                             events.append("disabled")
                         },
-                        MenuItem("Save", shortcut: MenuShortcut(.s, hint: "s")) { events.append("save") },
+                        MenuItem("Save", shortcut: KeyboardShortcut(.s, hint: "s")) { events.append("save") },
                     ])
             },
             runLoop: runLoop,

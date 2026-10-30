@@ -47,8 +47,7 @@ extension ViewRenderer {
         } else {
             return false
         }
-        if case .button(_, _, let action) = button?.description { action() }
-        isPresented.wrappedValue = false
+        if let button { button.activateButton() } else { isPresented.wrappedValue = false }
         return true
     }
 

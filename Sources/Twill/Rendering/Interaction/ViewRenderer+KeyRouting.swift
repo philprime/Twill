@@ -16,11 +16,12 @@ extension ViewRenderer {
         guard let target = focusTarget() else {
             return route(
                 key, from: modal ? sheetBranch ?? self : self, stoppingAt: modal ? self : nil,
-                includeControls: false) == .handled
+                includeControls: false) == .handled || handleKeyboardShortcut(key, from: nil)
         }
         if handleTabShortcut(key, from: target, stoppingAt: modal ? self : nil) { return true }
         if handleControl(key, at: target, stoppingAt: modal ? self : nil) { return true }
         if route(key, from: target, stoppingAt: modal ? self : nil) == .handled { return true }
+        if handleKeyboardShortcut(key, from: target) { return true }
         return navigate(key, from: target)
     }
 
