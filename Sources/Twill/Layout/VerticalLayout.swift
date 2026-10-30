@@ -1,4 +1,5 @@
-/// Intrinsic-height placement. Constrained bounds clip rows.
+/// Intrinsic-height placement with finite width offered to every child.
+/// Constrained height clips rows without changing their content.
 struct VerticalLayout: PrimitiveLayout {
     let spacing: Int
     var alignment: HorizontalAlignment = .leading
@@ -7,19 +8,19 @@ struct VerticalLayout: PrimitiveLayout {
     func measureSubviews(_ proposal: ProposedCellSize, subviews: [LayoutSubview]) -> [CellSize] {
         if let size = singleSubviewSize(proposal, subviews: subviews) { return [size] }
         let natural = subviews.map {
-            proposal.height != nil && $0.fillsHeight ? .zero : $0.sizeThatFits(.unspecified)
+            proposal.height != nil && $0.fillsHeight
+                ? .zero : $0.sizeThatFits(ProposedCellSize(width: proposal.width))
         }
         let flexible = subviews.indices.filter { subviews[$0].fillsHeight }
         let occupied = subviews.indices.filter { !subviews[$0].fillsHeight }.reduce(0) { $0 + natural[$1].height }
         let remaining = max(0, (proposal.height ?? 0) - occupied - max(0, subviews.count - 1) * spacing)
         return subviews.indices.map { index in
-            let width = subviews[index].fillsWidth ? proposal.width : nil
             let height =
                 proposal.height != nil && subviews[index].fillsHeight
                 ? remaining / max(1, flexible.count) + (index == flexible.last ? remaining % flexible.count : 0)
                 : nil
-            return width != nil || height != nil
-                ? subviews[index].sizeThatFits(ProposedCellSize(width: width, height: height)) : natural[index]
+            return height != nil
+                ? subviews[index].sizeThatFits(ProposedCellSize(width: proposal.width, height: height)) : natural[index]
         }
     }
 
