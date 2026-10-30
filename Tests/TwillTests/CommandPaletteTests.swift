@@ -5,6 +5,30 @@ import Testing
 @Suite("Command palette interaction")
 @MainActor
 struct CommandPaletteTests {
+    @Test("Advertised shortcut hints keep the surrounding foreground hue with secondary prominence")
+    func contextualHints() throws {
+        // -- Arrange --
+        let renderer = ViewRenderer.make(
+            CommandPalette(
+                commands: [Command("save", title: "Save", shortcuts: [KeyboardShortcut(.z)]) {}],
+                dismiss: {}
+            ).foregroundStyle(Color.blue))
+
+        // -- Act --
+        let grid = try #require(renderer.render(.now, proposal: .init(width: 40)).grid)
+        let hints = (0..<grid.size.height).flatMap { row in
+            (0..<grid.size.width).compactMap { column in
+                grid[column, row] == .glyph("z", width: 1) ? CellPosition(column: column, row: row) : nil
+            }
+        }
+        let hint = try #require(hints.first)
+
+        // -- Assert --
+        #expect(hints.count == 1)
+        #expect(grid.foreground(column: hint.column, row: hint.row) == .blue)
+        #expect(grid.attributes(column: hint.column, row: hint.row) == [.dim])
+    }
+
     @Test("Arrow selection keeps search focused and Enter performs the effective command once")
     func searchSelection() {
         // -- Arrange --

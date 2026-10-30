@@ -43,14 +43,14 @@ public struct CommandPalette<ID: Hashable>: View {
                             Text(command.title)
                             Spacer()
                             Text(command.shortcuts.map(\.hint).joined(separator: "/"))
-                                .foregroundStyle(.muted)
+                                .foregroundStyle(.secondary)
                         }
                     }
                     .onActivate(activate)
                     .frame(height: min(maximumVisibleCommands, visible.count), maxWidth: .infinity)
                 }
                 StatusBar { Text("↑/↓ choose  Enter run  Escape cancel") }
-                    .foregroundStyle(.muted)
+                    .foregroundStyle(.secondary)
             }
             .padding(.horizontal)
         }
