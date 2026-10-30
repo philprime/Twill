@@ -83,7 +83,7 @@ extension ViewRenderer {
     }
 
     func handleTabKey(_ key: KeyEvent, focused: ViewRenderer) -> KeyPressResult {
-        guard case .tabs(_, let selection) = description, hasTabBar else { return .ignored }
+        guard isEnabled, case .tabs(_, let selection) = description, hasTabBar else { return .ignored }
         let direction: Int
         switch key {
         case KeyEvent(.pageDown, modifiers: .control): direction = 1
@@ -94,7 +94,8 @@ extension ViewRenderer {
         }
         let tabs = tabs
         guard let index = tabs.firstIndex(where: \.tabState.isActive) else { return .handled }
-        let next = index + direction
+        var next = index + direction
+        while tabs.indices.contains(next), !tabs[next].isEnabled { next += direction }
         guard tabs.indices.contains(next) else { return .handled }
         if case .tab(_, _, let value) = tabs[next].description { selection.wrappedValue = value }
         return .handled

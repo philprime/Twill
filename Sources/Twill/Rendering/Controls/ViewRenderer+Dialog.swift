@@ -38,10 +38,12 @@ extension ViewRenderer {
         else { return false }
         let button: ViewRenderer?
         if key == .escape {
-            button = dialog.dialogButtons().first { $0.buttonRole == .cancel }
+            button = dialog.dialogButtons().first { $0.isEnabled && $0.buttonRole == .cancel }
         } else if key == .enter {
             button = focusTarget()?.enclosingButton
-            guard let button, dialog.dialogButtons().contains(where: { $0 === button }) else { return false }
+            guard let button, button.isEnabled, dialog.dialogButtons().contains(where: { $0 === button }) else {
+                return false
+            }
         } else {
             return false
         }
@@ -62,7 +64,8 @@ extension ViewRenderer {
 
     func updateDialogFallback(kind: DialogKind, at date: Date) {
         let buttons = retainedChildren.first?.dialogButtons() ?? []
-        let needsFallback = kind == .confirmation ? !buttons.contains { $0.buttonRole == .cancel } : buttons.isEmpty
+        let needsFallback =
+            kind == .confirmation ? !buttons.contains { $0.isEnabled && $0.buttonRole == .cancel } : buttons.isEmpty
         guard needsFallback else {
             if retainedChildren.count > 1 { childStorage.nodes.removeLast().unmount() }
             return

@@ -47,6 +47,7 @@ struct ActivityMonitorView: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
                 Button(paused ? "Resume" : "Pause") { paused.toggle() }
                 Button("Clear filter") { query = "" }
+                    .disabled(query.isEmpty)
             }
             .frame(height: 1)
             GroupBox("Processes · \(visibleProcesses.count) matching") {

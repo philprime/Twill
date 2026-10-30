@@ -1,5 +1,5 @@
 extension View {
-    /// Presents a modal choice with a Cancel action unless one is supplied.
+    /// Presents a modal choice with a Cancel action unless an enabled one is supplied.
     /// Cancellation receives initial focus so a destructive operation requires
     /// deliberate navigation. Every action dismisses the dialog after running.
     public func confirmationDialog<Actions: View, Message: View>(

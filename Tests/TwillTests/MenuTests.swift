@@ -117,6 +117,41 @@ struct MenuTests {
         #expect(actions == ["save"])
     }
 
+    @Test("An open menu remains dismissible when its ancestor becomes disabled")
+    func disabledAncestorDismissal() throws {
+        // -- Arrange --
+        var activations = 0
+        func content(disabled: Bool) -> some View {
+            Menu(
+                "Actions",
+                items: [
+                    MenuItem("Save") { activations += 1 },
+                    MenuItem("Unavailable", shortcut: MenuShortcut(.u, hint: "u"), isEnabled: false) {
+                        activations += 1
+                    },
+                ]
+            ).disabled(disabled)
+        }
+        let renderer = ViewRenderer.make(content(disabled: false))
+        _ = renderer.render(.now)
+        _ = renderer.handle(.enter)
+        _ = renderer.render(.now)
+
+        // -- Act --
+        renderer.update(content(disabled: true), at: .now)
+        let open = try #require(renderer.render(.now).grid)
+        _ = renderer.handle(.u)
+        let handled = renderer.handle(.escape)
+        let closed = try #require(renderer.render(.now).grid)
+
+        // -- Assert --
+        #expect(open.snapshotText.contains("Save"))
+        #expect(handled)
+        #expect(closed.snapshotText == "Actions")
+        #expect(activations == 0)
+        #expect(renderer.focusTarget() == nil)
+    }
+
     @Test("Empty and entirely disabled menus can be dismissed without activating anything", arguments: [false, true])
     func noEnabledItems(empty: Bool) throws {
         // -- Arrange --
