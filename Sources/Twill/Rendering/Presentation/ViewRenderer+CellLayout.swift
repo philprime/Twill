@@ -7,8 +7,9 @@ extension ViewRenderer {
     /// Drawing uses cached values without changing collection placement.
     func prepareLayout(
         inheritedAttributes: TextAttributes = [], inheritedStyles: StyleEnvironment = StyleEnvironment(),
-        inheritedControls: ControlEnvironment = ControlEnvironment()
+        inheritedControls: ControlEnvironment = ControlEnvironment(), inheritedStackAxis: Axis? = nil
     ) {
+        let stackAxis = containerBehavior?.stackAxis ?? inheritedStackAxis
         let controls = controlEnvironment(inheriting: inheritedControls)
         var styles = inheritedStyles
         switch description {
@@ -30,9 +31,12 @@ extension ViewRenderer {
             attributes = inheritedAttributes
         }
         for child in retainedChildren {
-            child.prepareLayout(inheritedAttributes: attributes, inheritedStyles: styles, inheritedControls: controls)
+            child.prepareLayout(
+                inheritedAttributes: attributes, inheritedStyles: styles, inheritedControls: controls,
+                inheritedStackAxis: stackAxis)
         }
         layoutState.beginFrame()
+        layoutState.stackAxis = stackAxis
         layoutState.controlOwner = controls.owner
         layoutState.controlStyle = controls.style
         layoutState.controlKind = controls.kind
@@ -44,13 +48,14 @@ extension ViewRenderer {
         layoutState.background = styles.resolvedBackground?.color
         layoutState.hasBackgroundStyle = styles.background != nil
         layoutState.traits = MountedLayoutState.Traits(
-            hasContent: hasLayoutContent, fillsWidth: wantsFillWidth, fillsHeight: wantsFillHeight)
+            hasContent: hasLayoutContent, fillsWidth: wantsFillWidth, fillsHeight: wantsFillHeight,
+            containsSpacer: containsSpacer)
     }
 
     private var hasLayoutContent: Bool {
         if let traits = layoutState.traits { return traits.hasContent }
         switch description {
-        case .drawing, .text, .canvas, .textField, .textEditor: return true
+        case .spacer, .divider, .drawing, .text, .canvas, .textField, .textEditor: return true
         case .keyHints(let hints): return isEnabled && hints.contains(where: \.hasContent)
         case .tableRow: return true
         case .tabs: return hasTabBar
@@ -62,7 +67,7 @@ extension ViewRenderer {
 
     var layoutItems: [ViewRenderer] {
         switch description {
-        case .drawing, .text, .canvas, .textField, .textEditor:
+        case .spacer, .divider, .drawing, .text, .canvas, .textField, .textEditor:
             return [self]
         case .keyHints:
             return hasLayoutContent ? [self] : []
@@ -89,8 +94,21 @@ extension ViewRenderer {
         }
     }
 
+    var dividerAxis: Axis {
+        if case .divider(let explicit?) = description { return explicit }
+        return layoutState.stackAxis == .horizontal ? .vertical : .horizontal
+    }
+
+    private var containsSpacer: Bool {
+        if let traits = layoutState.traits { return traits.containsSpacer }
+        if case .spacer = description { return true }
+        return presentationChildren.contains { $0.containsSpacer }
+    }
+
     private var wantsFillWidth: Bool {
         if let traits = layoutState.traits { return traits.fillsWidth }
+        if case .spacer = description { return layoutState.stackAxis != .vertical }
+        if case .divider = description { return dividerAxis == .horizontal }
         if case .canvas = description { return true }
         if case .textEditor = description { return true }
         if let behavior = containerBehavior {
@@ -105,6 +123,8 @@ extension ViewRenderer {
 
     private var wantsFillHeight: Bool {
         if let traits = layoutState.traits { return traits.fillsHeight }
+        if case .spacer = description { return layoutState.stackAxis != .horizontal }
+        if case .divider = description { return dividerAxis == .vertical }
         if case .canvas = description { return true }
         if case .textEditor = description { return true }
         if case .scroll = description { return true }
@@ -175,6 +195,7 @@ extension ViewRenderer {
         let subviews = items.map { node in
             LayoutSubview(
                 fillsWidth: node.wantsFillWidth, fillsHeight: node.wantsFillHeight,
+                preservesIntrinsicMinimum: node.containsSpacer,
                 measure: { node.measure($0, tableContext: tableContext) })
         }
         let result = layout.layout(proposal, subviews: subviews)

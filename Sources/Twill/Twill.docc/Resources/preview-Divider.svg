@@ -1,0 +1,35 @@
+<!-- dprint-ignore-file -->
+<svg xmlns="http://www.w3.org/2000/svg" width="82" height="92" viewBox="0 0 82 92" role="img" aria-labelledby="title">
+<title id="title">Divider</title>
+<rect width="100%" height="100%" rx="8" fill="#161b22"/>
+<rect x="16" y="16" width="10" height="20" fill="#161b22"/>
+<rect x="26" y="16" width="10" height="20" fill="#161b22"/>
+<rect x="36" y="16" width="10" height="20" fill="#161b22"/>
+<rect x="46" y="16" width="10" height="20" fill="#161b22"/>
+<rect x="56" y="16" width="10" height="20" fill="#161b22"/>
+<rect x="16" y="36" width="10" height="20" fill="#161b22"/>
+<rect x="26" y="36" width="10" height="20" fill="#161b22"/>
+<rect x="36" y="36" width="10" height="20" fill="#161b22"/>
+<rect x="46" y="36" width="10" height="20" fill="#161b22"/>
+<rect x="56" y="36" width="10" height="20" fill="#161b22"/>
+<rect x="16" y="56" width="10" height="20" fill="#161b22"/>
+<rect x="26" y="56" width="10" height="20" fill="#161b22"/>
+<rect x="36" y="56" width="10" height="20" fill="#161b22"/>
+<rect x="46" y="56" width="10" height="20" fill="#161b22"/>
+<rect x="56" y="56" width="10" height="20" fill="#161b22"/>
+<text x="16" y="31" fill="#e6edf3" font-family="'SFMono-Regular',Consolas,'Liberation Mono',monospace" font-size="16" textLength="10" lengthAdjust="spacingAndGlyphs">A</text>
+<text x="26" y="31" fill="#e6edf3" font-family="'SFMono-Regular',Consolas,'Liberation Mono',monospace" font-size="16" textLength="10" lengthAdjust="spacingAndGlyphs">b</text>
+<text x="36" y="31" fill="#e6edf3" font-family="'SFMono-Regular',Consolas,'Liberation Mono',monospace" font-size="16" textLength="10" lengthAdjust="spacingAndGlyphs">o</text>
+<text x="46" y="31" fill="#e6edf3" font-family="'SFMono-Regular',Consolas,'Liberation Mono',monospace" font-size="16" textLength="10" lengthAdjust="spacingAndGlyphs">v</text>
+<text x="56" y="31" fill="#e6edf3" font-family="'SFMono-Regular',Consolas,'Liberation Mono',monospace" font-size="16" textLength="10" lengthAdjust="spacingAndGlyphs">e</text>
+<text x="16" y="51" fill="#e6edf3" font-family="'SFMono-Regular',Consolas,'Liberation Mono',monospace" font-size="16" textLength="10" lengthAdjust="spacingAndGlyphs">─</text>
+<text x="26" y="51" fill="#e6edf3" font-family="'SFMono-Regular',Consolas,'Liberation Mono',monospace" font-size="16" textLength="10" lengthAdjust="spacingAndGlyphs">─</text>
+<text x="36" y="51" fill="#e6edf3" font-family="'SFMono-Regular',Consolas,'Liberation Mono',monospace" font-size="16" textLength="10" lengthAdjust="spacingAndGlyphs">─</text>
+<text x="46" y="51" fill="#e6edf3" font-family="'SFMono-Regular',Consolas,'Liberation Mono',monospace" font-size="16" textLength="10" lengthAdjust="spacingAndGlyphs">─</text>
+<text x="56" y="51" fill="#e6edf3" font-family="'SFMono-Regular',Consolas,'Liberation Mono',monospace" font-size="16" textLength="10" lengthAdjust="spacingAndGlyphs">─</text>
+<text x="16" y="71" fill="#e6edf3" font-family="'SFMono-Regular',Consolas,'Liberation Mono',monospace" font-size="16" textLength="10" lengthAdjust="spacingAndGlyphs">B</text>
+<text x="26" y="71" fill="#e6edf3" font-family="'SFMono-Regular',Consolas,'Liberation Mono',monospace" font-size="16" textLength="10" lengthAdjust="spacingAndGlyphs">e</text>
+<text x="36" y="71" fill="#e6edf3" font-family="'SFMono-Regular',Consolas,'Liberation Mono',monospace" font-size="16" textLength="10" lengthAdjust="spacingAndGlyphs">l</text>
+<text x="46" y="71" fill="#e6edf3" font-family="'SFMono-Regular',Consolas,'Liberation Mono',monospace" font-size="16" textLength="10" lengthAdjust="spacingAndGlyphs">o</text>
+<text x="56" y="71" fill="#e6edf3" font-family="'SFMono-Regular',Consolas,'Liberation Mono',monospace" font-size="16" textLength="10" lengthAdjust="spacingAndGlyphs">w</text>
+</svg>

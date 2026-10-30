@@ -29,8 +29,8 @@ struct ActivityMonitorView: View {
                 Text(" ACTIVITY / TWILL ").foregroundStyle(Color.ansi(.cyan))
                 Text(paused ? "PAUSED" : "LIVE · 1s")
                     .foregroundStyle(Color.ansi(paused ? .yellow : .green))
+                Spacer()
                 Text("\(snapshot?.processes.count ?? 0) processes")
-                    .frame(maxWidth: .infinity, alignment: .trailing)
             }
             HStack(spacing: 1) {
                 MetricPanel(
