@@ -18,7 +18,7 @@ public struct ContentUnavailableView<Label: View, Description: View, Actions: Vi
     public var body: some View {
         VStack(spacing: 1) {
             label.bold()
-            descriptionContent.foregroundStyle(.muted)
+            descriptionContent.foregroundStyle(.secondary)
             actions
         }
         .multilineTextAlignment(.center)

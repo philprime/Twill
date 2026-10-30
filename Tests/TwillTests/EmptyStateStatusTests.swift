@@ -20,6 +20,21 @@ struct EmptyStateStatusTests {
         #expect(grid.attributes(column: 5, row: 2).contains(.bold))
     }
 
+    @Test("Unavailable descriptions retain the inherited foreground hue with reduced prominence")
+    func descriptionHierarchy() throws {
+        // -- Arrange --
+        let renderer = ViewRenderer.make(
+            ContentUnavailableView("Empty", description: "Try again").foregroundStyle(Color.blue))
+
+        // -- Act --
+        let grid = try #require(renderer.render(.now).grid)
+
+        // -- Assert --
+        #expect(grid.foreground(column: 0, row: 2) == .blue)
+        #expect(grid.attributes(column: 0, row: 2) == [.dim])
+        #expect(grid.attributes(column: 2, row: 0) == [.bold])
+    }
+
     @Test("Custom description appearance overrides the component default and static content stays idle")
     func customAppearance() throws {
         // -- Arrange --
@@ -36,6 +51,7 @@ struct EmptyStateStatusTests {
 
         // -- Assert --
         #expect(grid.foreground(column: 0, row: 2) == .red)
+        #expect(grid.attributes(column: 0, row: 2).isEmpty)
         #expect(frame.nextUpdate == nil)
     }
 
