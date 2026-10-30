@@ -1,4 +1,5 @@
 struct TextLayoutConfiguration {
+    var alignment: HorizontalAlignment = .leading
     var lineBreakMode: Text.LineBreakMode = .wordWrapping
     var lineLimit: Int?
     var truncationMode: Text.TruncationMode?

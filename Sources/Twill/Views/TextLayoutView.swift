@@ -12,6 +12,11 @@ public struct TextLayoutView<Content: View>: View {
 }
 
 extension View {
+    /// Aligns rendered Text rows within the text block, independently of frame placement.
+    public func multilineTextAlignment(_ alignment: HorizontalAlignment) -> TextLayoutView<Self> {
+        TextLayoutView(content: self, change: .alignment(alignment))
+    }
+
     /// Chooses word wrapping, grapheme wrapping, or clipping for Text descendants.
     public func lineBreakMode(_ mode: Text.LineBreakMode) -> TextLayoutView<Self> {
         TextLayoutView(content: self, change: .lineBreakMode(mode))

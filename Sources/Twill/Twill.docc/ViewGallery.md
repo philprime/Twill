@@ -329,7 +329,7 @@ Disabled controls stay visible but do not receive focus or activate.
 
 ``TextLayoutView``
 
-Inherited line limits and truncation keep a terminal title within its viewport.
+Aligned text with limits and truncation.
 
 ![TextLayoutView terminal preview](preview-TextLayoutView.svg)
 

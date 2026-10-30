@@ -32,7 +32,7 @@ struct MultilineTextDrawing: PrimitiveDrawing {
     func draw(in context: inout DrawingContext) {
         let layout = layout(width: context.regionSize.width, height: context.regionSize.height)
         for (row, glyphs) in layout.rows.enumerated() {
-            var column = 0
+            var column = rowOffset(columns: columns(glyphs), width: layout.width)
             for glyph in glyphs {
                 context.draw(glyph.character, width: glyph.width, column: column, row: row)
                 column += glyph.width
@@ -81,6 +81,17 @@ struct MultilineTextDrawing: PrimitiveDrawing {
             glyphs.append(contentsOf: line)
         }
         return glyphs
+    }
+
+    private func rowOffset(columns: Int, width: Int) -> Int {
+        // Alignment distributes spare cells, not horizontal overflow. An
+        // oversized grapheme must retain the same whole-glyph clipping policy.
+        let spare = max(0, width - columns)
+        switch configuration.alignment {
+        case .leading: return 0
+        case .center: return spare / 2
+        case .trailing: return spare
+        }
     }
 
     private func columns(_ glyphs: [Glyph]) -> Int { glyphs.reduce(0) { $0 + $1.width } }

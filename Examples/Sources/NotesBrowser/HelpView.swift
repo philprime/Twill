@@ -15,6 +15,7 @@ struct HelpView: View {
             Text("Esc: stop editing or close a sheet")
             Text("Changes are in memory only and disappear when you quit")
         }
+        .multilineTextAlignment(.center)
         .foregroundStyle(NotesPalette.foreground)
         .border(.single, color: NotesPalette.border)
         .focusable()
