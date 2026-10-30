@@ -11,11 +11,12 @@ public struct GridItem: Equatable, Sendable {
     /// The column sizing strategy.
     public let size: Size
 
-    /// Creates a column description, requiring positive minimum widths and ordered flexible bounds.
+    /// Creates a column description with nonnegative flexible widths and ordered bounds.
+    /// Adaptive minimums must be positive because they determine the number of repeated columns.
     public init(_ size: Size) {
         switch size {
         case .flexible(let minimum, let maximum):
-            precondition(minimum > 0 && maximum >= minimum, "Grid column bounds must be positive and ordered")
+            precondition(minimum >= 0 && maximum >= minimum, "Grid column bounds must be nonnegative and ordered")
         case .adaptive(let minimum):
             precondition(minimum > 0, "Adaptive grid column minimum must be positive")
         }

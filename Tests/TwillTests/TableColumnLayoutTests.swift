@@ -77,6 +77,53 @@ struct TableColumnLayoutTests {
         #expect(widths == [1, 1])
     }
 
+    @Test(
+        "Zero-width column policies preserve their bounds during allocation",
+        arguments: [TableColumnWidth.fixed(0), .flexible(), .flexible(minimum: 0, maximum: 0)]
+    )
+    func zeroWidthAllocation(_ policy: TableColumnWidth) {
+        // -- Arrange --
+        let layout = TableLayout(columns: [policy])
+
+        // -- Act --
+        let widths = layout.columnWidths(in: 0, subviews: [CellSize(width: 8, height: 1)])
+
+        // -- Assert --
+        #expect(widths == [0])
+    }
+
+    @Test("A default flexible minimum shares space and permits zero-width clipping")
+    func defaultFlexibleMinimum() {
+        // -- Arrange --
+        let layout = TableLayout(columns: [.flexible()])
+        let sizes = [CellSize(width: 8, height: 1)]
+
+        // -- Act --
+        let natural = layout.columnWidths(in: nil, subviews: sizes)
+        let bounded = layout.columnWidths(in: 6, subviews: sizes)
+
+        // -- Assert --
+        #expect(natural == [8])
+        #expect(bounded == [6])
+    }
+
+    @Test("A zero-width column hides its content without shifting the following column slot")
+    func hiddenColumn() throws {
+        // -- Arrange --
+        let renderer = ViewRenderer.make(
+            Table([Row(id: 1, name: "Hidden", count: 2)]) {
+                TableColumn("Hidden", value: \.name).width(0)
+                TableColumn("N") { Text("\($0.count)") }.width(1)
+            })
+
+        // -- Act --
+        let grid = try #require(renderer.render(.now).grid)
+
+        // -- Assert --
+        #expect(grid.size == CellSize(width: 3, height: 2))
+        #expect(grid.snapshotText == "  N\n  2")
+    }
+
     @Test("Multiline cells keep top alignment and shared column slots")
     func multiline() throws {
         // -- Arrange --
