@@ -115,15 +115,12 @@ struct MenuTests {
         // -- Arrange --
         var activations = 0
         func content(disabled: Bool) -> some View {
-            Menu(
-                "Actions",
-                items: [
-                    MenuItem("Save") { activations += 1 },
-                    MenuItem("Unavailable", shortcuts: [KeyboardShortcut(.u, hint: "u")], isEnabled: false) {
-                        activations += 1
-                    },
-                ]
-            ).disabled(disabled)
+            Menu("Actions") {
+                Button("Save") { activations += 1 }
+                Button("Unavailable") { activations += 1 }
+                    .keyboardShortcut(KeyboardShortcut(.u, hint: "u"))
+                    .disabled(true)
+            }.disabled(disabled)
         }
         let renderer = ViewRenderer.make(content(disabled: false))
         _ = renderer.render(.now)
