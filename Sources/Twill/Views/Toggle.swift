@@ -22,6 +22,7 @@ public struct Toggle<Label: View>: View {
             isOn.wrappedValue.toggle()
             return .handled
         }
+        .controlPresentation(.toggle, selected: isOn.wrappedValue)
     }
 }
 

@@ -29,12 +29,12 @@ public struct ProgressView<Label: View>: View {
             VStack(alignment: .leading, spacing: 0) {
                 label
                 ProgressBar(fraction: fraction).frame(maxWidth: .infinity)
-            }
+            }.controlPresentation(.progress)
         } else {
             HStack {
                 ProgressSpinner(style: spinnerStyle)
                 label
-            }
+            }.controlPresentation(.progress)
         }
     }
 }

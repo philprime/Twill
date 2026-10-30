@@ -65,6 +65,34 @@ VStack {
 
 Custom ``Style`` implementations resolve with `resolve(in:)` using an immutable ``StyleContext``. They return a ``ResolvedStyle`` containing a color and additional text attributes. A nil resolved color explicitly selects the terminal default. Foreground and border styles contribute attributes to their drawn text; background styles use the resolved color to paint their bounds. Border attributes do not affect content. Style values remain concrete in public composition and resolve at the mounted presentation boundary. Style and tint updates preserve layout, mounted state, focus, and independent schedules.
 
+## Style Control State
+
+``ControlStyle`` resolves an immutable ``ControlAppearance`` from ``ControlState`` and the inherited ``StyleContext``. It adds control-state policy to contextual ``Style`` resolution. Apply a concrete implementation with `.controlStyle(...)` to one control or a subtree; a nearer declaration replaces it, and ordinary text outside controls is unchanged.
+
+```swift
+struct AccentControls: ControlStyle {
+    func resolve(_ state: ControlState, in context: StyleContext) -> ControlAppearance {
+        ControlAppearance(
+            foreground: state.isEnabled ? TintStyle.tint : HierarchicalStyle.secondary,
+            attributes: state.isFocused ? [.bold] : nil,
+            focusEffect: .none)
+    }
+}
+```
+
+State identifies the control family and its effective availability and focus owner. Toggle selection means on, picker options expose their own selection, and disclosure headers expose expansion without styling expanded content. Other controls can inherit enclosing row selection. Nested controls have independent owners, so their focus and value selection do not leak into one another. Progress participates in styling without becoming a focus stop.
+
+Appearance overrides ordinary inherited colors and attributes without changing layout, binding values, actions, or eligibility. Nil fields retain inherited presentation. A style can resolve to terminal-default color and contribute foreground attributes. Explicit appearance attributes replace inherited and style-contributed flags, including an empty set that clears them. ``ControlFocusEffect`` controls only reverse video, independently of logical focus and the hardware caret. Default appearance retains existing styling and focus highlighting.
+
+Slider and stepper initializers accept `format:` closures for their displayed values:
+
+```swift
+Stepper("Files", value: $count, in: 0...100, format: { "\($0) items" })
+Slider("Level", value: $level, format: { "\(Int($0 * 100))%" })
+```
+
+Formatting receives the actual external value, not its clamped track representation, and does not change adjustment behavior. Default formatting retains the ordinary numeric representation. Styles and formatting run during presentation/body evaluation and must not perform terminal output or register work.
+
 ## Apply Terminal Text Attributes
 
 ```swift

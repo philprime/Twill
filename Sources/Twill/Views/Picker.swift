@@ -32,7 +32,7 @@ public struct Picker<SelectionValue: Hashable, OptionLabel: View>: View {
                 HStack {
                     Text(option == selected ? "[x]" : "[ ]")
                     optionLabel(option)
-                }
+                }.controlSelection(option == selected)
             }
         }
         .focusable()
@@ -46,5 +46,6 @@ public struct Picker<SelectionValue: Hashable, OptionLabel: View>: View {
             }
             return .handled
         }
+        .controlPresentation(.picker)
     }
 }

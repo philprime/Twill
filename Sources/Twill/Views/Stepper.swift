@@ -8,23 +8,22 @@ public struct Stepper<Value: FixedWidthInteger, Label: View>: View {
     private let bounds: ClosedRange<Value>
     private let step: Value
     private let label: Label
+    private let format: @MainActor (Value) -> String
 
     /// Creates a stepper with a positive step. Without explicit bounds, the
     /// control uses the integer type's representable range. External binding
     /// values are displayed unchanged until an available adjustment is made.
+    /// The formatter changes presentation only, receiving the actual bound value.
     public init(
         value: Binding<Value>, in bounds: ClosedRange<Value> = Value.min...Value.max, step: Value = 1,
-        @ViewBuilder label: () -> Label
+        format: @escaping @MainActor (Value) -> String = { String(describing: $0) }, @ViewBuilder label: () -> Label
     ) {
-        self.init(value: value, bounds: bounds, step: step, label: label())
-    }
-
-    private init(value: Binding<Value>, bounds: ClosedRange<Value>, step: Value, label: Label) {
         precondition(step > 0, "Stepper step must be positive")
         self.value = value
         self.bounds = bounds
         self.step = step
-        self.label = label
+        self.label = label()
+        self.format = format
     }
 
     /// The label and value with availability markers and Left/Right adjustment handling.
@@ -33,7 +32,7 @@ public struct Stepper<Value: FixedWidthInteger, Label: View>: View {
             Text(value.wrappedValue > bounds.lowerBound ? "[-]" : "(-)")
             HStack(spacing: 0) {
                 label
-                Text(": \(value.wrappedValue)")
+                Text(": \(format(value.wrappedValue))")
             }
             Text(value.wrappedValue < bounds.upperBound ? "[+]" : "(+)")
         }
@@ -43,6 +42,7 @@ public struct Stepper<Value: FixedWidthInteger, Label: View>: View {
             adjust(increasing: key == .arrowRight)
             return .handled
         }
+        .controlPresentation(.stepper)
     }
 
     private func adjust(increasing: Bool) {
@@ -58,8 +58,9 @@ public struct Stepper<Value: FixedWidthInteger, Label: View>: View {
 extension Stepper where Label == Text {
     /// Creates a text-labeled integer stepper with a positive step and optional inclusive bounds.
     public init(
-        _ title: String, value: Binding<Value>, in bounds: ClosedRange<Value> = Value.min...Value.max, step: Value = 1
+        _ title: String, value: Binding<Value>, in bounds: ClosedRange<Value> = Value.min...Value.max, step: Value = 1,
+        format: @escaping @MainActor (Value) -> String = { String(describing: $0) }
     ) {
-        self.init(value: value, bounds: bounds, step: step, label: Text(title))
+        self.init(value: value, in: bounds, step: step, format: format) { return Text(title) }
     }
 }
