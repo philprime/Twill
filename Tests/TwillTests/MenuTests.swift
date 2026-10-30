@@ -126,7 +126,7 @@ struct MenuTests {
                 "Actions",
                 items: [
                     MenuItem("Save") { activations += 1 },
-                    MenuItem("Unavailable", shortcut: MenuShortcut(.u, hint: "u"), isEnabled: false) {
+                    MenuItem("Unavailable", shortcut: KeyboardShortcut(.u, hint: "u"), isEnabled: false) {
                         activations += 1
                     },
                 ]
