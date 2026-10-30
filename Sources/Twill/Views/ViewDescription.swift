@@ -38,6 +38,7 @@ enum ViewDescription {
     case listSelection(any View, AnyHashable?, @MainActor (KeyEvent) -> KeyPressResult)
     case listRow(any View, isSelected: Bool)
     case scroll(any View)
+    case scrollIndicators(any View, ScrollIndicatorVisibility)
     case pane(any View)
     case scrollReader(any View, ScrollViewProxy)
     case styled(any View, foreground: (any Style)?, background: (any Style)?)

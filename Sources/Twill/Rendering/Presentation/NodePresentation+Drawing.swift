@@ -13,12 +13,17 @@ extension NodePresentation {
             context.drawChildren(&drawing)
         case .border(let glyphs, let style, let title):
             drawBorder(glyphs, style: style, title: title, in: &drawing, context: context)
-        case .scroll(let offset, let contentHeight):
-            let viewport = CellRect(origin: .zero, size: context.size)
+        case .scroll(let offset, let contentHeight, let indicators):
+            let contentWidth = max(0, context.size.width - indicators.reservedColumns)
+            let viewport = CellRect(column: 0, row: 0, width: contentWidth, height: context.size.height)
             drawing.withRegion(viewport) { viewport in
                 viewport.withRegion(
-                    CellRect(column: 0, row: -offset, width: context.size.width, height: contentHeight)
+                    CellRect(column: 0, row: -offset, width: contentWidth, height: contentHeight)
                 ) { content in context.drawChildren(&content) }
+            }
+            if indicators == .visible {
+                ScrollIndicatorDrawing(offset: offset, contentHeight: contentHeight).draw(
+                    in: &drawing, size: context.size)
             }
         case .editor(let snapshot, let offset):
             drawEditor(snapshot, offset: offset, in: &drawing, context: context)

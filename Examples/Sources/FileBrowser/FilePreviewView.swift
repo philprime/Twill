@@ -42,6 +42,7 @@ struct FilePreviewView: View {
                     }
                 }
             }
+            .scrollIndicators(.visible)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             .onKeyPress { key in
                 let wasG = pendingG

@@ -37,7 +37,8 @@ extension ViewRenderer {
             .controlPresentation(let content, _, _), .controlSelection(let content, _),
             .focusable(let content), .control(let content, _),
             .focusBinding(let content, _), .submit(let content, _),
-            .scroll(let content), .pane(let content), .listSelection(let content, _, _), .listRow(let content, _),
+            .scroll(let content), .scrollIndicators(let content, _), .pane(let content),
+            .listSelection(let content, _, _), .listRow(let content, _),
             .keyPress(let content, _), .styled(let content, _, _), .attributes(let content, _, _),
             .border(let content, _, _, _):
             reconcile([content], at: date)
