@@ -6,6 +6,70 @@ import Testing
 @Suite("Inherited disabled controls")
 @MainActor
 struct DisabledViewTests {
+    @Test("A sheet without controls remains dismissible beneath a disabled ancestor")
+    func disabledAncestorDismissal() {
+        // -- Arrange --
+        var presented = true
+        let renderer = ViewRenderer.make(
+            Text("Base")
+                .sheet(isPresented: Binding(get: { presented }, set: { presented = $0 })) {
+                    Text("Help").onKeyPress { key in
+                        guard key == .escape else { return .ignored }
+                        presented = false
+                        return .handled
+                    }
+                }
+                .disabled(true))
+        _ = renderer.render(.now)
+
+        // -- Act --
+        let handled = renderer.handle(.escape)
+
+        // -- Assert --
+        #expect(handled)
+        #expect(!presented)
+    }
+
+    @Test("Presented controls ignore base availability but preserve disabled state inside the sheet")
+    func disabledAncestorControls() {
+        // -- Arrange --
+        var presented = true
+        var actions: [String] = []
+        let renderer = ViewRenderer.make(
+            Button("Base") { actions.append("base") }
+                .sheet(isPresented: Binding(get: { presented }, set: { presented = $0 })) {
+                    VStack {
+                        Button("Unavailable") { actions.append("unavailable") }
+                            .onKeyPress { key in
+                                guard key == .x else { return .ignored }
+                                actions.append("disabled shortcut")
+                                return .handled
+                            }
+                            .disabled(true)
+                        Button("Available") { actions.append("available") }
+                    }
+                    .onKeyPress { key in
+                        guard key == .escape else { return .ignored }
+                        presented = false
+                        return .handled
+                    }
+                }
+                .disabled(true))
+        _ = renderer.render(.now)
+
+        // -- Act --
+        _ = renderer.handle(.enter)
+        _ = renderer.handle(.x)
+        _ = renderer.handle(.escape)
+        _ = renderer.render(.now)
+        _ = renderer.handle(.enter)
+
+        // -- Assert --
+        #expect(actions == ["available"])
+        #expect(!presented)
+        #expect(renderer.focusTarget() == nil)
+    }
+
     @Test("Disabled controls stay visible but are skipped by Tab and arrow navigation")
     func traversal() throws {
         // -- Arrange --
