@@ -4,6 +4,7 @@ extension ViewRenderer {
         var ancestor: ViewRenderer? = self
         while let node = ancestor {
             if case .disabled(_, true) = node.description { return false }
+            if case .button(let button) = node.description, !button.isEnabled { return false }
             // Presented content owns interaction independently of the retained base.
             if case .sheet(_, let isPresented, _) = node.description, isPresented.wrappedValue { return true }
             ancestor = node.parent

@@ -215,10 +215,11 @@ extension DocumentationPreviewFixture {
                 Menu(
                     "Actions",
                     items: [
-                        MenuItem("Save", shortcut: KeyboardShortcut(.s)) {},
+                        MenuItem("Save", shortcuts: [KeyboardShortcut(.s)]) {},
                         MenuItem("Delete", isEnabled: false) {},
                     ])
             },
+            keyHintsFixture,
             Self("DisclosureGroup", "An expanded section. Enter or Space on the header toggles its content.") {
                 DisclosureGroup("Details", isExpanded: binding(true)) { Text("Additional information") }
             },
@@ -326,9 +327,7 @@ extension DocumentationPreviewFixture {
             Self("BorderView", "The border modifier encloses content in rounded terminal glyphs.") {
                 Text("Bordered content").border(.rounded, color: Color.cyan)
             },
-            Self("DisabledView", "Disabled controls stay visible but do not receive focus or activate.") {
-                Button("Unavailable") {}.disabled(true)
-            },
+            disabledFixture,
             Self("PaddingView", "The padding modifier reserves one blank cell around the enclosed content.") {
                 Text("Padded").padding(1)
             },
@@ -338,13 +337,7 @@ extension DocumentationPreviewFixture {
             Self("StyledView", "Foreground and background modifiers resolve styles into terminal cell colors.") {
                 Text("Styled content").foregroundStyle(Color.cyan).backgroundStyle(Color.blue)
             },
-            Self(
-                "FocusableView",
-                "A focusable text target. Reverse video indicates focus; "
-                    + "enclosing key handlers define actions."
-            ) {
-                Text("Keyboard target").focusable()
-            },
+            focusableFixture,
             Self(
                 "FocusedView",
                 "Associates a focus binding with a control. The binding adds no "
@@ -352,9 +345,7 @@ extension DocumentationPreviewFixture {
             ) {
                 FocusExample()
             },
-            Self("KeyboardShortcutView", "A shortcut reuses the button action without changing its label.") {
-                Button("Save") {}.keyboardShortcut(.s)
-            },
+            keyboardShortcutFixture,
             Self(
                 "KeyPressView",
                 "Attaches a key handler to a focusable target; the handler itself "

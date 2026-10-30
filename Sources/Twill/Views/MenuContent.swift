@@ -10,7 +10,7 @@ struct MenuContent: View {
             VStack(alignment: .leading) {
                 ForEach(0..<items.count, id: \.self) { index in
                     let item = items[index]
-                    Button(action: { activate(item) }, label: { label(for: item) })
+                    Button(role: item.role, action: { activate(item) }, label: { label(for: item) })
                         .disabled(!item.isEnabled)
                 }
             }
@@ -21,16 +21,17 @@ struct MenuContent: View {
                 isPresented.wrappedValue = false
                 return .handled
             }
-            if key != .enter, let item = items.first(where: { $0.isEnabled && $0.shortcut?.key == key }) {
-                activate(item)
-                return .handled
-            }
-            return .ignored
+            guard key != .enter else { return .ignored }
+            let item = items.first { $0.isEnabled && $0.shortcuts.contains(where: { $0.key == key }) }
+            guard let item else { return .ignored }
+            activate(item)
+            return .handled
         }
     }
 
     private func label(for item: MenuItem) -> some View {
-        Text(item.title + (item.shortcut.map { "  [\($0.hint)]" } ?? "") + (item.isEnabled ? "" : " (disabled)"))
+        let hints = item.shortcuts.map(\.hint).joined(separator: "/")
+        return Text(item.title + (hints.isEmpty ? "" : "  [\(hints)]") + (item.isEnabled ? "" : " (disabled)"))
     }
 
     private func activate(_ item: MenuItem) {

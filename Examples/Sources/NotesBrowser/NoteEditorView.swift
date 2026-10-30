@@ -2,6 +2,8 @@ import Foundation
 import Twill
 
 struct NoteEditorView: View {
+    private enum Action: Hashable { case save, cancel }
+
     @Binding var title: String
     @Binding var noteText: String
     let heading: String
@@ -16,7 +18,13 @@ struct NoteEditorView: View {
     }
 
     var body: some View {
-        Form {
+        let save = Command(
+            Action.save, title: saveLabel, isEnabled: !isTitleEmpty,
+            shortcuts: [saveShortcut, superSaveShortcut], action: onSave)
+        let cancel = Command(
+            Action.cancel, title: "Cancel", role: .cancel,
+            shortcuts: [KeyboardShortcut(.escape)], action: onCancel)
+        return Form {
             FormSection(heading) {
                 FormField(
                     "Title", help: "A title is required to save.",
@@ -32,14 +40,11 @@ struct NoteEditorView: View {
                 }
             }
             VStack(alignment: .leading) {
-                Button(saveLabel, action: onSave)
+                Button(save)
                     .foregroundStyle(NotesPalette.accent)
-                    .disabled(isTitleEmpty)
-                    .keyboardShortcut([saveShortcut, superSaveShortcut])
-                Button("Cancel", action: onCancel)
-                    .keyboardShortcut(.escape)
+                Button(cancel)
             }
-            Text("\(saveShortcut.hint)/\(superSaveShortcut.hint): save  •  Tab: focus  •  Esc: cancel")
+            KeyHints([save, cancel])
                 .foregroundStyle(NotesPalette.muted)
         }
         .foregroundStyle(NotesPalette.foreground)
