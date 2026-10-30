@@ -98,8 +98,8 @@ Start with <doc:GettingStarted>, then explore <doc:ViewGallery> to see rendered 
 
 ### Modal Presentation
 
-- ``View/sheet(isPresented:dismissalPolicy:onDismiss:content:)``
-- ``View/sheet(item:dismissalPolicy:onDismiss:content:)``
+- ``View/sheet(isPresented:dismissalPolicy:onDismiss:content:)-8f5hi``
+- ``View/sheet(item:dismissalPolicy:onDismiss:content:)-4jsm2``
 - ``DismissAction``
 - ``SheetDismissalPolicy``
 - ``View/alert(_:isPresented:actions:message:)``
