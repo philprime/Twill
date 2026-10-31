@@ -5,10 +5,16 @@ import Foundation
 final class MountedTaskRegistry {
     private var tasks: [UUID: Task<Void, Never>] = [:]
 
-    func start(priority: TaskPriority, action: @escaping @MainActor @Sendable () async -> Void) -> Task<Void, Never> {
+    func start(
+        priority: TaskPriority, after previous: Task<Void, Never>? = nil,
+        action: @escaping @MainActor @Sendable () async -> Void
+    ) -> Task<Void, Never> {
         let id = UUID()
         let task = Task(priority: priority) { @MainActor in
             defer { self.tasks[id] = nil }
+            // Even a cancelled intermediate must join its predecessor, or a later
+            // replacement could bypass cleanup still using borrowed resources.
+            await previous?.value
             guard !Task.isCancelled else { return }
             await action()
         }

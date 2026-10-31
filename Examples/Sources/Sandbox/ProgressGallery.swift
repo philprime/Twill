@@ -1,9 +1,11 @@
 import Twill
 
 struct ProgressGallery: View {
+    @State private var runID = 0
     @State private var completed = 2
     @State private var isLoading = true
     private let total = 8
+    private let demoStepInterval: Duration = .milliseconds(250)
 
     var body: some View {
         GroupBox("Progress") {
@@ -17,6 +19,7 @@ struct ProgressGallery: View {
                 Text("←/→: adjust  •  ↑/↓: focus  •  Home/End: slider bounds")
                 HStack(spacing: 2) {
                     Button("Reset") { completed = 0 }
+                    Button("Run demo") { runID += 1 }
                     Button(isLoading ? "Stop spinner" : "Start spinner") { isLoading.toggle() }
                 }
                 if isLoading {
@@ -35,6 +38,16 @@ struct ProgressGallery: View {
         .frame(width: 60)
         .controlStyle(GalleryControlStyle())
         .tint(.cyan)
+        .task(id: runID) { [runID] in
+            guard runID > 0 else { return }
+            completed = 0
+            do {
+                for step in 1...total {
+                    try await Task.sleep(for: demoStepInterval)
+                    completed = step
+                }
+            } catch { return }
+        }
     }
 }
 
