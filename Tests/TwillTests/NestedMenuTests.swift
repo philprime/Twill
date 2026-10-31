@@ -1,3 +1,4 @@
+import Foundation
 import Testing
 
 @testable import Twill
@@ -28,6 +29,41 @@ struct NestedMenuTests {
         #expect(parent.snapshotText.contains("More  ▸"))
         #expect(child.snapshotText.contains("Leaf"))
         #expect(restored == parent)
+    }
+
+    @Test("A submenu preserves its opener's parent placement and draws its content only once")
+    func distinctOverlayLayers() throws {
+        // -- Arrange --
+        let renderer = ViewRenderer.make(
+            Menu("Root") {
+                Menu(
+                    content: { Button("Leaf") {} },
+                    label: { Text("Submenu").frame(width: 20, alignment: .leading) })
+                Text("One")
+                Text("Two")
+                Text("Three")
+                Text("Four")
+            })
+        let proposal = ProposedCellSize(width: 50, height: 15)
+        _ = renderer.render(.now, proposal: proposal)
+        _ = renderer.handle(.enter)
+        let parent = try #require(renderer.render(.now, proposal: proposal).grid)
+        let positions = (0..<parent.size.height).flatMap { row in
+            (0..<parent.size.width).compactMap { column in
+                parent[column, row] == .glyph("S", width: 1) ? CellPosition(column: column, row: row) : nil
+            }
+        }
+        let opener = try #require(positions.first)
+
+        // -- Act --
+        _ = renderer.handle(.enter)
+        let child = try #require(renderer.render(.now, proposal: proposal).grid)
+
+        // -- Assert --
+        #expect(positions.count == 1)
+        #expect(child[opener.column, opener.row] == .glyph("S", width: 1))
+        #expect(child.snapshotText.components(separatedBy: "Leaf").count == 2)
+        #expect(child.snapshotText.components(separatedBy: "Submenu").count == 2)
     }
 
     @Test("Right opens a focused submenu and Left returns without invoking an action")

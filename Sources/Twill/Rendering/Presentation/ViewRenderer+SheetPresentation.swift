@@ -15,7 +15,8 @@ extension ViewRenderer {
         var layers: [ViewRenderer] = []
         var current: ViewRenderer? = outer
         while let sheet = current, let base = sheet.retainedChildren.first {
-            layers.append(base)
+            // Nested bases already occupy their normal slot in the preceding layer.
+            if layers.isEmpty { layers.append(base) }
             guard let presented = sheet.retainedChildren.dropFirst().first else { break }
             layers.append(presented)
             if let nested = presented.activeModalScope(), nested !== sheet {
