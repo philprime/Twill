@@ -91,6 +91,86 @@ struct ValueChangeLifetimeTests {
         #expect(deferred && changes == ["0:1"])
     }
 
+    @Test("Presented sheets deliver coalesced observations while their base remains active")
+    func presentedSheetObservations() {
+        // -- Arrange --
+        var baseChanges: [String] = []
+        var sheetChanges: [String] = []
+        func content(_ value: Int, presented: Bool) -> some View {
+            Text("Base").onChange(of: value) { baseChanges.append("\($0):\($1)") }
+                .sheet(isPresented: .constant(presented)) {
+                    Text("Sheet").onChange(of: value, initial: true) { sheetChanges.append("\($0):\($1)") }
+                }
+        }
+        let renderer = ViewRenderer.make(content(0, presented: true))
+        _ = renderer.render(.now)
+        let initial = sheetChanges
+
+        // -- Act --
+        renderer.update(content(1, presented: true), at: .now)
+        renderer.update(content(2, presented: true), at: .now)
+        _ = renderer.render(.now)
+        renderer.update(content(3, presented: true), at: .now)
+        renderer.update(content(4, presented: false), at: .now)
+        _ = renderer.render(.now)
+
+        // -- Assert --
+        #expect(initial == ["0:0"])
+        #expect(baseChanges == ["0:2", "2:4"])
+        #expect(sheetChanges == ["0:0", "0:2"])
+    }
+
+    @Test("Every mounted layer of nested sheets can deliver observations")
+    func nestedSheetObservations() {
+        // -- Arrange --
+        var observed: Set<String> = []
+        let renderer = ViewRenderer.make(
+            Text("Base").onChange(of: 0, initial: true) { _, _ in observed.insert("base") }
+                .sheet(isPresented: .constant(true)) {
+                    Text("Outer").onChange(of: 0, initial: true) { _, _ in observed.insert("outer") }
+                        .sheet(isPresented: .constant(true)) {
+                            Text("Inner").onChange(of: 0, initial: true) { _, _ in observed.insert("inner") }
+                        }
+                })
+
+        // -- Act --
+        _ = renderer.render(.now)
+
+        // -- Assert --
+        #expect(observed == ["base", "outer", "inner"])
+    }
+
+    @Test("Inactive tabs inside a presented sheet still defer and coalesce", arguments: [false, true])
+    func presentedInactiveTabs(surrounding: Bool) {
+        // -- Arrange --
+        var page: Binding<Page>?
+        var value: Binding<Int>?
+        var changes: [String] = []
+        let renderer = ViewRenderer.make(
+            Text("Base").sheet(isPresented: .constant(true)) {
+                Tabs(
+                    initial: false, surrounding: surrounding,
+                    capture: {
+                        page = $0
+                        value = $1
+                    },
+                    callback: { changes.append("\($0):\($1)") })
+            })
+        _ = renderer.render(.now)
+
+        // -- Act --
+        value?.wrappedValue = 1
+        _ = renderer.render(.now)
+        value?.wrappedValue = 2
+        _ = renderer.render(.now)
+        let deferred = changes.isEmpty
+        page?.wrappedValue = .second
+        _ = renderer.render(.now)
+
+        // -- Assert --
+        #expect(deferred && changes == ["0:2"])
+    }
+
     private struct Change: Equatable {
         let old: Int?
         let new: Int?

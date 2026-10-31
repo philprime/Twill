@@ -33,7 +33,14 @@ extension ViewRenderer {
         var node = self
         if case .tab = node.description, !node.tabState.isActive { return false }
         while let parent = node.parent {
-            guard parent.presentationChildren.contains(where: { $0 === node }) else { return false }
+            let children: [ViewRenderer]
+            if case .sheet = parent.description {
+                // Both sheet layers are visible, although only the base participates in inline layout.
+                children = parent.retainedChildren
+            } else {
+                children = parent.presentationChildren
+            }
+            guard children.contains(where: { $0 === node }) else { return false }
             node = parent
         }
         return true
