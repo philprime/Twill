@@ -50,6 +50,62 @@ struct ComposableMenuTests {
         #expect(actions == ["run"] && closed.snapshotText == "Actions")
     }
 
+    @Test("A focused menu action highlights its shortcut hint with its label")
+    func focusedShortcutHint() throws {
+        // -- Arrange --
+        let renderer = ViewRenderer.make(
+            Menu("Actions") {
+                Button("Run") {}.keyboardShortcut(.r)
+                Button("Next") {}.keyboardShortcut(.n)
+            })
+        _ = renderer.render(.now)
+
+        // -- Act --
+        _ = renderer.handle(.enter)
+        let grid = try #require(renderer.render(.now).grid)
+        _ = renderer.handle(.arrowDown)
+        let moved = try #require(renderer.render(.now).grid)
+        let lines = grid.snapshotText.split(separator: "\n", omittingEmptySubsequences: false)
+        let row = try #require(lines.firstIndex(where: { $0.contains("Run  [r]") }))
+        let start = try #require(lines[row].firstIndex(of: "R"))
+        let column = lines[row].distance(from: lines[row].startIndex, to: start)
+
+        // -- Assert --
+        #expect(grid.isFocused(column: column, row: row))
+        #expect((column..<(column + "Run  [r]".count)).allSatisfy { grid.isFocused(column: $0, row: row) })
+        #expect((column..<(column + "Run  [r]".count)).allSatisfy { !moved.isFocused(column: $0, row: row) })
+        #expect((column..<(column + "Next  [n]".count)).allSatisfy { moved.isFocused(column: $0, row: row + 1) })
+    }
+
+    private struct PlainAppearance: ControlStyle {
+        func resolve(_ state: ControlState, in context: StyleContext) -> ControlAppearance {
+            ControlAppearance(focusEffect: .none)
+        }
+    }
+
+    @Test("Menu hints respect custom focus appearance without changing activation")
+    func hintFocusAppearance() throws {
+        // -- Arrange --
+        var actions = 0
+        let renderer = ViewRenderer.make(
+            Menu("Actions") {
+                Button("Run") { actions += 1 }.keyboardShortcut(.r)
+            }.controlStyle(PlainAppearance()))
+        _ = renderer.render(.now)
+
+        // -- Act --
+        _ = renderer.handle(.enter)
+        let grid = try #require(renderer.render(.now).grid)
+        _ = renderer.handle(.enter)
+
+        // -- Assert --
+        #expect(actions == 1)
+        #expect(
+            (0..<grid.size.height).allSatisfy { row in
+                (0..<grid.size.width).allSatisfy { !grid.isFocused(column: $0, row: row) }
+            })
+    }
+
     @Test("Label handlers keep first refusal while shortcut activation uses the shared action path")
     func labelHandlerOrder() throws {
         // -- Arrange --

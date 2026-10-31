@@ -74,6 +74,11 @@ extension ViewRenderer {
     }
 
     private func isInsideFocus(_ focused: ViewRenderer?) -> Bool {
+        if case .menuButtonHints = description {
+            // Hints are siblings of the label's focus target, but share its control owner.
+            return isEnabled && layoutState.controlOwner != nil
+                && layoutState.controlOwner === focused?.layoutState.controlOwner
+        }
         var node: ViewRenderer? = self
         while let current = node {
             if case .listRow(_, let isSelected) = current.description { return isSelected }
