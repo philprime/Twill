@@ -2,32 +2,21 @@
 @MainActor
 extension ViewRenderer {
     func drawOverlay(sheet: ViewRenderer, proposal: ProposedCellSize) -> CellGrid? {
-        // Walk from the outermost modal layer so nested sheets retain their
-        // enclosing presentation underneath the active keyboard scope.
-        var outer = sheet
-        var ancestor = sheet.parent
+        // Collect every active ancestor rather than jumping to the deepest sheet.
+        // Nested bases occupy their normal slots in the enclosing presented layer.
+        var base: ViewRenderer?
+        var layers: [ViewRenderer] = []
+        var ancestor: ViewRenderer? = sheet
         while let current = ancestor {
             if case .sheet(_, let presented, _) = current.description, presented.wrappedValue {
-                outer = current
+                base = current.retainedChildren.first
+                if let content = current.retainedChildren.dropFirst().first { layers.append(content) }
             }
             ancestor = current.parent
         }
-        var layers: [ViewRenderer] = []
-        var current: ViewRenderer? = outer
-        while let sheet = current, let base = sheet.retainedChildren.first {
-            // Nested bases already occupy their normal slot in the preceding layer.
-            if layers.isEmpty { layers.append(base) }
-            guard let presented = sheet.retainedChildren.dropFirst().first else { break }
-            layers.append(presented)
-            if let nested = presented.activeModalScope(), nested !== sheet {
-                current = nested
-            } else {
-                break
-            }
-        }
-        guard let base = layers.first else { return nil }
+        guard let base else { return nil }
         let baseSize = base.measure(proposal)
-        let overlays = layers.dropFirst().map { ($0, $0.measure(.unspecified)) }
+        let overlays = layers.reversed().map { ($0, $0.measure(.unspecified)) }
         let size = CellSize(
             width: proposal.width ?? max(baseSize.width, overlays.map { $0.1.width }.max() ?? 0),
             height: proposal.height ?? max(baseSize.height, overlays.map { $0.1.height }.max() ?? 0)

@@ -66,6 +66,41 @@ struct NestedMenuTests {
         #expect(child.snapshotText.components(separatedBy: "Submenu").count == 2)
     }
 
+    @Test("Three menu levels retain intermediate content beneath the deepest overlay")
+    func intermediateOverlayLayer() throws {
+        // -- Arrange --
+        let renderer = ViewRenderer.make(
+            Menu("Root") {
+                Menu("Second") {
+                    Text("Intermediate marker")
+                    Menu("Third") { Button("Leaf") {} }
+                    Text("One")
+                    Text("Two")
+                    Text("Three")
+                    Text("Four")
+                    Text("Five")
+                }
+                Text("Parent tail")
+            })
+        let proposal = ProposedCellSize(width: 60, height: 20)
+        _ = renderer.render(.now, proposal: proposal)
+        _ = renderer.handle(.enter)
+        _ = renderer.render(.now, proposal: proposal)
+        _ = renderer.handle(.enter)
+        let intermediate = try #require(renderer.render(.now, proposal: proposal).grid)
+
+        // -- Act --
+        _ = renderer.handle(.enter)
+        let deepest = try #require(renderer.render(.now, proposal: proposal).grid)
+        _ = renderer.handle(.escape)
+        let restored = try #require(renderer.render(.now, proposal: proposal).grid)
+
+        // -- Assert --
+        #expect(deepest.snapshotText.components(separatedBy: "Intermediate marker").count == 2)
+        #expect(deepest.snapshotText.components(separatedBy: "Leaf").count == 2)
+        #expect(restored == intermediate)
+    }
+
     @Test("Right opens a focused submenu and Left returns without invoking an action")
     func directionalNavigation() throws {
         // -- Arrange --
