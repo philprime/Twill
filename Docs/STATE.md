@@ -35,3 +35,13 @@ Selection is independent of mounted child identity and keyboard focus. A collect
 ## Presentation payload identity
 
 An optional identifiable payload can own modal presence for sheets, alerts, and confirmations. A non-nil value presents content and nil ends its mounted lifetime. Updated values with the same ID retain the content's state and owned work; a changed ID replaces the keyed subtree. Dismissing and re-presenting starts a new lifetime even if the ID repeats. The underlying view retains its independent state, identity, and schedules throughout presentation. Keyboard isolation and focus restoration follow the interaction contract.
+
+## Observe Equatable Values
+
+`.onChange(of:initial:_:)` retains a typed observation cache in mounted state. Initial delivery is opt-in and supplies current/current on the first eligible update. Otherwise mounting establishes the baseline without a callback.
+
+Delivery follows the complete reconciliation/body-evaluation pass. Changes coalesce from the last delivered baseline to the latest value and action. Equal values, including a return to the baseline before delivery, produce no callback. Equality follows the supplied value's Equatable semantics rather than hashing or deep copying.
+
+Inactive retained destinations defer delivery and coalesce until presentation eligibility returns, including modifiers surrounding a destination. An initial callback deferred this way uses current/current on activation. Removal cancels pending delivery and releases retained values/actions. Pending registrations do not extend node lifetime or add timer deadlines.
+
+Callbacks run on the UI actor and may write state. Those writes request later mounted passes rather than recursive delivery. Cached layout/resize does not deliver observations. Before routing another input key, the host settles newly requested content passes while retaining one coalesced presentation. Stopping from a callback cancels later delivery and prevents subsequent presentation or application key fallthrough.
