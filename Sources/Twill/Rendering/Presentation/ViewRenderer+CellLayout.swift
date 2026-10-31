@@ -69,7 +69,6 @@ extension ViewRenderer {
         case .scroll where layoutState.scrollIndicators == .visible: return true
         case .tabs: return hasTabBar
         case .tab where !tabState.isActive: return false
-        case .sheet: return sheetBranch?.hasLayoutContent ?? false
         default: return presentationChildren.contains { $0.hasLayoutContent }
         }
     }
@@ -88,8 +87,6 @@ extension ViewRenderer {
             return hasTabBar ? [self] : []
         case .tab where !tabState.isActive:
             return []
-        case .sheet:
-            return sheetBranch?.layoutItems ?? []
         default:
             return presentationChildren.flatMap(\.layoutItems)
         }

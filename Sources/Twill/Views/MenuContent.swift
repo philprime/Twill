@@ -9,7 +9,7 @@ struct MenuContent<Content: View>: View, PrimitiveView {
         GroupBox(title ?? "") {
             VStack(alignment: .leading) { content }.padding(.horizontal)
         }.onKeyPress { key in
-            guard key == .escape else { return .ignored }
+            guard key == .escape || key == .arrowLeft else { return .ignored }
             isPresented.wrappedValue = false
             return .handled
         }

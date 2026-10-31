@@ -7,6 +7,8 @@ extension ViewRenderer {
     /// Excludes inactive tab branches, including modifiers surrounding a destination.
     /// Sheet bases remain available for drawing underneath their presented layers.
     var presentationChildren: [ViewRenderer] {
+        // Modal content draws in a separate overlay layer, not in its base's layout slot.
+        if case .sheet = description { return Array(retainedChildren.prefix(1)) }
         if case .tab = description, !tabState.isActive { return [] }
         guard !descendantTabNodes.isEmpty else { return retainedChildren }
         return retainedChildren.filter { child in
