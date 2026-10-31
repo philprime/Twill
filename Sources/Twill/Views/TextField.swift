@@ -9,6 +9,7 @@ public struct TextField: View {
     private let text: Binding<String>
     private let isSecure: Bool
     private let editingMode: TextEditingMode
+    private let onVerticalMove: (@MainActor (KeyEvent) -> Void)?
 
     /// Creates a single-line editor with a prompt displayed while the value is empty.
     /// Read-only mode consumes attempted edits without writing the binding.
@@ -16,11 +17,19 @@ public struct TextField: View {
         self.init(prompt, text: text, isSecure: false, editingMode: editingMode)
     }
 
-    init(_ prompt: String, text: Binding<String>, isSecure: Bool, editingMode: TextEditingMode) {
+    init(_ prompt: String, text: Binding<String>, onVerticalMove: @escaping @MainActor (KeyEvent) -> Void) {
+        self.init(prompt, text: text, isSecure: false, editingMode: .editable, onVerticalMove: onVerticalMove)
+    }
+
+    init(
+        _ prompt: String, text: Binding<String>, isSecure: Bool, editingMode: TextEditingMode,
+        onVerticalMove: (@MainActor (KeyEvent) -> Void)? = nil
+    ) {
         self.prompt = prompt
         self.text = text
         self.isSecure = isSecure
         self.editingMode = editingMode
+        self.onVerticalMove = onVerticalMove
     }
 
     private func handle(_ key: KeyEvent) -> KeyPressResult {
@@ -39,7 +48,9 @@ public struct TextField: View {
             delete(key, offset: offset, value: value)
         case .arrowLeft, .arrowRight, .home, .end:
             move(key, offset: offset, value: value)
-        case .arrowUp, .arrowDown, .pageUp, .pageDown, .insert, .function:
+        case .arrowUp, .arrowDown:
+            onVerticalMove?(key)
+        case .pageUp, .pageDown, .insert, .function:
             break
         default:
             return .ignored
