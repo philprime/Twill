@@ -14,9 +14,13 @@ extension Application {
             /// How the application occupies the terminal.
             public var mode: Mode
 
+            /// Immutable capabilities applied to the mounted tree at session start.
+            public var terminalCapabilities: TerminalCapabilities
+
             /// Creates presentation settings, using fullscreen mode by default.
-            public init(mode: Mode = .fullscreen) {
+            public init(mode: Mode = .fullscreen, terminalCapabilities: TerminalCapabilities = .detect()) {
                 self.mode = mode
+                self.terminalCapabilities = terminalCapabilities
             }
         }
 

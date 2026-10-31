@@ -12,6 +12,7 @@ enum ViewDescription {
     case spacer(Int)
     case divider(Axis?)
     case drawing(any PrimitiveDrawing)
+    case image(ImageDescription)
     case text(MultilineTextDrawing)
     case textLayout(any View, TextLayoutChange)
     case canvas(interval: TimeInterval?, render: @MainActor (Canvas.Context, Canvas.Size) -> Void)
