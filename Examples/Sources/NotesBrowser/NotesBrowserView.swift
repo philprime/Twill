@@ -58,9 +58,10 @@ struct NotesBrowserView: View {
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-            Text(" Tab: focus  •  Arrows: scroll/select  •  e: edit  •  n: new  •  d: delete  •  ?: help ")
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .foregroundStyle(.tint)
+            StatusBar {
+                Text(" Tab: focus | Arrows: move | e: edit | n: new | d: delete | ?: help ")
+            }
+            .foregroundStyle(.tint)
         }
         .backgroundStyle(NotesPalette.background)
         .onKeyPress { key in

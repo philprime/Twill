@@ -1,0 +1,44 @@
+<!-- dprint-ignore-file -->
+<svg xmlns="http://www.w3.org/2000/svg" width="312" height="52" viewBox="0 0 312 52" role="img" aria-labelledby="title">
+<title id="title">StatusBar</title>
+<rect width="100%" height="100%" rx="8" fill="#161b22"/>
+<rect x="16" y="16" width="10" height="20" fill="#161b22"/>
+<rect x="26" y="16" width="10" height="20" fill="#161b22"/>
+<rect x="36" y="16" width="10" height="20" fill="#161b22"/>
+<rect x="46" y="16" width="10" height="20" fill="#161b22"/>
+<rect x="56" y="16" width="10" height="20" fill="#161b22"/>
+<rect x="66" y="16" width="10" height="20" fill="#161b22"/>
+<rect x="76" y="16" width="10" height="20" fill="#161b22"/>
+<rect x="86" y="16" width="10" height="20" fill="#161b22"/>
+<rect x="96" y="16" width="10" height="20" fill="#161b22"/>
+<rect x="106" y="16" width="10" height="20" fill="#161b22"/>
+<rect x="116" y="16" width="10" height="20" fill="#161b22"/>
+<rect x="126" y="16" width="10" height="20" fill="#161b22"/>
+<rect x="136" y="16" width="10" height="20" fill="#161b22"/>
+<rect x="146" y="16" width="10" height="20" fill="#161b22"/>
+<rect x="156" y="16" width="10" height="20" fill="#161b22"/>
+<rect x="166" y="16" width="10" height="20" fill="#161b22"/>
+<rect x="176" y="16" width="10" height="20" fill="#161b22"/>
+<rect x="186" y="16" width="10" height="20" fill="#161b22"/>
+<rect x="196" y="16" width="10" height="20" fill="#161b22"/>
+<rect x="206" y="16" width="10" height="20" fill="#161b22"/>
+<rect x="216" y="16" width="10" height="20" fill="#161b22"/>
+<rect x="226" y="16" width="10" height="20" fill="#161b22"/>
+<rect x="236" y="16" width="10" height="20" fill="#161b22"/>
+<rect x="246" y="16" width="10" height="20" fill="#161b22"/>
+<rect x="256" y="16" width="10" height="20" fill="#161b22"/>
+<rect x="266" y="16" width="10" height="20" fill="#161b22"/>
+<rect x="276" y="16" width="10" height="20" fill="#161b22"/>
+<rect x="286" y="16" width="10" height="20" fill="#161b22"/>
+<text x="16" y="31" fill="#e6edf3" font-family="'SFMono-Regular',Consolas,'Liberation Mono',monospace" font-size="16" textLength="10" lengthAdjust="spacingAndGlyphs">R</text>
+<text x="26" y="31" fill="#e6edf3" font-family="'SFMono-Regular',Consolas,'Liberation Mono',monospace" font-size="16" textLength="10" lengthAdjust="spacingAndGlyphs">e</text>
+<text x="36" y="31" fill="#e6edf3" font-family="'SFMono-Regular',Consolas,'Liberation Mono',monospace" font-size="16" textLength="10" lengthAdjust="spacingAndGlyphs">a</text>
+<text x="46" y="31" fill="#e6edf3" font-family="'SFMono-Regular',Consolas,'Liberation Mono',monospace" font-size="16" textLength="10" lengthAdjust="spacingAndGlyphs">d</text>
+<text x="56" y="31" fill="#e6edf3" font-family="'SFMono-Regular',Consolas,'Liberation Mono',monospace" font-size="16" textLength="10" lengthAdjust="spacingAndGlyphs">y</text>
+<text x="226" y="31" fill="#e6edf3" font-family="'SFMono-Regular',Consolas,'Liberation Mono',monospace" font-size="16" textLength="10" lengthAdjust="spacingAndGlyphs">s</text>
+<text x="236" y="31" fill="#e6edf3" font-family="'SFMono-Regular',Consolas,'Liberation Mono',monospace" font-size="16" textLength="10" lengthAdjust="spacingAndGlyphs">:</text>
+<text x="256" y="31" fill="#e6edf3" font-family="'SFMono-Regular',Consolas,'Liberation Mono',monospace" font-size="16" textLength="10" lengthAdjust="spacingAndGlyphs">S</text>
+<text x="266" y="31" fill="#e6edf3" font-family="'SFMono-Regular',Consolas,'Liberation Mono',monospace" font-size="16" textLength="10" lengthAdjust="spacingAndGlyphs">a</text>
+<text x="276" y="31" fill="#e6edf3" font-family="'SFMono-Regular',Consolas,'Liberation Mono',monospace" font-size="16" textLength="10" lengthAdjust="spacingAndGlyphs">v</text>
+<text x="286" y="31" fill="#e6edf3" font-family="'SFMono-Regular',Consolas,'Liberation Mono',monospace" font-size="16" textLength="10" lengthAdjust="spacingAndGlyphs">e</text>
+</svg>

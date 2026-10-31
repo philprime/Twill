@@ -24,7 +24,7 @@ struct NoteListView: View {
                 return .handled
             }
             if notes.isEmpty {
-                Text("No matching notes")
+                ContentUnavailableView("No matching notes", description: "Try another search.")
                     .foregroundStyle(.secondary)
             }
         }
