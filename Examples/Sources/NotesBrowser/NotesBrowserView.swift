@@ -40,13 +40,14 @@ struct NotesBrowserView: View {
                     .foregroundStyle(NotesPalette.foreground)
             }
             .foregroundStyle(NotesPalette.border)
-            HStack(spacing: 2) {
+            SplitView(leadingWidth: .fixed(28), spacing: 2) {
                 GroupBox("Notes") {
                     NoteListView(notes: matches, selectedNoteID: $selectedNoteID, onDelete: requestDeletion)
-                        .frame(width: 26, maxHeight: .infinity, alignment: .top)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
                         .foregroundStyle(NotesPalette.foreground)
                 }
                 .foregroundStyle(NotesPalette.border)
+            } trailing: {
                 if let previewNote {
                     GroupBox("Preview") {
                         ScrollView {

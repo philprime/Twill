@@ -24,7 +24,7 @@ extension ViewRenderer {
             reconcile([body], at: date)
         case .dialog(let actions, _, let kind):
             updateDialog(actions, kind: kind, at: date)
-        case .group(let views, _), .tableRow(let views):
+        case .group(let views, _), .tableRow(let views), .split(let views, _):
             reconcile(views, at: date)
         case .keyed(let views):
             reconcileKeyed(views, at: date)

@@ -28,6 +28,7 @@ enum ViewDescription {
     // Shared-column ownership is structural, not a concrete-layout tag on a generic group.
     // Rows require a table-local measurement context and preserve even empty cell slots.
     case table(any View, TableLayout)
+    case split(panes: [any View], SplitLayout)
     case tableRow(cells: [any View])
     case keyed(children: [(id: AnyHashable, view: any View)])
     case disabled(any View, Bool)
