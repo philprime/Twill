@@ -75,7 +75,7 @@ public final class Application {
             if let runtimeError { throw runtimeError }
             let viewportRegistration = runLoop.add(viewportSource)
             let size = try terminalViewport.start(signaling: viewportRegistration)
-            try viewHost.start(size: size, mode: options.ui.mode)
+            try viewHost.start(size: size, mode: options.ui.mode, terminalCapabilities: options.ui.terminalCapabilities)
 
             // Keyboard remains a lossless stream consumer. Viewport changes retain only
             // their newest payload and signal the run loop without creating a task per event.

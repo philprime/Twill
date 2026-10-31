@@ -9,6 +9,7 @@ final class ViewRenderer {
 
     private let viewType: ObjectIdentifier
     private let taskRegistry: MountedTaskRegistry
+    let terminalCapabilities: TerminalCapabilities
     private var viewTask: Task<Void, Never>?
     weak var parent: ViewRenderer?
     var content: MountedContent
@@ -25,16 +26,18 @@ final class ViewRenderer {
     var layoutState = MountedLayoutState()
     var sheetState = MountedSheetState()
 
-    private init(_ view: any View, taskRegistry: MountedTaskRegistry) {
+    private init(_ view: any View, taskRegistry: MountedTaskRegistry, terminalCapabilities: TerminalCapabilities) {
         viewType = ObjectIdentifier(type(of: view))
         self.taskRegistry = taskRegistry
+        self.terminalCapabilities = terminalCapabilities
         content = MountedContent(view)
     }
 
     static func make<Content: View>(
-        _ view: Content, taskRegistry: MountedTaskRegistry = MountedTaskRegistry()
+        _ view: Content, taskRegistry: MountedTaskRegistry = MountedTaskRegistry(),
+        terminalCapabilities: TerminalCapabilities = TerminalCapabilities()
     ) -> ViewRenderer {
-        ViewRenderer(view, taskRegistry: taskRegistry)
+        ViewRenderer(view, taskRegistry: taskRegistry, terminalCapabilities: terminalCapabilities)
     }
 
     func unmount() {
@@ -55,7 +58,7 @@ final class ViewRenderer {
     }
 
     func makeChild(_ view: any View) -> ViewRenderer {
-        Self.make(view, taskRegistry: taskRegistry)
+        Self.make(view, taskRegistry: taskRegistry, terminalCapabilities: terminalCapabilities)
     }
 
     func reconcile(_ views: [any View], at date: Date) {
