@@ -8,7 +8,7 @@ extension ViewRenderer {
         var layers: [ViewRenderer] = []
         var ancestor: ViewRenderer? = sheet
         while let current = ancestor {
-            if case .sheet(_, let presented, _) = current.description, presented.wrappedValue {
+            if case .sheet(let sheet) = current.description, sheet.isPresented.wrappedValue {
                 base = current.retainedChildren.first
                 if let content = current.retainedChildren.dropFirst().first { layers.append(content) }
             }

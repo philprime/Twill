@@ -84,25 +84,25 @@ struct NotesBrowserView: View {
             return .handled
         }
         .sheet(isPresented: $isHelpPresented) {
-            HelpView(onDismiss: { isHelpPresented = false })
+            HelpView()
         }
-        .sheet(isPresented: $isCreatePresented) {
+        .sheet(isPresented: $isCreatePresented) { dismiss in
             NoteEditorView(
                 title: $draftTitle,
                 noteText: $draftBody,
                 heading: "New note",
                 saveLabel: "Create note",
                 onSave: createNote,
-                onCancel: { isCreatePresented = false })
+                onCancel: dismiss.callAsFunction)
         }
-        .sheet(item: $editingNote) { note in
+        .sheet(item: $editingNote) { note, dismiss in
             NoteEditorView(
                 title: $draftTitle,
                 noteText: $draftBody,
                 heading: "Edit note",
                 saveLabel: "Save changes",
                 onSave: { saveNote(note.id) },
-                onCancel: { editingNote = nil })
+                onCancel: dismiss.callAsFunction)
         }
         .confirmationDialog("Delete note?", isPresented: $isDeletePresented) {
             Button("Delete note", role: .destructive) {
