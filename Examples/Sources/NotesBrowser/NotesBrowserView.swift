@@ -59,7 +59,7 @@ struct NotesBrowserView: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             StatusBar {
-                Text(" Tab: focus  •  Arrows: scroll/select  •  e: edit  •  n: new  •  d: delete  •  ?: help ")
+                Text(" Tab: focus | Arrows: move | e: edit | n: new | d: delete | ?: help ")
             }
             .foregroundStyle(.tint)
         }
