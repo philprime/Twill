@@ -95,7 +95,6 @@ Start with <doc:GettingStarted>, then explore <doc:ViewGallery> to see rendered 
 - ``TabView``
 - ``Tab``
 - ``Menu``
-- ``MenuItem``
 
 ### Modal Presentation
 

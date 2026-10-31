@@ -215,12 +215,10 @@ extension DocumentationPreviewFixture {
                     + "opens or activates; arrows navigate; "
                     + "Escape dismisses.", keys: [.enter]
             ) {
-                Menu(
-                    "Actions",
-                    items: [
-                        MenuItem("Save", shortcuts: [KeyboardShortcut(.s)]) {},
-                        MenuItem("Delete", isEnabled: false) {},
-                    ])
+                Menu("Actions") {
+                    Button("Save") {}.keyboardShortcut(.s)
+                    Button("Delete") {}.disabled(true)
+                }
             },
             keyHintsFixture,
             Self("DisclosureGroup", "An expanded section. Enter or Space on the header toggles its content.") {
