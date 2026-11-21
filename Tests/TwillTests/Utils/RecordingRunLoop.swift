@@ -33,6 +33,8 @@ final class RecordingRunLoop: RunLoop {
         removed.append(source)
         sources.removeAll { $0 === source }
     }
+    func add(_ observer: RunLoopObserver) {}
+    func remove(_ observer: RunLoopObserver) {}
     func stop() {}
     func run() async {}
 }
