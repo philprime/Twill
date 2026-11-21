@@ -16,6 +16,10 @@ import Dispatch
         func consume(_ source: RunLoopSource)
         /// Removes a source and deactivates its registration capability.
         func remove(_ source: RunLoopSource)
+        /// Registers a lifecycle observer.
+        func add(_ observer: RunLoopObserver)
+        /// Removes a lifecycle observer.
+        func remove(_ observer: RunLoopObserver)
         /// Permanently stops delivery and deactivates registrations.
         func stop()
         /// Delivers ready work until stopped or cancelled, suspending while idle.
@@ -87,7 +91,8 @@ public final class DefaultRunLoop {
     private var nextRegistrationIdentifier: UInt = 0
     private var timers: [ObjectIdentifier: TimerRegistration] = [:]
     private var nextTimerOrder: UInt = 0
-
+    private let observers = RunLoopObservations()
+    private var isRunning = false
     // Each physical arm or disarm invalidates callbacks from every earlier arm.
     private var timerWakeGeneration: UInt = 0
 
@@ -159,7 +164,6 @@ public final class DefaultRunLoop {
         if let identifier = sourceIdentifiers[key], let existing = sources[identifier] {
             return existing.registration
         }
-
         nextRegistrationIdentifier &+= 1
         let identifier = nextRegistrationIdentifier
         let continuation = eventContinuation
@@ -210,6 +214,15 @@ public final class DefaultRunLoop {
         sources.removeValue(forKey: identifier)?.registration.deactivate()
     }
 
+    /// Registers without waking the loop. Additions during delivery start at the next phase.
+    public func add(_ observer: RunLoopObserver) {
+        guard !isStopped else { return }
+        observers.add(observer)
+    }
+    /// Removes an observer, suppressing callbacks not yet begun. It may be registered again.
+    public func remove(_ observer: RunLoopObserver) {
+        observers.remove(observer)
+    }
     /// Permanently stops the run loop.
     ///
     /// Stopping deactivates source registrations, removes logical timers, stops the physical timer
@@ -227,6 +240,7 @@ public final class DefaultRunLoop {
         armedTimerDeadline = nil
         timerBackend.stop()
         eventContinuation.finish()
+        if !isRunning { observers.removeAll() }
     }
 
     /// Delivers source and timer actions until the run loop stops or the calling task is cancelled.
@@ -235,11 +249,26 @@ public final class DefaultRunLoop {
     /// shutdown as ``stop()``, including when cancellation ends the loop. A stopped run loop cannot
     /// be run again.
     public func run() async {
-        defer { stop() }
-        for await event in eventStream {
+        guard !isRunning else { return }
+        isRunning = true
+        let didEnter = !isStopped && !Task.isCancelled
+        defer {
+            stop()
+            if didEnter { observers.notify(.exit) { true } }
+            observers.removeAll()
+            isRunning = false
+        }
+        if Task.isCancelled { stop() }
+        if didEnter { observers.notify(.entry) { !self.isStopped } }
+        var iterator = eventStream.makeAsyncIterator()
+        while true {
+            if !isStopped { observers.notify(.beforeWaiting) { !self.isStopped } }
+            guard let event = await iterator.next() else { break }
             if Task.isCancelled { stop() }
             // Discard buffered registrations without dispatching so a stopped loop
             // releases timer callbacks and any owners they captured.
+            guard !isStopped else { continue }
+            observers.notify(.afterWaiting) { !self.isStopped }
             guard !isStopped else { continue }
             dispatch(event)
         }
@@ -258,6 +287,10 @@ public final class DefaultRunLoop {
             // queues a distinct future delivery rather than being lost or delivered twice.
             guard let registration = sources[identifier],
                 registration.registration.beginDelivery(readiness: readiness)
+            else { return }
+            observers.notify(.beforeSources) { !self.isStopped }
+            guard !isStopped,
+                sources[identifier]?.registration === registration.registration
             else { return }
             registration.source.action()
         case .scheduleTimer(let timer):
@@ -284,6 +317,8 @@ public final class DefaultRunLoop {
         // Only the callback from the currently armed generation may inspect due timers.
         guard generation == timerWakeGeneration else { return }
         armedTimerDeadline = nil
+        observers.notify(.beforeTimers) { !self.isStopped }
+        guard !isStopped else { return }
 
         // Use one clock reading for the entire iteration so all timers are judged against
         // the same boundary even when earlier actions take time to execute.
@@ -320,7 +355,6 @@ public final class DefaultRunLoop {
             // timer, register other timers, or stop the run loop reentrantly.
             registration.timer.action()
         }
-
         scheduleNextTimerWake()
     }
 
